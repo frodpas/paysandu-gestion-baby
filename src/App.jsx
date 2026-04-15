@@ -488,6 +488,11 @@ function FormAltaJugador({ categorias, onSave, onCancel, initialData=null, reado
 
   const valid = f.nombre && f.celular && f.categoria_id && f.fecha_nacimiento;
 
+  // Validar que el año de nacimiento coincida con la categoría (si la cat es un año)
+  const catEsAño = /^\d{4}$/.test(f.categoria_id);
+  const añoNac   = f.fecha_nacimiento ? new Date(f.fecha_nacimiento).getFullYear() : null;
+  const catMismatch = catEsAño && añoNac && String(añoNac) !== f.categoria_id;
+
   return (
     <div>
       <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"18px 22px"}}>
@@ -532,6 +537,14 @@ function FormAltaJugador({ categorias, onSave, onCancel, initialData=null, reado
             ))}
           </select>
         </div>
+
+        {catMismatch&&(
+          <div style={{background:"#fff3cd",border:"1px solid #ffc107",borderRadius:8,
+            padding:"10px 14px",marginBottom:12,fontSize:13,color:"#856404"}}>
+            ⚠️ El año de nacimiento ({añoNac}) no coincide con la categoría seleccionada ({f.categoria_id}).
+            Por favor verificá los datos.
+          </div>
+        )}
 
         <div style={{marginBottom:20}}>
           <label style={{display:"block",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
@@ -786,21 +799,29 @@ function AdminScreen({ user, onLogout }) {
       </div>
 
       {/* Tabs */}
-      <div style={{background:C.white,borderBottom:`2px solid ${C.gray}`,padding:"10px 14px",
-        display:"flex",gap:8,overflowX:"auto",flexShrink:0}}>
-        {TABS.map(([id,label])=>(
-          <button key={id} onClick={()=>setTab(id)}
-            style={{background:tab===id?`linear-gradient(135deg,${C.navy},${C.navyLight})`:C.offWhite,
-              color:tab===id?C.white:C.navy,
-              border:`2px solid ${tab===id?C.navy:C.gray}`,borderRadius:24,
-              padding:"10px 18px",
-              fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:14,
-              textTransform:"uppercase",whiteSpace:"nowrap",flex:"1 1 auto",
-              boxShadow:tab===id?"0 4px 12px rgba(20,28,78,.25)":"none",
-              transition:"all .15s"}}>
-            {label}
-          </button>
-        ))}
+      <div style={{background:C.white,borderBottom:`3px solid ${C.gray}`,padding:"12px 16px",
+        display:"flex",gap:10,overflowX:"auto",flexShrink:0}}>
+        {TABS.map(([id,label])=>{
+          const active = tab===id;
+          const parts = label.split(" ");
+          const icon = parts[0];
+          const text = parts.slice(1).join(" ");
+          return(
+            <button key={id} onClick={()=>setTab(id)}
+              style={{background:active?`linear-gradient(135deg,${C.navy},${C.navyLight})`:C.offWhite,
+                color:active?C.white:C.navy,
+                border:`2px solid ${active?C.navy:C.gray}`,borderRadius:16,
+                padding:"12px 22px",
+                fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,
+                textTransform:"uppercase",whiteSpace:"nowrap",flex:"1 1 auto",
+                boxShadow:active?"0 6px 18px rgba(20,28,78,.3)":"none",
+                transition:"all .15s",display:"flex",flexDirection:"column",
+                alignItems:"center",gap:3,cursor:"pointer"}}>
+              <span style={{fontSize:22,lineHeight:1}}>{icon}</span>
+              <span style={{fontSize:13,fontWeight:800,letterSpacing:".04em"}}>{text}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Content */}
@@ -842,68 +863,67 @@ function AdminScreen({ user, onLogout }) {
               {jugadoresFilt.length} jugador{jugadoresFilt.length!==1?"es":""}
             </div>
             {/* Encabezado tabla */}
-            <div style={{display:"grid",gridTemplateColumns:"2fr 120px 100px 130px 160px",gap:0,
-              padding:"10px 16px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
-              {["Nombre / Nacimiento","Cat.","Código","QR / Copiar","Acciones"].map((h,i)=>(
+            <div style={{display:"grid",gridTemplateColumns:"1fr 70px 90px 170px 190px",gap:0,
+              padding:"11px 20px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
+              {["Nombre","Cat.","Código","Link de acceso","Acciones"].map((h,i)=>(
                 <div key={i} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
                   fontSize:13,color:C.white,textTransform:"uppercase",
-                  textAlign:i>=2?"center":"left",padding:"0 6px"}}>{h}</div>
+                  textAlign:i>=2?"center":"left",padding:"0 4px"}}>{h}</div>
               ))}
             </div>
-            {jugadoresFilt.map((j,idx)=>(
-              <div key={j.id} style={{display:"grid",gridTemplateColumns:"2fr 120px 100px 130px 160px",gap:0,
-                alignItems:"center",padding:"12px 16px",
-                background:idx%2===0?C.white:"#f5f5f0",
-                borderLeft:`1px solid ${C.gray}`,borderRight:`1px solid ${C.gray}`,
-                borderBottom:`1px solid ${C.gray}`,
-                borderRadius:idx===jugadoresFilt.length-1?"0 0 12px 12px":"0"}}>
-                {/* Nombre + nacimiento */}
-                <div style={{minWidth:0,paddingRight:8}}>
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:16,
-                    color:C.navy,textTransform:"uppercase",overflow:"hidden",textOverflow:"ellipsis",
-                    whiteSpace:"nowrap"}}>{j.nombre}</div>
-                  <div style={{display:"flex",gap:12,marginTop:2}}>
-                    {j.fecha_nacimiento&&<span style={{fontSize:11,color:C.grayMid}}>📅 {j.fecha_nacimiento}</span>}
-                    {j.ci&&<span style={{fontSize:11,color:C.grayMid}}>🪪 {j.ci}</span>}
-                    {j.numero_camiseta&&<span style={{fontSize:11,color:C.grayMid}}>👕 #{j.numero_camiseta}</span>}
+            {jugadoresFilt.map((j,idx)=>{
+              const linkAcceso = window.location.origin + "?id=" + j.id;
+              return(
+                <div key={j.id} style={{display:"grid",gridTemplateColumns:"1fr 70px 90px 170px 190px",gap:0,
+                  alignItems:"center",padding:"10px 20px",
+                  background:idx%2===0?C.white:"#f5f5f0",
+                  borderLeft:`1px solid ${C.gray}`,borderRight:`1px solid ${C.gray}`,
+                  borderBottom:`1px solid ${C.gray}`,
+                  borderRadius:idx===jugadoresFilt.length-1?"0 0 12px 12px":"0"}}>
+                  {/* Nombre + datos en una sola línea */}
+                  <div style={{minWidth:0,paddingRight:8,display:"flex",flexDirection:"column",gap:2}}>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:16,
+                      color:C.navy,textTransform:"uppercase",overflow:"hidden",textOverflow:"ellipsis",
+                      whiteSpace:"nowrap"}}>{j.nombre}</div>
+                    <div style={{display:"flex",gap:10,flexWrap:"nowrap",alignItems:"center"}}>
+                      {j.fecha_nacimiento&&<span style={{fontSize:11,color:C.grayMid,whiteSpace:"nowrap"}}>📅 {j.fecha_nacimiento}</span>}
+                      {j.ci&&<span style={{fontSize:11,color:C.grayMid,whiteSpace:"nowrap"}}>🪪 {j.ci}</span>}
+                      {j.numero_camiseta&&<span style={{fontSize:11,color:C.grayMid,whiteSpace:"nowrap"}}>👕 #{j.numero_camiseta}</span>}
+                    </div>
+                  </div>
+                  {/* Categoría */}
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:17,
+                    color:C.navy,textAlign:"center"}}>{j.categoria_id}</div>
+                  {/* Código */}
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,
+                    color:C.lilacDark,letterSpacing:".06em",textAlign:"center"}}>{j.id}</div>
+                  {/* Link directo */}
+                  <div style={{display:"flex",gap:5,justifyContent:"center",alignItems:"center"}}>
+                    <button onClick={()=>{
+                        navigator.clipboard?.writeText(linkAcceso).then(()=>{
+                          alert("✅ Link copiado para " + j.nombre + ". Podés pegarlo en WhatsApp o email para que acceda directamente a su ficha.");
+                        });
+                      }}
+                      title="Copiar link de acceso directo"
+                      style={{padding:"7px 12px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                        color:C.white,border:"none",borderRadius:8,fontFamily:"'Barlow Condensed',sans-serif",
+                        fontWeight:700,fontSize:12,cursor:"pointer",textTransform:"uppercase",
+                        whiteSpace:"nowrap"}}>🔗 Copiar link</button>
+                  </div>
+                  {/* Acciones */}
+                  <div style={{display:"flex",gap:6,justifyContent:"center"}}>
+                    <button onClick={()=>{setSelJugador(j);setModal("editJug");}}
+                      style={{flex:1,padding:"8px 12px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                        color:C.white,border:"none",borderRadius:8,fontFamily:"'Barlow Condensed',sans-serif",
+                        fontWeight:700,fontSize:13,cursor:"pointer",textTransform:"uppercase"}}>✏ Editar</button>
+                    <button onClick={()=>deleteJugador(j.id)}
+                      style={{padding:"8px 10px",background:"#fff5f5",border:"1px solid #fca5a5",
+                        borderRadius:8,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                        fontSize:13,cursor:"pointer",color:"#dc2626"}}>🗑</button>
                   </div>
                 </div>
-                {/* Categoría */}
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:17,
-                  color:C.navy,textAlign:"center"}}>{j.categoria_id}</div>
-                {/* Código */}
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:15,
-                  color:C.lilacDark,letterSpacing:".08em",textAlign:"center"}}>{j.id}</div>
-                {/* QR + Copiar */}
-                <div style={{display:"flex",gap:6,justifyContent:"center",alignItems:"center"}}>
-                  <button onClick={()=>{setQrLink(j.id);setModal("qrJugador");}}
-                    title="Ver QR"
-                    style={{padding:"8px 12px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
-                      color:C.white,border:"none",borderRadius:8,fontSize:16,cursor:"pointer"}}>📱</button>
-                  <button onClick={()=>{
-                      navigator.clipboard?.writeText(j.id).then(()=>{
-                        alert(`✅ Código ${j.id} copiado.
-Podés pegarlo en WhatsApp o email para que ${j.nombre} acceda a su ficha.`);
-                      });
-                    }}
-                    title="Copiar código"
-                    style={{padding:"8px 12px",background:C.offWhite,border:`2px solid ${C.navy}`,
-                      borderRadius:8,fontSize:13,cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",
-                      fontWeight:700,color:C.navy}}>📋</button>
-                </div>
-                {/* Acciones */}
-                <div style={{display:"flex",gap:6,justifyContent:"center"}}>
-                  <button onClick={()=>{setSelJugador(j);setModal("editJug");}}
-                    style={{padding:"8px 14px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
-                      color:C.white,border:"none",borderRadius:8,fontFamily:"'Barlow Condensed',sans-serif",
-                      fontWeight:700,fontSize:13,cursor:"pointer",textTransform:"uppercase"}}>✏ Editar</button>
-                  <button onClick={()=>deleteJugador(j.id)}
-                    style={{padding:"8px 12px",background:"#fff5f5",border:"1px solid #fca5a5",
-                      borderRadius:8,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
-                      fontSize:13,cursor:"pointer",color:"#dc2626"}}>🗑</button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
             {jugadoresFilt.length===0&&(
               <div style={{textAlign:"center",padding:"40px 0",color:C.grayMid}}>Sin jugadores en esta categoría</div>
             )}
@@ -1817,17 +1837,46 @@ function DelegadoScreen({ user, onLogout }) {
 /* ══ APP ROOT ═════════════════════════════════════════════════════════ */
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
+  const [autoLoading, setAutoLoading] = useState(false);
 
-  // Verificar si viene de un link de formulario
   const params = new URLSearchParams(window.location.search);
   const formType = params.get("form");
+  const directId  = params.get("id"); // link directo ?id=XXXXXX
 
-  // TODO: FormularioPublico para altas via QR
+  // Acceso directo con link de jugador
+  useEffect(()=>{
+    if (directId && !currentUser) {
+      setAutoLoading(true);
+      sbFetch(`baby_jugadores?id=eq.${directId.toUpperCase()}&select=*`).then(data=>{
+        setAutoLoading(false);
+        if (data && data.length > 0) {
+          setCurrentUser({role:"publico", jugador:data[0]});
+          // Limpiar URL para no recargar
+          window.history.replaceState({}, "", window.location.pathname);
+        }
+      });
+    }
+  },[directId]);
+
   if (formType) {
     return (
       <>
         <GlobalStyle/>
         <FormularioPublico tipo={formType} org={params.get("org")||"paysandu"}/>
+      </>
+    );
+  }
+
+  if (autoLoading) {
+    return (
+      <>
+        <GlobalStyle/>
+        <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${C.navyDark},${C.navy})`,
+          display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}>
+          <ClubLogo size={64}/>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:18,
+            color:"rgba(255,255,255,.7)"}}>Cargando ficha...</div>
+        </div>
       </>
     );
   }
