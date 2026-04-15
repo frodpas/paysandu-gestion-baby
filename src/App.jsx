@@ -613,8 +613,7 @@ function ModalQRJugador({ jugId, jug, onClose }) {
           Escaneá el código o ingresá el ID para acceder a la ficha y pagos
         </div>
         <div style={{display:"flex",gap:8,marginBottom:8}}>
-          <button onClick={()=>{ navigator.clipboard?.writeText(jugId).then(()=>{ alert("✅ Código " + jugId + " copiado.
-Podés pegarlo en WhatsApp o email."); }); }}
+          <button onClick={()=>{ navigator.clipboard?.writeText(jugId).then(()=>{ alert("✅ Código " + jugId + " copiado. Podés pegarlo en WhatsApp o email."); }); }}
             style={{flex:1,padding:"10px",background:C.offWhite,color:C.navy,
               border:`2px solid ${C.navy}`,borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
               fontWeight:700,fontSize:13,textTransform:"uppercase",cursor:"pointer"}}>📋 Copiar ID</button>
