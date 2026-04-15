@@ -736,22 +736,29 @@ function AdminScreen({ user, onLogout }) {
 
         {/* ── TAB PLANTELES ── */}
         {!loading&&tab==="planteles"&&(
-          <div style={{maxWidth:900}}>
-            <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12,alignItems:"center"}}>
+          <div style={{maxWidth:"100%"}}>
+            {/* Barra acciones */}
+            <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:14,alignItems:"center"}}>
               <button onClick={()=>{setSelJugador(null);setModal("newJug");}}
                 style={{background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,color:C.white,
-                  border:"none",borderRadius:8,padding:"8px 16px",fontFamily:"'Barlow Condensed',sans-serif",
-                  fontWeight:700,fontSize:13,textTransform:"uppercase"}}>➕ Nuevo jugador</button>
-              <button onClick={()=>generarLink("jugador")}
-                style={{background:C.offWhite,color:C.navy,border:`1px solid ${C.gray}`,borderRadius:8,
-                  padding:"8px 14px",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
-                  fontSize:13,textTransform:"uppercase"}}>🔗 Link formulario</button>
-              <div style={{marginLeft:"auto",display:"flex",gap:6,flexWrap:"wrap"}}>
+                  border:"none",borderRadius:10,padding:"11px 20px",fontFamily:"'Barlow Condensed',sans-serif",
+                  fontWeight:800,fontSize:15,textTransform:"uppercase"}}>➕ Nuevo jugador</button>
+              <button onClick={()=>{
+                  const base=window.location.origin;
+                  const link=`${base}?form=jugador&org=paysandu`;
+                  navigator.clipboard?.writeText(link).then(()=>{
+                    alert("✅ Enlace copiado. Podés pegarlo en WhatsApp o email para que completen el formulario.");
+                  });
+                }}
+                style={{background:C.offWhite,color:C.navy,border:`2px solid ${C.navy}`,borderRadius:10,
+                  padding:"11px 18px",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
+                  fontSize:15,textTransform:"uppercase"}}>🔗 Copiar link formulario</button>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap",marginLeft:"auto"}}>
                 {["todos",...categorias.map(c=>c.id)].map(cid=>(
                   <button key={cid} onClick={()=>setFiltCat(cid)}
                     style={{background:filtCat===cid?C.navy:C.white,color:filtCat===cid?C.white:C.navy,
-                      border:`1px solid ${filtCat===cid?C.navy:C.gray}`,borderRadius:16,padding:"4px 10px",
-                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:11,
+                      border:`2px solid ${filtCat===cid?C.navy:C.gray}`,borderRadius:20,padding:"7px 16px",
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,
                       textTransform:"uppercase",cursor:"pointer"}}>
                     {cid==="todos"?"Todos":cid}
                   </button>
@@ -762,34 +769,55 @@ function AdminScreen({ user, onLogout }) {
               {jugadoresFilt.length} jugador{jugadoresFilt.length!==1?"es":""}
             </div>
             {/* Encabezado tabla */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 80px 90px 80px",gap:8,
-              padding:"6px 14px",marginBottom:4}}>
-              {["Nombre","Categoría","Código",""].map((h,i)=>(
+            <div style={{display:"grid",gridTemplateColumns:"1fr 90px 110px 50px 130px",gap:8,
+              padding:"8px 16px",marginBottom:4,background:C.navy,borderRadius:"10px 10px 0 0"}}>
+              {["Nombre","Cat.","Código","QR","Acciones"].map((h,i)=>(
                 <div key={i} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
-                  fontSize:11,color:C.grayMid,textTransform:"uppercase"}}>{h}</div>
+                  fontSize:13,color:C.white,textTransform:"uppercase",textAlign:i>2?"center":"left"}}>{h}</div>
               ))}
             </div>
             {jugadoresFilt.map((j,idx)=>(
-              <div key={j.id} style={{display:"grid",gridTemplateColumns:"1fr 80px 90px 80px",gap:8,
-                alignItems:"center",padding:"10px 14px",borderRadius:10,marginBottom:4,
-                background:idx%2===0?C.white:C.offWhite,border:`1px solid ${C.gray}`}}>
+              <div key={j.id} style={{display:"grid",gridTemplateColumns:"1fr 90px 110px 50px 130px",gap:8,
+                alignItems:"center",padding:"12px 16px",marginBottom:2,
+                background:idx%2===0?C.white:"#f8f8f5",border:`1px solid ${C.gray}`,
+                borderRadius:idx===jugadoresFilt.length-1?"0 0 10px 10px":"0"}}>
                 <div style={{minWidth:0}}>
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:16,
                     color:C.navy,textTransform:"uppercase",overflow:"hidden",textOverflow:"ellipsis",
                     whiteSpace:"nowrap"}}>{j.nombre}</div>
-                  {j.numero_camiseta&&<div style={{fontSize:10,color:C.grayMid}}>Camiseta #{j.numero_camiseta}</div>}
+                  {j.numero_camiseta&&<div style={{fontSize:11,color:C.grayMid}}>Camiseta #{j.numero_camiseta}</div>}
                 </div>
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,
                   color:C.navy,textAlign:"center"}}>{j.categoria_id}</div>
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
-                  color:C.lilacDark,letterSpacing:".08em",textAlign:"center"}}>{j.id}</div>
-                <div style={{display:"flex",gap:4,justifyContent:"flex-end"}}>
-                  <button onClick={()=>{setSelJugador(j);setModal("editJug");}}
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,
+                  color:C.lilacDark,letterSpacing:".1em",textAlign:"center"}}>
+                  <div>{j.id}</div>
+                  <button onClick={()=>{
+                      navigator.clipboard?.writeText(j.id).then(()=>{
+                        alert(`✅ Código ${j.id} copiado. Podés enviarlo por WhatsApp o email.`);
+                      });
+                    }}
                     style={{background:C.offWhite,border:`1px solid ${C.gray}`,borderRadius:6,
-                      padding:"5px 8px",fontSize:13,cursor:"pointer"}}>✏</button>
+                      padding:"2px 8px",fontSize:10,cursor:"pointer",marginTop:2,
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}>
+                    📋 Copiar
+                  </button>
+                </div>
+                {/* QR individual */}
+                <div style={{textAlign:"center"}}>
+                  <button onClick={()=>{setQrLink(j.id);setModal("qrJugador");}}
+                    style={{background:C.offWhite,border:`1px solid ${C.gray}`,borderRadius:8,
+                      padding:"6px 8px",fontSize:18,cursor:"pointer"}}>📱</button>
+                </div>
+                <div style={{display:"flex",gap:5,justifyContent:"center"}}>
+                  <button onClick={()=>{setSelJugador(j);setModal("editJug");}}
+                    style={{flex:1,padding:"7px 10px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                      color:C.white,border:"none",borderRadius:7,fontFamily:"'Barlow Condensed',sans-serif",
+                      fontWeight:700,fontSize:13,cursor:"pointer"}}>✏</button>
                   <button onClick={()=>deleteJugador(j.id)}
-                    style={{background:"#fff5f5",border:"1px solid #fca5a5",borderRadius:6,
-                      padding:"5px 8px",fontSize:13,cursor:"pointer",color:"#dc2626"}}>🗑</button>
+                    style={{flex:1,padding:"7px 10px",background:"#fff5f5",border:"1px solid #fca5a5",
+                      borderRadius:7,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                      fontSize:13,cursor:"pointer",color:"#dc2626"}}>🗑</button>
                 </div>
               </div>
             ))}
@@ -817,26 +845,63 @@ function AdminScreen({ user, onLogout }) {
 
         {/* ── TAB DELEGADOS ── */}
         {!loading&&tab==="delegados"&&(
-          <div style={{maxWidth:600}}>
+          <div style={{maxWidth:"100%"}}>
             <button onClick={()=>setModal("newDel")}
               style={{background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,color:C.white,
-                border:"none",borderRadius:8,padding:"8px 16px",fontFamily:"'Barlow Condensed',sans-serif",
-                fontWeight:700,fontSize:13,textTransform:"uppercase",marginBottom:14}}>➕ Nuevo delegado</button>
-            {delegados.map(d=>(
-              <div key={d.id} style={{background:C.white,borderRadius:12,padding:"12px 16px",
-                marginBottom:8,border:`1px solid ${C.gray}`,display:"flex",gap:12,alignItems:"center"}}>
-                <div style={{flex:1}}>
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,
-                    color:C.navy,textTransform:"uppercase"}}>{d.nombre}</div>
-                  <div style={{fontSize:11,color:C.grayMid}}>{d.celular} · {d.mail}</div>
-                  <div style={{fontSize:11,color:C.grayMid}}>PIN: {d.pin} · Categorías: {(d.categorias||[]).join(", ")||"todas"}</div>
+                border:"none",borderRadius:10,padding:"11px 22px",fontFamily:"'Barlow Condensed',sans-serif",
+                fontWeight:800,fontSize:15,textTransform:"uppercase",marginBottom:16}}>➕ Nuevo delegado</button>
+            {/* Encabezado */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 120px 100px 80px 150px",gap:8,
+              padding:"9px 16px",background:C.navy,borderRadius:"10px 10px 0 0"}}>
+              {["Nombre","Contacto","PIN","Categorías","Acciones"].map((h,i)=>(
+                <div key={i} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
+                  fontSize:13,color:C.white,textTransform:"uppercase",textAlign:i>3?"center":"left"}}>{h}</div>
+              ))}
+            </div>
+            {delegados.map((d,idx)=>(
+              <div key={d.id} style={{display:"grid",gridTemplateColumns:"1fr 120px 100px 80px 150px",gap:8,
+                alignItems:"center",padding:"12px 16px",
+                background:d.activo===false?"#fff5f5":idx%2===0?C.white:"#f8f8f5",
+                border:`1px solid ${d.activo===false?"#fca5a5":C.gray}`,
+                borderRadius:idx===delegados.length-1?"0 0 10px 10px":"0",borderTop:"none"}}>
+                <div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:16,
+                    color:d.activo===false?C.grayMid:C.navy,textTransform:"uppercase"}}>{d.nombre}</div>
+                  {d.activo===false&&<span style={{fontSize:10,background:"#fee2e2",color:"#dc2626",
+                    borderRadius:10,padding:"1px 8px",fontWeight:700}}>SUSPENDIDO</span>}
                 </div>
-                <button onClick={()=>deleteDelegado(d.id)}
-                  style={{background:"#fff5f5",border:"1px solid #fca5a5",borderRadius:6,
-                    padding:"5px 10px",fontSize:12,fontWeight:600,cursor:"pointer",color:"#dc2626"}}>🗑</button>
+                <div style={{fontSize:12,color:C.grayMid}}>
+                  <div>{d.celular}</div>
+                  <div style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.mail}</div>
+                </div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
+                  color:C.navy,textAlign:"center",letterSpacing:".15em"}}>{d.pin}</div>
+                <div style={{fontSize:12,color:C.navy,textAlign:"center"}}>
+                  {(d.categorias||[]).length>0?(d.categorias||[]).join(", "):"Todas"}
+                </div>
+                <div style={{display:"flex",gap:5,justifyContent:"center"}}>
+                  <button onClick={()=>{setSelJugador(d);setModal("editDel");}}
+                    style={{flex:1,padding:"7px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                      color:C.white,border:"none",borderRadius:7,fontFamily:"'Barlow Condensed',sans-serif",
+                      fontWeight:700,fontSize:12,cursor:"pointer",textTransform:"uppercase"}}>✏</button>
+                  <button onClick={async()=>{
+                      const nuevo={...d,activo:d.activo===false?true:false};
+                      await sbFetch(`baby_delegados?id=eq.${d.id}`,"PATCH",{activo:nuevo.activo});
+                      load();
+                    }}
+                    style={{flex:1,padding:"7px",background:d.activo===false?"#dcfce7":"#fef3c7",
+                      color:d.activo===false?"#16a34a":"#d97706",border:"none",borderRadius:7,
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer"}}>
+                    {d.activo===false?"✅":"⏸"}
+                  </button>
+                  <button onClick={()=>deleteDelegado(d.id)}
+                    style={{flex:1,padding:"7px",background:"#fff5f5",border:"1px solid #fca5a5",
+                      borderRadius:7,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                      fontSize:12,cursor:"pointer",color:"#dc2626"}}>🗑</button>
+                </div>
               </div>
             ))}
-            {delegados.length===0&&<div style={{color:C.grayMid,fontSize:13}}>Sin delegados registrados</div>}
+            {delegados.length===0&&<div style={{color:C.grayMid,fontSize:13,padding:"20px 0"}}>Sin delegados registrados</div>}
           </div>
         )}
 
@@ -902,10 +967,42 @@ function AdminScreen({ user, onLogout }) {
               style={{width:200,height:200,borderRadius:12,border:`3px solid ${C.navy}`,marginBottom:12}}/>
             <div style={{background:C.offWhite,borderRadius:8,padding:"10px 12px",fontSize:12,
               color:C.navy,wordBreak:"break-all",marginBottom:16}}>{qrLink}</div>
-            <button onClick={()=>navigator.clipboard?.writeText(qrLink)}
+            <button onClick={()=>{
+                navigator.clipboard?.writeText(qrLink);
+                alert("✅ Enlace copiado. Podés pegarlo en WhatsApp o email para que completen el formulario.");
+              }}
               style={{width:"100%",padding:"10px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
                 color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
                 fontWeight:700,fontSize:14,textTransform:"uppercase"}}>📋 Copiar enlace</button>
+          </div>
+        </Modal>
+      )}
+      {modal==="qrJugador"&&qrLink&&(
+        <Modal onClose={()=>setModal(null)} maxWidth={360}>
+          <div style={{padding:"24px",textAlign:"center"}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
+              color:C.navy,textTransform:"uppercase",marginBottom:6}}>📱 QR del jugador</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,
+              color:C.lilacDark,letterSpacing:".1em",marginBottom:14}}>{qrLink}</div>
+            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrLink)}&bgcolor=ffffff&color=1e2a6e&qzone=2`}
+              style={{width:200,height:200,borderRadius:12,border:`3px solid ${C.navy}`,marginBottom:14}}/>
+            <div style={{fontSize:12,color:C.grayMid,marginBottom:16}}>
+              El jugador puede escanear este código para acceder a su ficha
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>{
+                  navigator.clipboard?.writeText(qrLink).then(()=>{
+                    alert(`✅ Código ${qrLink} copiado. Podés enviarlo por WhatsApp o email.`);
+                  });
+                }}
+                style={{flex:1,padding:"10px",background:C.offWhite,color:C.navy,
+                  border:`2px solid ${C.navy}`,borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+                  fontWeight:700,fontSize:14,textTransform:"uppercase",cursor:"pointer"}}>📋 Copiar ID</button>
+              <button onClick={()=>setModal(null)}
+                style={{flex:1,padding:"10px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                  color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+                  fontWeight:700,fontSize:14,textTransform:"uppercase",cursor:"pointer"}}>Cerrar</button>
+            </div>
           </div>
         </Modal>
       )}
@@ -978,11 +1075,11 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
       </div>
 
       {/* Encabezado lista */}
-      <div style={{display:"grid",gridTemplateColumns:"40px 1fr 80px 100px 110px",gap:8,
-        padding:"6px 14px",marginBottom:4,alignItems:"center"}}>
-        {["","Nombre","Cat.","Estado",""].map((h,i)=>(
+      <div style={{display:"grid",gridTemplateColumns:"50px 1fr 100px 130px 160px",gap:8,
+        padding:"10px 16px",background:C.navy,borderRadius:"10px 10px 0 0",alignItems:"center"}}>
+        {["","Nombre","Cat.","Estado","Acciones"].map((h,i)=>(
           <div key={i} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
-            fontSize:11,color:C.grayMid,textTransform:"uppercase"}}>{h}</div>
+            fontSize:13,color:C.white,textTransform:"uppercase",textAlign:i>2?"center":"left"}}>{h}</div>
         ))}
       </div>
       {jugFiltrados.map((j,idx)=>{
@@ -992,35 +1089,36 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
           return monto>0&&!pagoJugMes(j.id,mes)&&mes<=mesActual;
         });
         return(
-          <div key={j.id} style={{display:"grid",gridTemplateColumns:"40px 1fr 80px 100px 110px",gap:8,
-            alignItems:"center",padding:"10px 14px",borderRadius:10,marginBottom:4,
-            background:idx%2===0?C.white:C.offWhite,border:`1px solid ${C.gray}`}}>
+          <div key={j.id} style={{display:"grid",gridTemplateColumns:"50px 1fr 100px 130px 160px",gap:8,
+            alignItems:"center",padding:"12px 16px",
+            background:idx%2===0?C.white:"#f8f8f5",border:`1px solid ${C.gray}`,
+            borderRadius:idx===jugFiltrados.length-1?"0 0 10px 10px":"0",borderTop:"none"}}>
             {/* Semáforo */}
-            <div style={{fontSize:20,textAlign:"center"}}>{est.icon}</div>
+            <div style={{fontSize:24,textAlign:"center"}}>{est.icon}</div>
             {/* Nombre */}
             <div style={{minWidth:0}}>
-              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:14,
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:16,
                 color:C.navy,textTransform:"uppercase",overflow:"hidden",textOverflow:"ellipsis",
                 whiteSpace:"nowrap"}}>{j.nombre}</div>
             </div>
             {/* Categoría */}
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,
               color:C.navy,textAlign:"center"}}>{j.categoria_id}</div>
             {/* Estado */}
-            <div style={{background:est.bg,borderRadius:20,padding:"3px 10px",textAlign:"center",
-              fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:12,
+            <div style={{background:est.bg,borderRadius:20,padding:"5px 12px",textAlign:"center",
+              fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
               color:est.color,whiteSpace:"nowrap"}}>{est.label}</div>
             {/* Acciones */}
-            <div style={{display:"flex",gap:5}}>
+            <div style={{display:"flex",gap:6}}>
               <button onClick={()=>setVerHistorial(j)}
-                style={{flex:1,padding:"6px 8px",background:C.offWhite,border:`1px solid ${C.gray}`,
-                  borderRadius:7,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
-                  fontSize:11,cursor:"pointer",textTransform:"uppercase"}}>📋</button>
+                style={{flex:1,padding:"8px 10px",background:C.offWhite,border:`1px solid ${C.gray}`,
+                  borderRadius:8,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
+                  fontSize:13,cursor:"pointer",textTransform:"uppercase"}}>📋 Ficha</button>
               {deudaMeses.length>0&&(
                 <button onClick={()=>{setSelJug(j);setSelMes(null);setMetodo(null);}}
-                  style={{flex:1,padding:"6px 8px",background:`linear-gradient(135deg,${C.green},#15803d)`,
-                    color:C.white,border:"none",borderRadius:7,fontFamily:"'Barlow Condensed',sans-serif",
-                    fontWeight:700,fontSize:11,cursor:"pointer",textTransform:"uppercase"}}>💳</button>
+                  style={{flex:1,padding:"8px 10px",background:`linear-gradient(135deg,${C.green},#15803d)`,
+                    color:C.white,border:"none",borderRadius:8,fontFamily:"'Barlow Condensed',sans-serif",
+                    fontWeight:800,fontSize:13,cursor:"pointer",textTransform:"uppercase"}}>💳 Pagar</button>
               )}
             </div>
           </div>
@@ -1264,10 +1362,11 @@ function PlanPagosTab({ planPagos, onSave, añoActual, tiposCuota, onSaveTipos }
                     fontSize:16,fontWeight:700,color:C.navy,outline:"none",
                     background:editable?C.white:C.offWhite}}/>
                 {editable&&(
-                  <button onClick={()=>onSave(mes,monto||"0")}
-                    style={{padding:"8px 14px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                  <button onClick={async()=>{await onSave(mes,monto||"0");}}
+                    title="Guardar"
+                    style={{padding:"8px 16px",background:`linear-gradient(135deg,${C.green},#15803d)`,
                       color:C.white,border:"none",borderRadius:8,fontFamily:"'Barlow Condensed',sans-serif",
-                      fontWeight:800,fontSize:13,textTransform:"uppercase"}}>✓</button>
+                      fontWeight:800,fontSize:14,textTransform:"uppercase"}}>✓ Guardar</button>
                 )}
               </div>
               {!editable&&<div style={{fontSize:10,color:C.grayMid,marginTop:4}}>Mes pasado — no editable</div>}
@@ -1281,8 +1380,10 @@ function PlanPagosTab({ planPagos, onSave, añoActual, tiposCuota, onSaveTipos }
 
 /* ══ CATEGORIAS TAB ═══════════════════════════════════════════════════ */
 function CategoriasTab({ categorias, onRefresh }) {
-  const [nombre, setNombre] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [nombre,    setNombre]   = useState("");
+  const [saving,    setSaving]   = useState(false);
+  const [editando,  setEditando] = useState(null); // {id, nombre}
+  const [editNombre,setEditNombre]=useState("");
 
   const addCat = async () => {
     if (!nombre.trim()) return;
@@ -1291,37 +1392,81 @@ function CategoriasTab({ categorias, onRefresh }) {
     setNombre(""); setSaving(false); onRefresh();
   };
 
-  const delCat = async (id) => {
-    if (!confirm("¿Eliminar categoría?")) return;
-    await sbFetch(`baby_categorias?id=eq.${id}`,"DELETE");
+  const saveCat = async () => {
+    if (!editando||!editNombre.trim()) return;
+    await sbFetch(`baby_categorias?id=eq.${editando.id}`,"PATCH",{nombre:editNombre.trim()});
+    setEditando(null); onRefresh();
+  };
+
+  const delCat = async (cat) => {
+    // Verificar si tiene jugadores
+    const jugs = await sbFetch(`baby_jugadores?categoria_id=eq.${cat.id}&select=id`);
+    const cant = (jugs||[]).length;
+    const msg = cant>0
+      ? `⚠️ La categoría "${cat.nombre}" tiene ${cant} jugador${cant!==1?"es":""} asignado${cant!==1?"s":""}.
+
+Si la eliminás, esos jugadores quedarán sin categoría asignada (no se borrarán).
+
+¿Confirmás la eliminación?`
+      : `¿Eliminar la categoría "${cat.nombre}"? No tiene jugadores asignados.`;
+    if (!confirm(msg)) return;
+    await sbFetch(`baby_categorias?id=eq.${cat.id}`,"DELETE");
     onRefresh();
   };
 
   return (
-    <div style={{maxWidth:480}}>
+    <div style={{maxWidth:560}}>
       <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:16,
         color:C.navy,textTransform:"uppercase",marginBottom:12}}>Categorías</div>
-      <div style={{display:"flex",gap:8,marginBottom:16}}>
+      <div style={{display:"flex",gap:8,marginBottom:18}}>
         <input value={nombre} onChange={e=>setNombre(e.target.value)}
           onKeyDown={e=>e.key==="Enter"&&addCat()}
           placeholder="Ej: 2015"
-          style={{flex:1,padding:"10px 14px",border:`1px solid ${C.gray}`,borderRadius:8,fontSize:14}}/>
-        <button onClick={addCat} disabled={saving}
-          style={{padding:"10px 18px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
-            color:C.white,border:"none",borderRadius:8,fontFamily:"'Barlow Condensed',sans-serif",
-            fontWeight:700,fontSize:14,textTransform:"uppercase"}}>+ Agregar</button>
+          style={{flex:1,padding:"11px 14px",border:`2px solid ${C.gray}`,borderRadius:10,fontSize:15}}/>
+        <button onClick={addCat} disabled={saving||!nombre.trim()}
+          style={{padding:"11px 22px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+            color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+            fontWeight:800,fontSize:15,textTransform:"uppercase",cursor:"pointer"}}>+ Agregar</button>
       </div>
       {categorias.map(c=>(
-        <div key={c.id} style={{background:C.white,borderRadius:10,padding:"10px 14px",marginBottom:6,
-          border:`1px solid ${C.gray}`,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:C.navy}}>
-            {c.nombre}
-          </div>
-          <button onClick={()=>delCat(c.id)}
-            style={{background:"#fff5f5",border:"1px solid #fca5a5",borderRadius:6,
-              padding:"4px 10px",fontSize:12,color:"#dc2626",cursor:"pointer",fontWeight:700}}>🗑</button>
+        <div key={c.id} style={{background:C.white,borderRadius:10,padding:"12px 16px",marginBottom:6,
+          border:`1px solid ${C.gray}`}}>
+          {editando?.id===c.id ? (
+            <div style={{display:"flex",gap:8,alignItems:"center"}}>
+              <input value={editNombre} onChange={e=>setEditNombre(e.target.value)}
+                onKeyDown={e=>e.key==="Enter"&&saveCat()}
+                style={{flex:1,padding:"8px 12px",border:`2px solid ${C.navy}`,borderRadius:8,fontSize:15,fontWeight:700}}/>
+              <button onClick={saveCat}
+                style={{padding:"8px 14px",background:`linear-gradient(135deg,${C.green},#15803d)`,
+                  color:C.white,border:"none",borderRadius:8,fontFamily:"'Barlow Condensed',sans-serif",
+                  fontWeight:700,fontSize:13,cursor:"pointer"}}>✓ Guardar</button>
+              <button onClick={()=>setEditando(null)}
+                style={{padding:"8px 12px",background:C.offWhite,border:`1px solid ${C.gray}`,
+                  borderRadius:8,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                  fontSize:13,cursor:"pointer"}}>Cancelar</button>
+            </div>
+          ) : (
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:18,
+                color:C.navy}}>{c.nombre}</div>
+              <div style={{display:"flex",gap:6}}>
+                <button onClick={()=>{setEditando(c);setEditNombre(c.nombre);}}
+                  style={{padding:"7px 14px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                    color:C.white,border:"none",borderRadius:8,fontFamily:"'Barlow Condensed',sans-serif",
+                    fontWeight:700,fontSize:13,cursor:"pointer",textTransform:"uppercase"}}>✏ Editar</button>
+                <button onClick={()=>delCat(c)}
+                  style={{padding:"7px 14px",background:"#fff5f5",border:"1px solid #fca5a5",borderRadius:8,
+                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,
+                    cursor:"pointer",color:"#dc2626",textTransform:"uppercase"}}>🗑 Eliminar</button>
+              </div>
+            </div>
+          )}
         </div>
       ))}
+      <div style={{background:"#fff8e1",borderRadius:10,padding:"12px 14px",marginTop:12,
+        border:"1px solid #fde68a",fontSize:12,color:"#92400e"}}>
+        ⚠️ Si eliminás una categoría que tiene jugadores asignados, esos jugadores quedarán sin categoría pero no serán eliminados.
+      </div>
     </div>
   );
 }
