@@ -1,0 +1,1537 @@
+import { useState, useEffect, useRef, useCallback } from "react";
+
+/* ══ CONFIG ═══════════════════════════════════════════════════════════ */
+const SB_URL = "https://ipgvsrmlgavsmickwrst.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlwZ3Zzcm1sZ2F2c21pY2t3cnN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNzEzMTgsImV4cCI6MjA5MDg0NzMxOH0.pqamuY9uhqQSuXlife5J5XYRpt_x31Z75gRBRoeol2Q";
+
+const ESCUDO = "data:image/webp;base64,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";
+
+/* ══ COLORES ═══════════════════════════════════════════════════════════ */
+const C = {
+  navy:"#1e2a6e", navyDark:"#141c4e", navyLight:"#2d3d9a",
+  red:"#c0272d", white:"#ffffff", offWhite:"#f5f5f0",
+  lilac:"#c9a8d4", lilacDark:"#9c6fae", gold:"#e8b84b",
+  gray:"#e2e2da", grayMid:"#9a9a90", green:"#16a34a",
+  greenLight:"#dcfce7", amber:"#d97706",
+};
+
+const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
+               "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+const PAY_METHODS = [
+  {id:"debito",  label:"Débito",   icon:"💳", color:"#2563eb"},
+  {id:"credito", label:"Crédito",  icon:"💳", color:"#7c3aed"},
+  {id:"mp",      label:"MP / QR",  icon:"📱", color:"#009ee3"},
+];
+
+const TIPOS_CUOTA_DEFAULT = [
+  {id:"base",     nombre:"Cuota Base",     porcentaje:100},
+  {id:"hermano",  nombre:"Cuota Hermano",  porcentaje:70},
+  {id:"50",       nombre:"50%",            porcentaje:50},
+  {id:"0",        nombre:"Becado",         porcentaje:0},
+];
+
+/* ══ HELPERS ═══════════════════════════════════════════════════════════ */
+const uid = () => Math.random().toString(36).slice(2,8).toUpperCase();
+const fmt = n => "$"+(n||0).toLocaleString("es-UY");
+const fdate = () => new Date().toLocaleDateString("es-UY");
+
+async function sbFetch(path, method="GET", body=null) {
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
+      method,
+      headers: {
+        "apikey": SB_KEY,
+        "Authorization": `Bearer ${SB_KEY}`,
+        "Content-Type": "application/json",
+        "Prefer": method==="POST"?"return=representation":"",
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (!res.ok) return null;
+    if (method==="DELETE"||res.status===204) return true;
+    return await res.json();
+  } catch { return null; }
+}
+
+/* ══ ESCUDO COMPONENTE ════════════════════════════════════════════════ */
+function ClubLogo({ size=40 }) {
+  return <img src={ESCUDO} alt="Escudo" style={{width:size,height:size,objectFit:"contain",borderRadius:"50%"}}/>;
+}
+
+/* ══ CSS GLOBAL ═══════════════════════════════════════════════════════ */
+function GlobalStyle() {
+  return (
+    <style>{`
+      @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap');
+      *{box-sizing:border-box;margin:0;padding:0;}
+      body{font-family:'Barlow',sans-serif;background:${C.offWhite};color:${C.navyDark};}
+      button{transition:all .15s;cursor:pointer;}
+      button:hover{filter:brightness(1.07);}
+      input,select,textarea{font-family:'Barlow',sans-serif;}
+      ::-webkit-scrollbar{width:5px;height:5px;}
+      ::-webkit-scrollbar-thumb{background:${C.navyLight};border-radius:4px;}
+      .app-header{padding-top:max(12px,env(safe-area-inset-top));}
+      @keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+      .fi{animation:fi .2s ease;}
+      @keyframes pop{0%{transform:scale(.92)}100%{transform:scale(1)}}
+      .pop{animation:pop .18s ease;}
+    `}</style>
+  );
+}
+
+/* ══ MODAL OVERLAY ════════════════════════════════════════════════════ */
+function Modal({ children, onClose, maxWidth=480 }) {
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(20,28,78,.75)",zIndex:300,
+      display:"flex",alignItems:"flex-start",justifyContent:"center",padding:16,overflowY:"auto"}}>
+      <div onClick={e=>e.stopPropagation()} className="fi"
+        style={{background:C.white,borderRadius:20,maxWidth,width:"100%",margin:"auto",
+          boxShadow:"0 24px 64px rgba(20,28,78,.4)",overflow:"hidden"}}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/* ══ LOGIN SCREEN ═════════════════════════════════════════════════════ */
+function LoginScreen({ onLogin }) {
+  const [mode,     setMode]    = useState("select"); // select | admin | delegado | publico
+  const [user,     setUser]    = useState("");
+  const [pass,     setPass]    = useState("");
+  const [pin,      setPin]     = useState("");
+  const [jugId,    setJugId]   = useState("");
+  const [err,      setErr]     = useState("");
+  const [loading,  setLoading] = useState(false);
+
+  const handleAdmin = async () => {
+    if (user.trim().toLowerCase()==="admin" && pass==="admin") {
+      onLogin({role:"admin", name:"Administrador"});
+    } else {
+      setErr("Usuario o contraseña incorrectos");
+    }
+  };
+
+  const handleDelegado = async () => {
+    setLoading(true);
+    const data = await sbFetch(`baby_delegados?pin=eq.${pin}&activo=eq.true&select=*`);
+    setLoading(false);
+    if (data && data.length > 0) {
+      onLogin({role:"delegado", ...data[0]});
+    } else {
+      setErr("PIN incorrecto o delegado inactivo");
+    }
+  };
+
+  const handlePublico = async () => {
+    setLoading(true);
+    const data = await sbFetch(`baby_jugadores?id=eq.${jugId.toUpperCase()}&select=*`);
+    setLoading(false);
+    if (data && data.length > 0) {
+      onLogin({role:"publico", jugador:data[0]});
+    } else {
+      setErr("ID de jugador no encontrado");
+    }
+  };
+
+  return (
+    <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${C.navyDark} 0%,${C.navy} 50%,${C.navyLight} 100%)`,
+      display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div className="fi" style={{maxWidth:400,width:"100%"}}>
+        {/* Header */}
+        <div style={{textAlign:"center",marginBottom:32}}>
+          <ClubLogo size={80}/>
+          <h1 style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:32,fontWeight:900,
+            color:C.white,textTransform:"uppercase",letterSpacing:".05em",marginTop:16,lineHeight:1}}>
+            Paysandú FC
+          </h1>
+          <div style={{color:C.lilac,fontFamily:"'Barlow Condensed',sans-serif",fontSize:18,fontWeight:700,
+            textTransform:"uppercase",letterSpacing:".1em",marginTop:4}}>Baby Fútbol</div>
+        </div>
+
+        {mode==="select" && (
+          <div style={{display:"flex",flexDirection:"column",gap:12}}>
+            {[
+              {key:"admin",    label:"👤 Administrador",  sub:"Acceso completo"},
+              {key:"delegado", label:"🏃 Delegado",        sub:"Gestión de categoría"},
+              {key:"publico",  label:"👨‍👧 Familia / Jugador", sub:"Ver ficha y pagos"},
+            ].map(({key,label,sub})=>(
+              <button key={key} onClick={()=>{setMode(key);setErr("");}}
+                style={{background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.25)",
+                  borderRadius:14,padding:"16px 20px",display:"flex",alignItems:"center",gap:14,
+                  backdropFilter:"blur(8px)"}}>
+                <div style={{textAlign:"left"}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:18,
+                    color:C.white,textTransform:"uppercase"}}>{label}</div>
+                  <div style={{fontSize:12,color:"rgba(255,255,255,.6)",marginTop:2}}>{sub}</div>
+                </div>
+                <div style={{marginLeft:"auto",color:"rgba(255,255,255,.5)",fontSize:20}}>›</div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {mode==="admin" && (
+          <div className="fi" style={{background:"rgba(255,255,255,.08)",borderRadius:16,padding:24,backdropFilter:"blur(8px)"}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,
+              color:C.white,textTransform:"uppercase",marginBottom:20}}>👤 Administrador</div>
+            <input value={user} onChange={e=>setUser(e.target.value)} placeholder="Usuario"
+              style={{width:"100%",padding:"12px 16px",borderRadius:10,border:"1px solid rgba(255,255,255,.3)",
+                background:"rgba(255,255,255,.1)",color:C.white,fontSize:15,marginBottom:10,outline:"none"}}/>
+            <input type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="Contraseña"
+              onKeyDown={e=>e.key==="Enter"&&handleAdmin()}
+              style={{width:"100%",padding:"12px 16px",borderRadius:10,border:"1px solid rgba(255,255,255,.3)",
+                background:"rgba(255,255,255,.1)",color:C.white,fontSize:15,marginBottom:16,outline:"none"}}/>
+            {err&&<div style={{color:"#fca5a5",fontSize:12,marginBottom:10}}>{err}</div>}
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>setMode("select")}
+                style={{flex:1,padding:"11px",background:"transparent",color:C.white,
+                  border:"1px solid rgba(255,255,255,.3)",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+                  fontWeight:700,fontSize:14,textTransform:"uppercase"}}>← Volver</button>
+              <button onClick={handleAdmin}
+                style={{flex:2,padding:"11px",background:C.gold,color:C.navyDark,border:"none",
+                  borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,
+                  textTransform:"uppercase"}}>Ingresar</button>
+            </div>
+          </div>
+        )}
+
+        {mode==="delegado" && (
+          <div className="fi" style={{background:"rgba(255,255,255,.08)",borderRadius:16,padding:24,backdropFilter:"blur(8px)"}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,
+              color:C.white,textTransform:"uppercase",marginBottom:8}}>🏃 Delegado</div>
+            <div style={{color:"rgba(255,255,255,.6)",fontSize:13,marginBottom:20}}>Ingresá tu PIN de 4 dígitos</div>
+            <div style={{display:"flex",gap:8,justifyContent:"center",marginBottom:16}}>
+              {[0,1,2,3].map(i=>(
+                <input key={i} type="password" maxLength={1} value={pin[i]||""}
+                  onChange={e=>{
+                    const v=e.target.value.replace(/\D/g,"");
+                    const arr=pin.split("");
+                    arr[i]=v;
+                    const np=arr.join("").slice(0,4);
+                    setPin(np);
+                    if(v&&i<3) document.getElementById(`pin-${i+1}`)?.focus();
+                  }}
+                  id={`pin-${i}`}
+                  style={{width:56,height:56,borderRadius:12,border:"2px solid rgba(255,255,255,.4)",
+                    background:"rgba(255,255,255,.1)",color:C.white,fontSize:28,fontWeight:900,
+                    textAlign:"center",outline:"none"}}/>
+              ))}
+            </div>
+            {err&&<div style={{color:"#fca5a5",fontSize:12,marginBottom:10,textAlign:"center"}}>{err}</div>}
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>setMode("select")}
+                style={{flex:1,padding:"11px",background:"transparent",color:C.white,
+                  border:"1px solid rgba(255,255,255,.3)",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+                  fontWeight:700,fontSize:14,textTransform:"uppercase"}}>← Volver</button>
+              <button onClick={handleDelegado} disabled={loading}
+                style={{flex:2,padding:"11px",background:C.green,color:C.white,border:"none",
+                  borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,
+                  textTransform:"uppercase"}}>{loading?"...":"Ingresar"}</button>
+            </div>
+          </div>
+        )}
+
+        {mode==="publico" && (
+          <div className="fi" style={{background:"rgba(255,255,255,.08)",borderRadius:16,padding:24,backdropFilter:"blur(8px)"}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,
+              color:C.white,textTransform:"uppercase",marginBottom:8}}>👨‍👧 Ficha del Jugador</div>
+            <div style={{color:"rgba(255,255,255,.6)",fontSize:13,marginBottom:20}}>Ingresá el ID del jugador</div>
+            <input value={jugId} onChange={e=>setJugId(e.target.value.toUpperCase())}
+              onKeyDown={e=>e.key==="Enter"&&handlePublico()}
+              placeholder="Ej: AB1234" maxLength={8}
+              style={{width:"100%",padding:"14px 16px",borderRadius:10,border:"1px solid rgba(255,255,255,.3)",
+                background:"rgba(255,255,255,.1)",color:C.white,fontSize:22,fontWeight:900,
+                textAlign:"center",letterSpacing:".15em",marginBottom:16,outline:"none"}}/>
+            {err&&<div style={{color:"#fca5a5",fontSize:12,marginBottom:10,textAlign:"center"}}>{err}</div>}
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>setMode("select")}
+                style={{flex:1,padding:"11px",background:"transparent",color:C.white,
+                  border:"1px solid rgba(255,255,255,.3)",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+                  fontWeight:700,fontSize:14,textTransform:"uppercase"}}>← Volver</button>
+              <button onClick={handlePublico} disabled={loading}
+                style={{flex:2,padding:"11px",background:C.lilacDark,color:C.white,border:"none",
+                  borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,
+                  textTransform:"uppercase"}}>{loading?"...":"Ver ficha"}</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ══ VISTA PÚBLICA — ficha del jugador ════════════════════════════════ */
+function PublicoView({ user, onLogout }) {
+  const jug = user.jugador;
+  const [pagos, setPagos] = useState([]);
+  const [plan,  setPlan]  = useState([]);
+  const [modal, setModal] = useState(null);
+  const [payMethod, setPayMethod] = useState(null);
+  const [selectedMes, setSelectedMes] = useState(null);
+  const [paying, setPaying] = useState(false);
+  const añoActual = new Date().getFullYear();
+
+  useEffect(()=>{
+    const load = async () => {
+      const [p, pl] = await Promise.all([
+        sbFetch(`baby_pagos?jugador_id=eq.${jug.id}&año=eq.${añoActual}&select=*`),
+        sbFetch(`baby_plan_pagos?año=eq.${añoActual}&select=*&order=mes.asc`),
+      ]);
+      setPagos(p||[]);
+      setPlan(pl||[]);
+    };
+    load();
+  },[jug.id]);
+
+  const tipos = TIPOS_CUOTA_DEFAULT;
+  const tipoCuota = tipos.find(t=>t.id===jug.tipo_cuota)||tipos[0];
+
+  const cuotaMes = (mes) => {
+    const planMes = plan.find(p=>p.mes===mes);
+    if (!planMes || planMes.monto===0) return 0;
+    return Math.round(planMes.monto * tipoCuota.porcentaje / 100);
+  };
+
+  const pagoMes = (mes) => pagos.find(p=>p.mes===mes);
+
+  const mesesConDeuda = () => {
+    const mesActual = new Date().getMonth()+1;
+    return MESES.map((m,i)=>i+1).filter(mes=>{
+      const monto = cuotaMes(mes);
+      return monto>0 && !pagoMes(mes) && mes<=mesActual+1;
+    });
+  };
+
+  const confirmarPago = async () => {
+    if (!payMethod || !selectedMes) return;
+    setPaying(true);
+    const monto = cuotaMes(selectedMes);
+    await sbFetch("baby_pagos","POST",{
+      id: uid(),
+      jugador_id: jug.id,
+      org_id: jug.org_id,
+      año: añoActual,
+      mes: selectedMes,
+      monto,
+      metodo_pago: payMethod,
+      fecha_pago: fdate(),
+    });
+    const p = await sbFetch(`baby_pagos?jugador_id=eq.${jug.id}&año=eq.${añoActual}&select=*`);
+    setPagos(p||[]);
+    setPaying(false);
+    setModal("success");
+    setPayMethod(null);
+    setSelectedMes(null);
+  };
+
+  return (
+    <div style={{minHeight:"100dvh",background:C.offWhite}}>
+      {/* Header */}
+      <div className="app-header" style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"14px 20px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <ClubLogo size={36}/>
+          <div style={{flex:1}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
+              color:C.white,textTransform:"uppercase"}}>Paysandú FC — Baby</div>
+            <div style={{color:C.lilac,fontSize:12}}>Ficha del jugador</div>
+          </div>
+          <button onClick={onLogout} style={{background:"rgba(255,255,255,.1)",border:"none",
+            borderRadius:8,padding:"7px 12px",color:C.white,fontFamily:"'Barlow Condensed',sans-serif",
+            fontWeight:700,fontSize:12,textTransform:"uppercase"}}>Salir</button>
+        </div>
+      </div>
+
+      <div style={{padding:16,maxWidth:520,margin:"0 auto"}}>
+        {/* Ficha jugador */}
+        <div className="fi" style={{background:C.white,borderRadius:16,padding:20,marginBottom:16,
+          boxShadow:"0 4px 16px rgba(20,28,78,.08)"}}>
+          <div style={{display:"flex",gap:14,alignItems:"center",marginBottom:16}}>
+            {jug.foto_url
+              ? <img src={jug.foto_url} style={{width:72,height:72,borderRadius:"50%",objectFit:"cover",border:`3px solid ${C.navy}`}}/>
+              : <div style={{width:72,height:72,borderRadius:"50%",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                  display:"flex",alignItems:"center",justifyContent:"center",fontSize:28}}>⚽</div>
+            }
+            <div>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,
+                color:C.navy,textTransform:"uppercase",lineHeight:1}}>{jug.nombre}</div>
+              <div style={{fontSize:12,color:C.grayMid,marginTop:4}}>ID: <strong>{jug.id}</strong></div>
+              {jug.numero_camiseta&&<div style={{fontSize:12,color:C.grayMid}}>Camiseta: #{jug.numero_camiseta}</div>}
+            </div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            {[
+              ["📅","Nacimiento",jug.fecha_nacimiento],
+              ["🏷","Categoría",jug.categoria_id],
+              ["💳","Tipo cuota",tipoCuota.nombre],
+              ["📱","Contacto",jug.celular],
+            ].map(([ico,lbl,val])=>(
+              <div key={lbl} style={{background:C.offWhite,borderRadius:10,padding:"8px 12px"}}>
+                <div style={{fontSize:10,color:C.grayMid,textTransform:"uppercase",fontWeight:600}}>{ico} {lbl}</div>
+                <div style={{fontSize:13,fontWeight:700,color:C.navy,marginTop:2}}>{val||"-"}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Estado pagos */}
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:16,
+          color:C.navy,textTransform:"uppercase",marginBottom:10}}>Pagos {añoActual}</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
+          {MESES.map((m,i)=>{
+            const mes=i+1;
+            const monto=cuotaMes(mes);
+            const pago=pagoMes(mes);
+            if (monto===0) return(
+              <div key={mes} style={{background:C.offWhite,borderRadius:10,padding:"8px 10px",textAlign:"center",opacity:.5}}>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:11,color:C.grayMid}}>{m}</div>
+                <div style={{fontSize:10,color:C.grayMid}}>Sin cuota</div>
+              </div>
+            );
+            return(
+              <div key={mes} style={{background:pago?"#f0fdf4":C.white,borderRadius:10,padding:"8px 10px",
+                textAlign:"center",border:`1px solid ${pago?"#86efac":C.gray}`}}>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:11,
+                  color:pago?C.green:C.navy}}>{m}</div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,
+                  color:pago?C.green:C.navy}}>{fmt(monto)}</div>
+                <div style={{fontSize:9,marginTop:2,
+                  color:pago?"#16a34a":"#d97706",fontWeight:700,textTransform:"uppercase"}}>
+                  {pago?"✓ Pagado":"Pendiente"}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Botón pagar */}
+        {mesesConDeuda().length>0&&(
+          <button onClick={()=>setModal("pagar")}
+            style={{width:"100%",padding:"14px",background:`linear-gradient(135deg,${C.green},#15803d)`,
+              color:C.white,border:"none",borderRadius:12,fontFamily:"'Barlow Condensed',sans-serif",
+              fontWeight:900,fontSize:18,textTransform:"uppercase"}}>
+            💳 Registrar Pago
+          </button>
+        )}
+      </div>
+
+      {/* Modal pago */}
+      {modal==="pagar"&&(
+        <Modal onClose={()=>setModal(null)}>
+          <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"18px 22px"}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,
+              color:C.white,textTransform:"uppercase"}}>💳 Registrar Pago</div>
+          </div>
+          <div style={{padding:"20px 22px"}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,
+              color:C.navy,textTransform:"uppercase",marginBottom:10}}>Seleccioná el mes a pagar</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:18}}>
+              {mesesConDeuda().map(mes=>(
+                <button key={mes} onClick={()=>setSelectedMes(mes)}
+                  style={{padding:"10px 6px",borderRadius:10,border:`2px solid ${selectedMes===mes?C.navy:C.gray}`,
+                    background:selectedMes===mes?C.navy:C.white,cursor:"pointer",
+                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,
+                    color:selectedMes===mes?C.white:C.navy}}>
+                  <div>{MESES[mes-1]}</div>
+                  <div style={{fontWeight:900,fontSize:15}}>{fmt(cuotaMes(mes))}</div>
+                </button>
+              ))}
+            </div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,
+              color:C.navy,textTransform:"uppercase",marginBottom:10}}>Medio de pago</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:18}}>
+              {PAY_METHODS.map(pm=>(
+                <button key={pm.id} onClick={()=>setPayMethod(pm.id)}
+                  style={{padding:"12px 8px",borderRadius:12,border:`2px solid ${payMethod===pm.id?pm.color:C.gray}`,
+                    background:payMethod===pm.id?pm.color+"18":C.white,cursor:"pointer",
+                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,
+                    color:payMethod===pm.id?pm.color:C.navy,display:"flex",flexDirection:"column",
+                    alignItems:"center",gap:4}}>
+                  <span style={{fontSize:22}}>{pm.icon}</span>{pm.label}
+                </button>
+              ))}
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>setModal(null)}
+                style={{flex:1,padding:"11px",background:"transparent",color:C.navy,
+                  border:`2px solid ${C.navy}`,borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+                  fontWeight:700,fontSize:14,textTransform:"uppercase"}}>Cancelar</button>
+              <button onClick={confirmarPago} disabled={!payMethod||!selectedMes||paying}
+                style={{flex:2,padding:"11px",background:payMethod&&selectedMes?`linear-gradient(135deg,${C.green},#15803d)`:"#e2e2da",
+                  color:payMethod&&selectedMes?C.white:C.grayMid,border:"none",borderRadius:10,
+                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:15,
+                  textTransform:"uppercase"}}>{paying?"...":"✅ Confirmar"}</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+      {modal==="success"&&(
+        <Modal onClose={()=>setModal(null)} maxWidth={340}>
+          <div style={{padding:"36px 28px",textAlign:"center"}}>
+            <div style={{fontSize:56,marginBottom:12}}>✅</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:26,
+              color:C.navy,textTransform:"uppercase",marginBottom:8}}>¡Pago registrado!</div>
+            <div style={{color:C.grayMid,fontSize:14,marginBottom:20}}>El pago fue registrado correctamente.</div>
+            <button onClick={()=>setModal(null)}
+              style={{width:"100%",padding:"12px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+                fontWeight:900,fontSize:16,textTransform:"uppercase"}}>Cerrar</button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+/* ══ FORM ALTA JUGADOR ════════════════════════════════════════════════ */
+function FormAltaJugador({ categorias, onSave, onCancel, initialData=null, readonlyPagos=false }) {
+  const [f, setF] = useState(initialData || {
+    nombre:"", celular:"", mail:"", categoria_id:"",
+    fecha_nacimiento:"", numero_camiseta:"", direccion:"",
+    foto_url:"", tipo_cuota:"base",
+  });
+
+  const set = (k,v) => setF(p=>({...p,[k]:v}));
+
+  const valid = f.nombre && f.celular && f.categoria_id && f.fecha_nacimiento;
+
+  return (
+    <div>
+      <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"18px 22px"}}>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,
+          color:C.white,textTransform:"uppercase"}}>{initialData?"✏ Editar Jugador":"➕ Nuevo Jugador"}</div>
+      </div>
+      <div style={{padding:"20px 22px",maxHeight:"70dvh",overflowY:"auto"}}>
+        {/* Foto */}
+        <div style={{marginBottom:14}}>
+          <label style={{display:"block",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+            fontSize:12,color:C.navy,textTransform:"uppercase",marginBottom:6}}>Foto (URL) — opcional</label>
+          <input value={f.foto_url} onChange={e=>set("foto_url",e.target.value)} placeholder="https://..."
+            style={{width:"100%",padding:"9px 12px",border:`1px solid ${C.gray}`,borderRadius:8,fontSize:13}}/>
+        </div>
+
+        {[
+          ["nombre","Nombre completo *","text",true],
+          ["celular","Celular *","tel",true],
+          ["mail","Email","email",false],
+          ["fecha_nacimiento","Fecha de nacimiento *","date",true],
+          ["numero_camiseta","Número de camiseta","text",false],
+          ["direccion","Dirección","text",false],
+        ].map(([k,label,type,req])=>(
+          <div key={k} style={{marginBottom:12}}>
+            <label style={{display:"block",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+              fontSize:12,color:C.navy,textTransform:"uppercase",marginBottom:5}}>{label}</label>
+            <input type={type} value={f[k]||""} onChange={e=>set(k,e.target.value)}
+              placeholder={label.replace(" *","")}
+              style={{width:"100%",padding:"9px 12px",border:`1px solid ${C.gray}`,borderRadius:8,fontSize:14}}/>
+          </div>
+        ))}
+
+        <div style={{marginBottom:12}}>
+          <label style={{display:"block",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+            fontSize:12,color:C.navy,textTransform:"uppercase",marginBottom:5}}>Categoría *</label>
+          <select value={f.categoria_id} onChange={e=>set("categoria_id",e.target.value)}
+            style={{width:"100%",padding:"9px 12px",border:`1px solid ${C.gray}`,borderRadius:8,fontSize:14}}>
+            <option value="">— Seleccioná categoría —</option>
+            {categorias.map(c=>(
+              <option key={c.id} value={c.id}>{c.nombre}</option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{marginBottom:20}}>
+          <label style={{display:"block",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+            fontSize:12,color:C.navy,textTransform:"uppercase",marginBottom:5}}>Tipo de cuota</label>
+          <select value={f.tipo_cuota||"base"} onChange={e=>set("tipo_cuota",e.target.value)}
+            style={{width:"100%",padding:"9px 12px",border:`1px solid ${C.gray}`,borderRadius:8,fontSize:14}}>
+            {TIPOS_CUOTA_DEFAULT.map(t=>(
+              <option key={t.id} value={t.id}>{t.nombre} ({t.porcentaje}%)</option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{display:"flex",gap:10}}>
+          <button onClick={onCancel}
+            style={{flex:1,padding:"11px",background:"transparent",color:C.navy,
+              border:`2px solid ${C.navy}`,borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+              fontWeight:700,fontSize:14,textTransform:"uppercase"}}>Cancelar</button>
+          <button onClick={()=>valid&&onSave(f)} disabled={!valid}
+            style={{flex:2,padding:"11px",background:valid?`linear-gradient(135deg,${C.navy},${C.navyLight})`:"#e2e2da",
+              color:valid?C.white:C.grayMid,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+              fontWeight:900,fontSize:15,textTransform:"uppercase"}}>Guardar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══ ADMIN SCREEN ═════════════════════════════════════════════════════ */
+function AdminScreen({ user, onLogout }) {
+  const [tab,          setTab]         = useState("planteles");
+  const [categorias,   setCategorias]  = useState([]);
+  const [jugadores,    setJugadores]   = useState([]);
+  const [pendientes,   setPendientes]  = useState([]);
+  const [delegados,    setDelegados]   = useState([]);
+  const [planPagos,    setPlanPagos]   = useState([]);
+  const [pagos,        setPagos]       = useState([]);
+  const [tiposCuota,   setTiposCuota]  = useState(TIPOS_CUOTA_DEFAULT);
+  const [filtCat,      setFiltCat]     = useState("todos");
+  const [modal,        setModal]       = useState(null); // null | "newJug" | "editJug" | "newCat" | "newDel" | "pagos"
+  const [selJugador,   setSelJugador]  = useState(null);
+  const [loading,      setLoading]     = useState(true);
+  const [qrLink,       setQrLink]      = useState(null);
+  const añoActual = new Date().getFullYear();
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const [cats, jugs, pends, dels, plan, pags] = await Promise.all([
+      sbFetch("baby_categorias?select=*&order=nombre.asc"),
+      sbFetch("baby_jugadores?select=*&order=nombre.asc"),
+      sbFetch("baby_formularios_pendientes?select=*&order=created_at.desc"),
+      sbFetch("baby_delegados?select=*&order=nombre.asc"),
+      sbFetch(`baby_plan_pagos?año=eq.${añoActual}&select=*&order=mes.asc`),
+      sbFetch(`baby_pagos?año=eq.${añoActual}&select=*`),
+    ]);
+    setCategorias(cats||[]);
+    setJugadores(jugs||[]);
+    setPendientes(pends||[]);
+    setDelegados(dels||[]);
+    setPlanPagos(plan||[]);
+    setPagos(pags||[]);
+    setLoading(false);
+  },[añoActual]);
+
+  useEffect(()=>{ load(); },[load]);
+
+  const jugadoresFilt = filtCat==="todos"
+    ? jugadores
+    : jugadores.filter(j=>j.categoria_id===filtCat);
+
+  const cuotaJugMes = (jug, mes) => {
+    const planMes = planPagos.find(p=>p.mes===mes);
+    if (!planMes || planMes.monto===0) return 0;
+    const tipo = tiposCuota.find(t=>t.id===jug.tipo_cuota)||tiposCuota[0];
+    return Math.round(planMes.monto * tipo.porcentaje / 100);
+  };
+
+  const pagoJugMes = (jugId, mes) => pagos.find(p=>p.jugador_id===jugId&&p.mes===mes);
+
+  const saveJugador = async (data) => {
+    if (selJugador) {
+      await sbFetch(`baby_jugadores?id=eq.${selJugador.id}`, "PATCH", data);
+    } else {
+      const newId = uid();
+      await sbFetch("baby_jugadores", "POST", {
+        ...data, id:newId, org_id:"paysandu", estado:"activo",
+        pendiente_validacion:false, created_at:new Date().toISOString(),
+      });
+    }
+    setModal(null); setSelJugador(null);
+    load();
+  };
+
+  const deleteJugador = async (id) => {
+    if (!confirm("¿Eliminar jugador?")) return;
+    await sbFetch(`baby_jugadores?id=eq.${id}`, "DELETE");
+    load();
+  };
+
+  const validarPendiente = async (pend) => {
+    const datos = typeof pend.datos_json==="string" ? JSON.parse(pend.datos_json) : pend.datos_json;
+    await sbFetch("baby_jugadores", "POST", {
+      ...datos, id:uid(), org_id:"paysandu", estado:"activo",
+      pendiente_validacion:false, created_at:new Date().toISOString(),
+    });
+    await sbFetch(`baby_formularios_pendientes?id=eq.${pend.id}`, "DELETE");
+    load();
+  };
+
+  const rechazarPendiente = async (id) => {
+    await sbFetch(`baby_formularios_pendientes?id=eq.${id}`, "DELETE");
+    load();
+  };
+
+  const savePlanMes = async (mes, monto) => {
+    const existe = planPagos.find(p=>p.mes===mes);
+    if (existe) {
+      await sbFetch(`baby_plan_pagos?id=eq.${existe.id}`, "PATCH", {monto:parseInt(monto)||0});
+    } else {
+      await sbFetch("baby_plan_pagos", "POST", {
+        id:uid(), org_id:"paysandu", año:añoActual, mes, monto:parseInt(monto)||0
+      });
+    }
+    const plan = await sbFetch(`baby_plan_pagos?año=eq.${añoActual}&select=*&order=mes.asc`);
+    setPlanPagos(plan||[]);
+  };
+
+  const saveDelegado = async (data) => {
+    await sbFetch("baby_delegados", "POST", {
+      ...data, id:uid(), org_id:"paysandu", activo:true
+    });
+    setModal(null); load();
+  };
+
+  const deleteDelegado = async (id) => {
+    if (!confirm("¿Eliminar delegado?")) return;
+    await sbFetch(`baby_delegados?id=eq.${id}`, "DELETE");
+    load();
+  };
+
+  const generarLink = (tipo) => {
+    const base = window.location.origin;
+    const link = `${base}?form=${tipo}&org=paysandu`;
+    setQrLink(link);
+    setModal("qr");
+  };
+
+  const registrarPago = async (jugId, mes, monto, metodo) => {
+    await sbFetch("baby_pagos", "POST", {
+      id:uid(), jugador_id:jugId, org_id:"paysandu",
+      año:añoActual, mes, monto, metodo_pago:metodo, fecha_pago:fdate(),
+    });
+    const pags = await sbFetch(`baby_pagos?año=eq.${añoActual}&select=*`);
+    setPagos(pags||[]);
+  };
+
+  const TABS = [
+    ["planteles",  "⚽ Planteles"],
+    ["pagos",      "💳 Pagos"],
+    ["plan",       "📋 Plan de Pagos"],
+    ["delegados",  "🏃 Delegados"],
+    ["pendientes", "⏳ Pendientes"],
+    ["categorias", "🏷 Categorías"],
+  ];
+
+  return (
+    <div style={{minHeight:"100dvh",background:C.offWhite,display:"flex",flexDirection:"column"}}>
+      {/* Header */}
+      <div className="app-header" style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"12px 18px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <ClubLogo size={32}/>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:17,
+              color:C.white,textTransform:"uppercase"}}>Admin — Paysandú FC Baby</div>
+            <div style={{color:C.lilac,fontSize:11}}>👤 {user.name}</div>
+          </div>
+          <button onClick={onLogout} style={{background:"rgba(255,255,255,.1)",border:"none",
+            borderRadius:8,padding:"7px 12px",color:C.white,fontFamily:"'Barlow Condensed',sans-serif",
+            fontWeight:700,fontSize:12,textTransform:"uppercase"}}>Salir</button>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div style={{background:C.white,borderBottom:`1px solid ${C.gray}`,padding:"8px 12px",
+        display:"flex",gap:6,overflowX:"auto",flexShrink:0}}>
+        {TABS.map(([id,label])=>(
+          <button key={id} onClick={()=>setTab(id)}
+            style={{background:tab===id?C.navy:C.offWhite,color:tab===id?C.white:C.navy,
+              border:`2px solid ${tab===id?C.navy:C.gray}`,borderRadius:20,padding:"6px 14px",
+              fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
+              textTransform:"uppercase",whiteSpace:"nowrap",flex:"0 0 auto"}}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Content */}
+      <div style={{flex:1,overflowY:"auto",padding:16}}>
+        {loading&&<div style={{textAlign:"center",padding:"40px 0",color:C.grayMid}}>⏳ Cargando...</div>}
+
+        {/* ── TAB PLANTELES ── */}
+        {!loading&&tab==="planteles"&&(
+          <div style={{maxWidth:900}}>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12,alignItems:"center"}}>
+              <button onClick={()=>{setSelJugador(null);setModal("newJug");}}
+                style={{background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,color:C.white,
+                  border:"none",borderRadius:8,padding:"8px 16px",fontFamily:"'Barlow Condensed',sans-serif",
+                  fontWeight:700,fontSize:13,textTransform:"uppercase"}}>➕ Nuevo jugador</button>
+              <button onClick={()=>generarLink("jugador")}
+                style={{background:C.offWhite,color:C.navy,border:`1px solid ${C.gray}`,borderRadius:8,
+                  padding:"8px 14px",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                  fontSize:13,textTransform:"uppercase"}}>🔗 Link formulario</button>
+              <div style={{marginLeft:"auto",display:"flex",gap:6,flexWrap:"wrap"}}>
+                {["todos",...categorias.map(c=>c.id)].map(cid=>(
+                  <button key={cid} onClick={()=>setFiltCat(cid)}
+                    style={{background:filtCat===cid?C.navy:C.white,color:filtCat===cid?C.white:C.navy,
+                      border:`1px solid ${filtCat===cid?C.navy:C.gray}`,borderRadius:16,padding:"4px 10px",
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:11,
+                      textTransform:"uppercase",cursor:"pointer"}}>
+                    {cid==="todos"?"Todos":cid}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:C.grayMid,marginBottom:8}}>
+              {jugadoresFilt.length} jugador{jugadoresFilt.length!==1?"es":""}
+            </div>
+            {jugadoresFilt.map(j=>(
+              <div key={j.id} style={{background:C.white,borderRadius:12,padding:"12px 16px",
+                marginBottom:8,border:`1px solid ${C.gray}`,display:"flex",gap:12,alignItems:"center"}}>
+                {j.foto_url
+                  ? <img src={j.foto_url} style={{width:44,height:44,borderRadius:"50%",objectFit:"cover",flexShrink:0}}/>
+                  : <div style={{width:44,height:44,borderRadius:"50%",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                      display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>⚽</div>
+                }
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,
+                    color:C.navy,textTransform:"uppercase"}}>{j.nombre}</div>
+                  <div style={{fontSize:11,color:C.grayMid}}>
+                    {j.categoria_id} · {j.celular}
+                    {j.numero_camiseta&&` · #${j.numero_camiseta}`}
+                  </div>
+                  <div style={{fontSize:10,color:C.grayMid}}>ID: {j.id}</div>
+                </div>
+                <div style={{display:"flex",gap:6,flexShrink:0}}>
+                  <button onClick={()=>{setSelJugador(j);setModal("editJug");}}
+                    style={{background:C.offWhite,border:`1px solid ${C.gray}`,borderRadius:6,
+                      padding:"5px 10px",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏</button>
+                  <button onClick={()=>deleteJugador(j.id)}
+                    style={{background:"#fff5f5",border:"1px solid #fca5a5",borderRadius:6,
+                      padding:"5px 10px",fontSize:12,fontWeight:600,cursor:"pointer",color:"#dc2626"}}>🗑</button>
+                </div>
+              </div>
+            ))}
+            {jugadoresFilt.length===0&&(
+              <div style={{textAlign:"center",padding:"40px 0",color:C.grayMid}}>Sin jugadores en esta categoría</div>
+            )}
+          </div>
+        )}
+
+        {/* ── TAB PAGOS ── */}
+        {!loading&&tab==="pagos"&&(
+          <PagosTab jugadores={jugadoresFilt} pagos={pagos} planPagos={planPagos}
+            categorias={categorias} tiposCuota={tiposCuota}
+            filtCat={filtCat} setFiltCat={setFiltCat}
+            onRegistrarPago={registrarPago} añoActual={añoActual}/>
+        )}
+
+        {/* ── TAB PLAN DE PAGOS ── */}
+        {!loading&&tab==="plan"&&(
+          <PlanPagosTab planPagos={planPagos} onSave={savePlanMes} añoActual={añoActual}/>
+        )}
+
+        {/* ── TAB DELEGADOS ── */}
+        {!loading&&tab==="delegados"&&(
+          <div style={{maxWidth:600}}>
+            <button onClick={()=>setModal("newDel")}
+              style={{background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,color:C.white,
+                border:"none",borderRadius:8,padding:"8px 16px",fontFamily:"'Barlow Condensed',sans-serif",
+                fontWeight:700,fontSize:13,textTransform:"uppercase",marginBottom:14}}>➕ Nuevo delegado</button>
+            {delegados.map(d=>(
+              <div key={d.id} style={{background:C.white,borderRadius:12,padding:"12px 16px",
+                marginBottom:8,border:`1px solid ${C.gray}`,display:"flex",gap:12,alignItems:"center"}}>
+                <div style={{flex:1}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,
+                    color:C.navy,textTransform:"uppercase"}}>{d.nombre}</div>
+                  <div style={{fontSize:11,color:C.grayMid}}>{d.celular} · {d.mail}</div>
+                  <div style={{fontSize:11,color:C.grayMid}}>PIN: {d.pin} · Categorías: {(d.categorias||[]).join(", ")||"todas"}</div>
+                </div>
+                <button onClick={()=>deleteDelegado(d.id)}
+                  style={{background:"#fff5f5",border:"1px solid #fca5a5",borderRadius:6,
+                    padding:"5px 10px",fontSize:12,fontWeight:600,cursor:"pointer",color:"#dc2626"}}>🗑</button>
+              </div>
+            ))}
+            {delegados.length===0&&<div style={{color:C.grayMid,fontSize:13}}>Sin delegados registrados</div>}
+          </div>
+        )}
+
+        {/* ── TAB PENDIENTES ── */}
+        {!loading&&tab==="pendientes"&&(
+          <div style={{maxWidth:600}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:16,
+              color:C.navy,textTransform:"uppercase",marginBottom:12}}>
+              Altas pendientes de validación ({pendientes.length})
+            </div>
+            {pendientes.map(p=>{
+              const datos = typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
+              return(
+                <div key={p.id} style={{background:C.white,borderRadius:12,padding:"14px 16px",
+                  marginBottom:10,border:`2px solid ${C.gold}`}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,
+                    color:C.navy,marginBottom:6}}>{datos.nombre}</div>
+                  <div style={{fontSize:12,color:C.grayMid,marginBottom:8}}>
+                    {datos.categoria_id} · {datos.celular} · {datos.mail}<br/>
+                    Nacimiento: {datos.fecha_nacimiento}
+                  </div>
+                  <div style={{display:"flex",gap:8}}>
+                    <button onClick={()=>validarPendiente(p)}
+                      style={{flex:1,padding:"8px",background:`linear-gradient(135deg,${C.green},#15803d)`,
+                        color:C.white,border:"none",borderRadius:8,fontFamily:"'Barlow Condensed',sans-serif",
+                        fontWeight:700,fontSize:13,textTransform:"uppercase"}}>✅ Validar</button>
+                    <button onClick={()=>rechazarPendiente(p.id)}
+                      style={{flex:1,padding:"8px",background:"#fff5f5",color:"#dc2626",
+                        border:"1px solid #fca5a5",borderRadius:8,fontFamily:"'Barlow Condensed',sans-serif",
+                        fontWeight:700,fontSize:13,textTransform:"uppercase"}}>❌ Rechazar</button>
+                  </div>
+                </div>
+              );
+            })}
+            {pendientes.length===0&&<div style={{color:C.grayMid,fontSize:13}}>Sin altas pendientes</div>}
+          </div>
+        )}
+
+        {/* ── TAB CATEGORÍAS ── */}
+        {!loading&&tab==="categorias"&&(
+          <CategoriasTab categorias={categorias} onRefresh={load}/>
+        )}
+      </div>
+
+      {/* Modales */}
+      {(modal==="newJug"||modal==="editJug")&&(
+        <Modal onClose={()=>{setModal(null);setSelJugador(null);}}>
+          <FormAltaJugador
+            categorias={categorias}
+            initialData={selJugador}
+            onSave={saveJugador}
+            onCancel={()=>{setModal(null);setSelJugador(null);}}
+          />
+        </Modal>
+      )}
+      {modal==="newDel"&&<Modal onClose={()=>setModal(null)}><FormDelegado categorias={categorias} onSave={saveDelegado} onCancel={()=>setModal(null)}/></Modal>}
+      {modal==="qr"&&qrLink&&(
+        <Modal onClose={()=>setModal(null)} maxWidth={380}>
+          <div style={{padding:"28px",textAlign:"center"}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,
+              color:C.navy,textTransform:"uppercase",marginBottom:16}}>🔗 Link de formulario</div>
+            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrLink)}&bgcolor=ffffff&color=1e2a6e`}
+              style={{width:200,height:200,borderRadius:12,border:`3px solid ${C.navy}`,marginBottom:12}}/>
+            <div style={{background:C.offWhite,borderRadius:8,padding:"10px 12px",fontSize:12,
+              color:C.navy,wordBreak:"break-all",marginBottom:16}}>{qrLink}</div>
+            <button onClick={()=>navigator.clipboard?.writeText(qrLink)}
+              style={{width:"100%",padding:"10px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+                fontWeight:700,fontSize:14,textTransform:"uppercase"}}>📋 Copiar enlace</button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+/* ══ PAGOS TAB ════════════════════════════════════════════════════════ */
+function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
+  filtCat, setFiltCat, onRegistrarPago, añoActual }) {
+  const [selJug, setSelJug] = useState(null);
+  const [selMes, setSelMes] = useState(null);
+  const [metodo, setMetodo] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [done,   setDone]   = useState(false);
+
+  const cuotaMes = (jug, mes) => {
+    const planMes = planPagos.find(p=>p.mes===mes);
+    if (!planMes||planMes.monto===0) return 0;
+    const tipo = (tiposCuota||TIPOS_CUOTA_DEFAULT).find(t=>t.id===jug.tipo_cuota)||(tiposCuota||TIPOS_CUOTA_DEFAULT)[0];
+    return Math.round(planMes.monto * tipo.porcentaje / 100);
+  };
+
+  const pagoJugMes = (jugId, mes) => pagos.find(p=>p.jugador_id===jugId&&p.mes===mes);
+
+  const mesActual = new Date().getMonth()+1;
+
+  const confirmar = async () => {
+    if (!selJug||!selMes||!metodo) return;
+    setSaving(true);
+    await onRegistrarPago(selJug.id, selMes, cuotaMes(selJug,selMes), metodo);
+    setSaving(false); setDone(true);
+    setTimeout(()=>{setDone(false);setSelJug(null);setSelMes(null);setMetodo(null);},2000);
+  };
+
+  return (
+    <div style={{maxWidth:900}}>
+      {/* Filtro categoría */}
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
+        {["todos",...categorias.map(c=>c.id)].map(cid=>(
+          <button key={cid} onClick={()=>setFiltCat(cid)}
+            style={{background:filtCat===cid?C.navy:C.white,color:filtCat===cid?C.white:C.navy,
+              border:`1px solid ${filtCat===cid?C.navy:C.gray}`,borderRadius:16,padding:"4px 12px",
+              fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
+              textTransform:"uppercase",cursor:"pointer"}}>
+            {cid==="todos"?"Todos":cid}
+          </button>
+        ))}
+      </div>
+
+      {/* Grilla jugadores */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:12}}>
+        {jugadores.map(j=>{
+          const deudaMeses = MESES.map((_,i)=>i+1).filter(mes=>{
+            const monto=cuotaMes(j,mes);
+            return monto>0&&!pagoJugMes(j.id,mes)&&mes<=mesActual;
+          });
+          return(
+            <div key={j.id} style={{background:C.white,borderRadius:12,padding:"12px 14px",
+              border:`1px solid ${deudaMeses.length>0?"#fde68a":C.gray}`,
+              background:deudaMeses.length>0?"#fffbeb":C.white}}>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:14,
+                color:C.navy,textTransform:"uppercase",marginBottom:4}}>{j.nombre}</div>
+              <div style={{fontSize:11,color:C.grayMid,marginBottom:8}}>{j.categoria_id}</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:8}}>
+                {MESES.map((_,i)=>{
+                  const mes=i+1;
+                  const monto=cuotaMes(j,mes);
+                  const pago=pagoJugMes(j.id,mes);
+                  if(monto===0) return null;
+                  return(
+                    <span key={mes} style={{fontSize:9,padding:"1px 5px",borderRadius:4,fontWeight:700,
+                      background:pago?"#dcfce7":"#fef3c7",color:pago?"#16a34a":"#d97706",
+                      border:`1px solid ${pago?"#86efac":"#fde68a"}`}}>
+                      {MESES[i].slice(0,3)}{pago?"✓":""}
+                    </span>
+                  );
+                })}
+              </div>
+              {deudaMeses.length>0&&(
+                <button onClick={()=>{setSelJug(j);setSelMes(null);setMetodo(null);}}
+                  style={{width:"100%",padding:"7px",background:`linear-gradient(135deg,${C.amber},#b45309)`,
+                    color:C.white,border:"none",borderRadius:8,fontFamily:"'Barlow Condensed',sans-serif",
+                    fontWeight:700,fontSize:12,textTransform:"uppercase"}}>
+                  💳 {deudaMeses.length} mes{deudaMeses.length!==1?"es":""} pendiente{deudaMeses.length!==1?"s":""}
+                </button>
+              )}
+              {deudaMeses.length===0&&(
+                <div style={{textAlign:"center",fontSize:11,color:C.green,fontWeight:700}}>✅ Al día</div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Modal registrar pago */}
+      {selJug&&(
+        <Modal onClose={()=>setSelJug(null)}>
+          <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"16px 20px"}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
+              color:C.white,textTransform:"uppercase"}}>💳 Registrar pago</div>
+            <div style={{color:C.lilac,fontSize:13}}>{selJug.nombre}</div>
+          </div>
+          <div style={{padding:"18px 20px"}}>
+            {done?(
+              <div style={{textAlign:"center",padding:"20px 0"}}>
+                <div style={{fontSize:48}}>✅</div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
+                  color:C.navy,textTransform:"uppercase",marginTop:8}}>¡Pago registrado!</div>
+              </div>
+            ):(
+              <>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
+                  color:C.navy,textTransform:"uppercase",marginBottom:8}}>Seleccioná el mes</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:16}}>
+                  {MESES.map((_,i)=>{
+                    const mes=i+1;
+                    const monto=cuotaMes(selJug,mes);
+                    const pago=pagoJugMes(selJug.id,mes);
+                    if(monto===0||pago) return null;
+                    if(mes>mesActual+1) return null;
+                    return(
+                      <button key={mes} onClick={()=>setSelMes(mes)}
+                        style={{padding:"8px 4px",borderRadius:8,border:`2px solid ${selMes===mes?C.navy:C.gray}`,
+                          background:selMes===mes?C.navy:C.white,cursor:"pointer",
+                          fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
+                          color:selMes===mes?C.white:C.navy}}>
+                        <div>{MESES[i].slice(0,3)}</div>
+                        <div style={{fontWeight:900,fontSize:13}}>{fmt(monto)}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
+                  color:C.navy,textTransform:"uppercase",marginBottom:8}}>Medio de pago</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:16}}>
+                  {PAY_METHODS.map(pm=>(
+                    <button key={pm.id} onClick={()=>setMetodo(pm.id)}
+                      style={{padding:"10px 6px",borderRadius:10,border:`2px solid ${metodo===pm.id?pm.color:C.gray}`,
+                        background:metodo===pm.id?pm.color+"18":C.white,cursor:"pointer",
+                        fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
+                        color:metodo===pm.id?pm.color:C.navy,display:"flex",flexDirection:"column",
+                        alignItems:"center",gap:3}}>
+                      <span style={{fontSize:18}}>{pm.icon}</span>{pm.label}
+                    </button>
+                  ))}
+                </div>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={()=>setSelJug(null)}
+                    style={{flex:1,padding:"10px",background:"transparent",color:C.navy,
+                      border:`2px solid ${C.navy}`,borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+                      fontWeight:700,fontSize:13,textTransform:"uppercase"}}>Cancelar</button>
+                  <button onClick={confirmar} disabled={!selMes||!metodo||saving}
+                    style={{flex:2,padding:"10px",background:selMes&&metodo?`linear-gradient(135deg,${C.green},#15803d)`:"#e2e2da",
+                      color:selMes&&metodo?C.white:C.grayMid,border:"none",borderRadius:10,
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,
+                      textTransform:"uppercase"}}>{saving?"...":"✅ Confirmar"}</button>
+                </div>
+              </>
+            )}
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+/* ══ PLAN PAGOS TAB ═══════════════════════════════════════════════════ */
+function PlanPagosTab({ planPagos, onSave, añoActual }) {
+  const [montos, setMontos] = useState(
+    Object.fromEntries(MESES.map((_,i)=>{
+      const mes=i+1;
+      const found=planPagos.find(p=>p.mes===mes);
+      return [mes, found?String(found.monto):""];
+    }))
+  );
+
+  useEffect(()=>{
+    setMontos(Object.fromEntries(MESES.map((_,i)=>{
+      const mes=i+1;
+      const found=planPagos.find(p=>p.mes===mes);
+      return [mes, found?String(found.monto):""];
+    })));
+  },[planPagos]);
+
+  const mesActual = new Date().getMonth()+1;
+
+  return (
+    <div style={{maxWidth:560}}>
+      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:16,
+        color:C.navy,textTransform:"uppercase",marginBottom:4}}>Plan de Pagos {añoActual}</div>
+      <div style={{fontSize:12,color:C.grayMid,marginBottom:16}}>
+        Establecé el valor de la cuota base para cada mes. Los meses sin cuota colocá 0.
+        Solo se pueden editar meses actuales y futuros.
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10}}>
+        {MESES.map((m,i)=>{
+          const mes=i+1;
+          const editable = mes >= mesActual;
+          const monto = montos[mes]||"";
+          return(
+            <div key={mes} style={{background:C.white,borderRadius:12,padding:"12px 14px",
+              border:`1px solid ${C.gray}`,opacity:editable?1:.7}}>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,
+                color:C.navy,textTransform:"uppercase",marginBottom:6}}>{m}</div>
+              <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                <input
+                  type="number" min="0" value={monto}
+                  disabled={!editable}
+                  onChange={e=>setMontos(p=>({...p,[mes]:e.target.value}))}
+                  placeholder="$ 0"
+                  style={{flex:1,padding:"7px 10px",border:`1px solid ${C.gray}`,borderRadius:8,
+                    fontSize:15,fontWeight:700,color:C.navy,outline:"none",
+                    background:editable?C.white:C.offWhite}}/>
+                {editable&&(
+                  <button onClick={()=>onSave(mes,monto||"0")}
+                    style={{padding:"7px 12px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                      color:C.white,border:"none",borderRadius:8,fontFamily:"'Barlow Condensed',sans-serif",
+                      fontWeight:700,fontSize:12,textTransform:"uppercase"}}>✓</button>
+                )}
+              </div>
+              {!editable&&<div style={{fontSize:10,color:C.grayMid,marginTop:4}}>Mes pasado — no editable</div>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ══ CATEGORIAS TAB ═══════════════════════════════════════════════════ */
+function CategoriasTab({ categorias, onRefresh }) {
+  const [nombre, setNombre] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const addCat = async () => {
+    if (!nombre.trim()) return;
+    setSaving(true);
+    await sbFetch("baby_categorias","POST",{id:nombre.trim(),org_id:"paysandu",nombre:nombre.trim(),activo:true});
+    setNombre(""); setSaving(false); onRefresh();
+  };
+
+  const delCat = async (id) => {
+    if (!confirm("¿Eliminar categoría?")) return;
+    await sbFetch(`baby_categorias?id=eq.${id}`,"DELETE");
+    onRefresh();
+  };
+
+  return (
+    <div style={{maxWidth:480}}>
+      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:16,
+        color:C.navy,textTransform:"uppercase",marginBottom:12}}>Categorías</div>
+      <div style={{display:"flex",gap:8,marginBottom:16}}>
+        <input value={nombre} onChange={e=>setNombre(e.target.value)}
+          onKeyDown={e=>e.key==="Enter"&&addCat()}
+          placeholder="Ej: 2015"
+          style={{flex:1,padding:"10px 14px",border:`1px solid ${C.gray}`,borderRadius:8,fontSize:14}}/>
+        <button onClick={addCat} disabled={saving}
+          style={{padding:"10px 18px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+            color:C.white,border:"none",borderRadius:8,fontFamily:"'Barlow Condensed',sans-serif",
+            fontWeight:700,fontSize:14,textTransform:"uppercase"}}>+ Agregar</button>
+      </div>
+      {categorias.map(c=>(
+        <div key={c.id} style={{background:C.white,borderRadius:10,padding:"10px 14px",marginBottom:6,
+          border:`1px solid ${C.gray}`,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:C.navy}}>
+            {c.nombre}
+          </div>
+          <button onClick={()=>delCat(c.id)}
+            style={{background:"#fff5f5",border:"1px solid #fca5a5",borderRadius:6,
+              padding:"4px 10px",fontSize:12,color:"#dc2626",cursor:"pointer",fontWeight:700}}>🗑</button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ══ FORM DELEGADO ════════════════════════════════════════════════════ */
+function FormDelegado({ categorias, onSave, onCancel }) {
+  const [f, setF] = useState({nombre:"",celular:"",mail:"",pin:"",categorias:[]});
+  const set = (k,v) => setF(p=>({...p,[k]:v}));
+  const valid = f.nombre&&f.pin.length===4;
+
+  const toggleCat = (id) => {
+    setF(p=>({...p, categorias: p.categorias.includes(id)
+      ? p.categorias.filter(c=>c!==id) : [...p.categorias, id]}));
+  };
+
+  return (
+    <div>
+      <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"18px 22px"}}>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,
+          color:C.white,textTransform:"uppercase"}}>🏃 Nuevo Delegado</div>
+      </div>
+      <div style={{padding:"20px 22px"}}>
+        {[["nombre","Nombre *"],["celular","Celular"],["mail","Email"]].map(([k,l])=>(
+          <div key={k} style={{marginBottom:12}}>
+            <label style={{display:"block",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+              fontSize:12,color:C.navy,textTransform:"uppercase",marginBottom:5}}>{l}</label>
+            <input value={f[k]} onChange={e=>set(k,e.target.value)}
+              style={{width:"100%",padding:"9px 12px",border:`1px solid ${C.gray}`,borderRadius:8,fontSize:14}}/>
+          </div>
+        ))}
+        <div style={{marginBottom:12}}>
+          <label style={{display:"block",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+            fontSize:12,color:C.navy,textTransform:"uppercase",marginBottom:5}}>PIN (4 dígitos) *</label>
+          <input type="number" maxLength={4} value={f.pin}
+            onChange={e=>set("pin",e.target.value.slice(0,4))}
+            style={{width:"100%",padding:"9px 12px",border:`1px solid ${C.gray}`,borderRadius:8,fontSize:18,
+              fontWeight:700,textAlign:"center",letterSpacing:".2em"}}/>
+        </div>
+        <div style={{marginBottom:20}}>
+          <label style={{display:"block",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+            fontSize:12,color:C.navy,textTransform:"uppercase",marginBottom:8}}>Categorías asignadas</label>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {categorias.map(c=>(
+              <button key={c.id} onClick={()=>toggleCat(c.id)}
+                style={{padding:"5px 12px",borderRadius:16,border:`2px solid ${f.categorias.includes(c.id)?C.navy:C.gray}`,
+                  background:f.categorias.includes(c.id)?C.navy:C.white,cursor:"pointer",
+                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
+                  color:f.categorias.includes(c.id)?C.white:C.navy,textTransform:"uppercase"}}>
+                {c.nombre}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={onCancel}
+            style={{flex:1,padding:"11px",background:"transparent",color:C.navy,
+              border:`2px solid ${C.navy}`,borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+              fontWeight:700,fontSize:14,textTransform:"uppercase"}}>Cancelar</button>
+          <button onClick={()=>valid&&onSave(f)} disabled={!valid}
+            style={{flex:2,padding:"11px",background:valid?`linear-gradient(135deg,${C.navy},${C.navyLight})`:"#e2e2da",
+              color:valid?C.white:C.grayMid,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+              fontWeight:900,fontSize:15,textTransform:"uppercase"}}>Guardar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══ DELEGADO SCREEN ══════════════════════════════════════════════════ */
+function DelegadoScreen({ user, onLogout }) {
+  const [tab,         setTab]       = useState("planteles");
+  const [categorias,  setCat]       = useState([]);
+  const [jugadores,   setJug]       = useState([]);
+  const [pendientes,  setPend]      = useState([]);
+  const [planPagos,   setPlan]      = useState([]);
+  const [filtCat,     setFiltCat]   = useState("todos");
+  const [modal,       setModal]     = useState(null);
+  const [selJugador,  setSelJug]    = useState(null);
+  const [loading,     setLoading]   = useState(true);
+  const misCategs = user.categorias||[];
+  const añoActual = new Date().getFullYear();
+
+  useEffect(()=>{
+    const load = async () => {
+      setLoading(true);
+      const [cats,jugs,pends,plan] = await Promise.all([
+        sbFetch("baby_categorias?select=*&order=nombre.asc"),
+        sbFetch("baby_jugadores?select=*&order=nombre.asc"),
+        sbFetch("baby_formularios_pendientes?select=*&order=created_at.desc"),
+        sbFetch(`baby_plan_pagos?año=eq.${añoActual}&select=*`),
+      ]);
+      const catsFilt = (cats||[]).filter(c=>misCategs.length===0||misCategs.includes(c.id));
+      setCat(catsFilt);
+      const jugFilt = (jugs||[]).filter(j=>misCategs.length===0||misCategs.includes(j.categoria_id));
+      setJug(jugFilt);
+      setPend(pends||[]);
+      setPlan(plan||[]);
+      setLoading(false);
+    };
+    load();
+  },[]);
+
+  const jugFiltrados = filtCat==="todos"?jugadores:jugadores.filter(j=>j.categoria_id===filtCat);
+
+  const saveJugador = async (data) => {
+    if (selJugador) {
+      const {pagos:_,...rest}=data;
+      await sbFetch(`baby_jugadores?id=eq.${selJugador.id}`,"PATCH",rest);
+    } else {
+      await sbFetch("baby_jugadores","POST",{
+        ...data, id:uid(), org_id:"paysandu", estado:"activo",
+        pendiente_validacion:false, created_at:new Date().toISOString(),
+      });
+    }
+    setModal(null); setSelJug(null);
+    const jugs = await sbFetch("baby_jugadores?select=*&order=nombre.asc");
+    setJug((jugs||[]).filter(j=>misCategs.length===0||misCategs.includes(j.categoria_id)));
+  };
+
+  const validarPend = async (p) => {
+    const datos = typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
+    await sbFetch("baby_jugadores","POST",{
+      ...datos,id:uid(),org_id:"paysandu",estado:"activo",
+      pendiente_validacion:false,created_at:new Date().toISOString(),
+    });
+    await sbFetch(`baby_formularios_pendientes?id=eq.${p.id}`,"DELETE");
+    setPend(prev=>prev.filter(x=>x.id!==p.id));
+    const jugs = await sbFetch("baby_jugadores?select=*&order=nombre.asc");
+    setJug((jugs||[]).filter(j=>misCategs.length===0||misCategs.includes(j.categoria_id)));
+  };
+
+  return (
+    <div style={{minHeight:"100dvh",background:C.offWhite,display:"flex",flexDirection:"column"}}>
+      <div className="app-header" style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"12px 18px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <ClubLogo size={30}/>
+          <div style={{flex:1}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,
+              color:C.white,textTransform:"uppercase"}}>Delegado — {user.nombre}</div>
+            <div style={{color:C.lilac,fontSize:11}}>
+              {misCategs.length>0?`Categorías: ${misCategs.join(", ")}`:"Todas las categorías"}
+            </div>
+          </div>
+          <button onClick={onLogout} style={{background:"rgba(255,255,255,.1)",border:"none",
+            borderRadius:8,padding:"7px 12px",color:C.white,fontFamily:"'Barlow Condensed',sans-serif",
+            fontWeight:700,fontSize:12,textTransform:"uppercase"}}>Salir</button>
+        </div>
+      </div>
+
+      <div style={{background:C.white,borderBottom:`1px solid ${C.gray}`,padding:"8px 12px",display:"flex",gap:6}}>
+        {[["planteles","⚽ Planteles"],["pendientes","⏳ Pendientes"]].map(([id,lbl])=>(
+          <button key={id} onClick={()=>setTab(id)}
+            style={{background:tab===id?C.navy:C.offWhite,color:tab===id?C.white:C.navy,
+              border:`2px solid ${tab===id?C.navy:C.gray}`,borderRadius:20,padding:"6px 16px",
+              fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,
+              textTransform:"uppercase",flex:"1 1 auto",textAlign:"center"}}>
+            {lbl}
+          </button>
+        ))}
+      </div>
+
+      <div style={{flex:1,overflowY:"auto",padding:16}}>
+        {loading&&<div style={{textAlign:"center",padding:"40px 0",color:C.grayMid}}>⏳ Cargando...</div>}
+
+        {!loading&&tab==="planteles"&&(
+          <div style={{maxWidth:700}}>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}}>
+              <button onClick={()=>{setSelJug(null);setModal("form");}}
+                style={{background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,color:C.white,
+                  border:"none",borderRadius:8,padding:"8px 16px",fontFamily:"'Barlow Condensed',sans-serif",
+                  fontWeight:700,fontSize:13,textTransform:"uppercase"}}>➕ Nuevo jugador</button>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap",marginLeft:"auto"}}>
+                {["todos",...categorias.map(c=>c.id)].map(cid=>(
+                  <button key={cid} onClick={()=>setFiltCat(cid)}
+                    style={{background:filtCat===cid?C.navy:C.white,color:filtCat===cid?C.white:C.navy,
+                      border:`1px solid ${filtCat===cid?C.navy:C.gray}`,borderRadius:16,padding:"4px 10px",
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:11,
+                      textTransform:"uppercase",cursor:"pointer"}}>
+                    {cid==="todos"?"Todos":cid}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {jugFiltrados.map(j=>(
+              <div key={j.id} style={{background:C.white,borderRadius:12,padding:"12px 16px",
+                marginBottom:8,border:`1px solid ${C.gray}`,display:"flex",gap:12,alignItems:"center"}}>
+                <div style={{flex:1}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,
+                    color:C.navy,textTransform:"uppercase"}}>{j.nombre}</div>
+                  <div style={{fontSize:11,color:C.grayMid}}>{j.categoria_id} · {j.celular}</div>
+                </div>
+                <button onClick={()=>{setSelJug(j);setModal("form");}}
+                  style={{background:C.offWhite,border:`1px solid ${C.gray}`,borderRadius:6,
+                    padding:"5px 10px",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏</button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!loading&&tab==="pendientes"&&(
+          <div style={{maxWidth:600}}>
+            {pendientes.filter(p=>{
+              const datos=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
+              return misCategs.length===0||misCategs.includes(datos.categoria_id);
+            }).map(p=>{
+              const datos=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
+              return(
+                <div key={p.id} style={{background:C.white,borderRadius:12,padding:"14px 16px",
+                  marginBottom:10,border:`2px solid ${C.gold}`}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,
+                    color:C.navy,marginBottom:6}}>{datos.nombre}</div>
+                  <div style={{fontSize:12,color:C.grayMid,marginBottom:8}}>
+                    {datos.categoria_id} · {datos.celular}
+                  </div>
+                  <button onClick={()=>validarPend(p)}
+                    style={{width:"100%",padding:"8px",background:`linear-gradient(135deg,${C.green},#15803d)`,
+                      color:C.white,border:"none",borderRadius:8,fontFamily:"'Barlow Condensed',sans-serif",
+                      fontWeight:700,fontSize:13,textTransform:"uppercase"}}>✅ Validar alta</button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {modal==="form"&&(
+        <Modal onClose={()=>{setModal(null);setSelJug(null);}}>
+          <FormAltaJugador categorias={categorias} initialData={selJugador}
+            onSave={saveJugador} onCancel={()=>{setModal(null);setSelJug(null);}}/>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+/* ══ APP ROOT ═════════════════════════════════════════════════════════ */
+export default function App() {
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // Verificar si viene de un link de formulario
+  const params = new URLSearchParams(window.location.search);
+  const formType = params.get("form");
+
+  // TODO: FormularioPublico para altas via QR
+  if (formType) {
+    return (
+      <>
+        <GlobalStyle/>
+        <FormularioPublico tipo={formType} org={params.get("org")||"paysandu"}/>
+      </>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <>
+        <GlobalStyle/>
+        <LoginScreen onLogin={setCurrentUser}/>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <GlobalStyle/>
+      {currentUser.role==="admin"    && <AdminScreen    user={currentUser} onLogout={()=>setCurrentUser(null)}/>}
+      {currentUser.role==="delegado" && <DelegadoScreen user={currentUser} onLogout={()=>setCurrentUser(null)}/>}
+      {currentUser.role==="publico"  && <PublicoView    user={currentUser} onLogout={()=>setCurrentUser(null)}/>}
+    </>
+  );
+}
+
+/* ══ FORMULARIO PÚBLICO (via QR/link) ════════════════════════════════ */
+function FormularioPublico({ tipo, org }) {
+  const [f, setF] = useState({nombre:"",celular:"",mail:"",categoria_id:"",
+    fecha_nacimiento:"",numero_camiseta:"",direccion:"",tipo_cuota:"base"});
+  const [categorias, setCat] = useState([]);
+  const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(()=>{
+    sbFetch("baby_categorias?select=*&order=nombre.asc").then(d=>setCat(d||[]));
+  },[]);
+
+  const set = (k,v) => setF(p=>({...p,[k]:v}));
+  const valid = f.nombre&&f.celular&&f.categoria_id&&f.fecha_nacimiento;
+
+  const enviar = async () => {
+    if (!valid) return;
+    setLoading(true);
+    await sbFetch("baby_formularios_pendientes","POST",{
+      id:uid(), org_id:org,
+      datos_json: JSON.stringify(f),
+      created_at: new Date().toISOString(),
+    });
+    setSent(true);
+    setLoading(false);
+  };
+
+  if (sent) return (
+    <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${C.navyDark},${C.navy})`,
+      display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div className="fi pop" style={{background:C.white,borderRadius:24,padding:"40px 28px",
+        maxWidth:380,width:"100%",textAlign:"center",boxShadow:"0 32px 80px rgba(20,28,78,.5)"}}>
+        <div style={{fontSize:64,marginBottom:16}}>✅</div>
+        <h2 style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:26,
+          color:C.navy,textTransform:"uppercase",marginBottom:12}}>¡Formulario enviado!</h2>
+        <p style={{color:C.grayMid,fontSize:14,lineHeight:1.6}}>
+          Tu solicitud fue recibida. Un delegado la revisará y te confirmará el alta.
+        </p>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${C.navyDark},${C.navy})`,padding:20}}>
+      <div style={{maxWidth:480,margin:"0 auto"}}>
+        <div style={{textAlign:"center",marginBottom:24}}>
+          <ClubLogo size={60}/>
+          <h1 style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:26,fontWeight:900,
+            color:C.white,textTransform:"uppercase",marginTop:12}}>Paysandú FC — Baby</h1>
+          <div style={{color:C.lilac,fontSize:15,marginTop:4}}>Formulario de inscripción</div>
+        </div>
+        <div className="fi" style={{background:C.white,borderRadius:20,padding:"24px 22px",
+          boxShadow:"0 24px 64px rgba(20,28,78,.4)"}}>
+          {[
+            ["nombre","Nombre completo del jugador *","text"],
+            ["celular","Celular del tutor *","tel"],
+            ["mail","Email del tutor","email"],
+            ["fecha_nacimiento","Fecha de nacimiento *","date"],
+            ["numero_camiseta","Número de camiseta (opcional)","text"],
+            ["direccion","Dirección (opcional)","text"],
+          ].map(([k,l,t])=>(
+            <div key={k} style={{marginBottom:14}}>
+              <label style={{display:"block",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                fontSize:12,color:C.navy,textTransform:"uppercase",marginBottom:5}}>{l}</label>
+              <input type={t} value={f[k]||""} onChange={e=>set(k,e.target.value)}
+                style={{width:"100%",padding:"10px 14px",border:`1px solid ${C.gray}`,
+                  borderRadius:10,fontSize:14,outline:"none"}}/>
+            </div>
+          ))}
+          <div style={{marginBottom:20}}>
+            <label style={{display:"block",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+              fontSize:12,color:C.navy,textTransform:"uppercase",marginBottom:5}}>Categoría *</label>
+            <select value={f.categoria_id} onChange={e=>set("categoria_id",e.target.value)}
+              style={{width:"100%",padding:"10px 14px",border:`1px solid ${C.gray}`,borderRadius:10,fontSize:14}}>
+              <option value="">— Seleccioná —</option>
+              {categorias.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}
+            </select>
+          </div>
+          <button onClick={enviar} disabled={!valid||loading}
+            style={{width:"100%",padding:"13px",background:valid?`linear-gradient(135deg,${C.green},#15803d)`:"#e2e2da",
+              color:valid?C.white:C.grayMid,border:"none",borderRadius:12,fontFamily:"'Barlow Condensed',sans-serif",
+              fontWeight:900,fontSize:17,textTransform:"uppercase"}}>
+            {loading?"Enviando...":"✅ Enviar formulario"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
