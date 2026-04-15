@@ -608,32 +608,39 @@ function ModalQRJugador({ jugId, jug, onClose }) {
     w.document.close();
   };
 
+  const linkAcceso = window.location.origin + "?id=" + jugId;
+
   return (
-    <Modal onClose={onClose} maxWidth={400}>
+    <Modal onClose={onClose} maxWidth={420}>
       <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"16px 20px",textAlign:"center"}}>
-        <ClubLogo size={36}/>
-        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,
-          color:C.white,textTransform:"uppercase",marginTop:6}}>Paysandú FC — Baby Fútbol</div>
+        <ClubLogo size={40}/>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,
+          color:C.white,textTransform:"uppercase",marginTop:8}}>Paysandú FC — Baby Fútbol</div>
       </div>
       <div style={{padding:"20px 24px",textAlign:"center"}}>
-        {nombre&&<div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,
+        {nombre&&<div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,
           color:C.navy,textTransform:"uppercase",marginBottom:2}}>{nombre}</div>}
-        {cat&&<div style={{fontSize:13,color:C.grayMid,marginBottom:12}}>Categoría {cat}</div>}
-        <img src={qrSrc} style={{width:200,height:200,borderRadius:12,border:`3px solid ${C.navy}`,marginBottom:10}}/>
-        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,
+        {cat&&<div style={{fontSize:13,color:C.grayMid,marginBottom:10}}>Categoría {cat}</div>}
+        <img src={qrSrc} style={{width:190,height:190,borderRadius:12,border:`3px solid ${C.navy}`,marginBottom:8}}/>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
           color:C.lilacDark,letterSpacing:".15em",marginBottom:4}}>{jugId}</div>
-        <div style={{fontSize:11,color:C.grayMid,marginBottom:18}}>
-          Escaneá el código o ingresá el ID para acceder a la ficha y pagos
+        <div style={{fontSize:11,color:C.grayMid,marginBottom:12}}>
+          Escaneá el QR o compartí el link de acceso directo
+        </div>
+        {/* Link de acceso */}
+        <div style={{background:C.offWhite,borderRadius:8,padding:"8px 12px",marginBottom:14,
+          fontSize:11,color:C.navy,wordBreak:"break-all",border:`1px solid ${C.gray}`}}>
+          {linkAcceso}
         </div>
         <div style={{display:"flex",gap:8,marginBottom:8}}>
-          <button onClick={()=>{ navigator.clipboard?.writeText(jugId).then(()=>{ alert("✅ Código " + jugId + " copiado. Podés pegarlo en WhatsApp o email."); }); }}
-            style={{flex:1,padding:"10px",background:C.offWhite,color:C.navy,
-              border:`2px solid ${C.navy}`,borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
-              fontWeight:700,fontSize:13,textTransform:"uppercase",cursor:"pointer"}}>📋 Copiar ID</button>
+          <button onClick={()=>{ navigator.clipboard?.writeText(linkAcceso).then(()=>{ alert("✅ Link de acceso copiado para " + (nombre||jugId) + ". Al abrirlo entra directo a la ficha."); }); }}
+            style={{flex:1,padding:"10px",background:`linear-gradient(135deg,${C.green},#15803d)`,color:C.white,
+              border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+              fontWeight:700,fontSize:12,textTransform:"uppercase",cursor:"pointer"}}>🔗 Copiar link</button>
           <button onClick={imprimir}
             style={{flex:1,padding:"10px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
               color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
-              fontWeight:700,fontSize:13,textTransform:"uppercase",cursor:"pointer"}}>🖨 Imprimir</button>
+              fontWeight:700,fontSize:12,textTransform:"uppercase",cursor:"pointer"}}>🖨 Imprimir</button>
         </div>
         <button onClick={onClose}
           style={{width:"100%",padding:"9px",background:"transparent",color:C.grayMid,
@@ -680,7 +687,19 @@ function AdminScreen({ user, onLogout }) {
     setLoading(false);
   },[añoActual]);
 
+  // Sincronización suave de pagos cada 30s (no toca loading ni interrumpe edición)
+  const syncPagos = useCallback(async () => {
+    const pags = await sbFetch(`baby_pagos?año=eq.${añoActual}&select=*`);
+    if (pags) setPagos(pags);
+    const pends = await sbFetch("baby_formularios_pendientes?select=*&order=created_at.desc");
+    if (pends) setPendientes(pends);
+  },[añoActual]);
+
   useEffect(()=>{ load(); },[load]);
+  useEffect(()=>{
+    const timer = setInterval(syncPagos, 30000);
+    return ()=>clearInterval(timer);
+  },[syncPagos]);
 
   const jugadoresFilt = filtCat==="todos"
     ? jugadores
@@ -863,63 +882,67 @@ function AdminScreen({ user, onLogout }) {
               {jugadoresFilt.length} jugador{jugadoresFilt.length!==1?"es":""}
             </div>
             {/* Encabezado tabla */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 70px 90px 170px 190px",gap:0,
-              padding:"11px 20px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
-              {["Nombre","Cat.","Código","Link de acceso","Acciones"].map((h,i)=>(
+            <div style={{display:"grid",gridTemplateColumns:"minmax(180px,1fr) 110px 80px 90px 160px 160px",gap:0,
+              padding:"9px 14px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
+              {["Nombre","Nacimiento","Cat.","Código","Link","Acciones"].map((h,i)=>(
                 <div key={i} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
-                  fontSize:13,color:C.white,textTransform:"uppercase",
+                  fontSize:12,color:C.white,textTransform:"uppercase",
                   textAlign:i>=2?"center":"left",padding:"0 4px"}}>{h}</div>
               ))}
             </div>
             {jugadoresFilt.map((j,idx)=>{
               const linkAcceso = window.location.origin + "?id=" + j.id;
               return(
-                <div key={j.id} style={{display:"grid",gridTemplateColumns:"1fr 70px 90px 170px 190px",gap:0,
-                  alignItems:"center",padding:"10px 20px",
+                <div key={j.id} style={{display:"grid",
+                  gridTemplateColumns:"minmax(180px,1fr) 110px 80px 90px 160px 160px",gap:0,
+                  alignItems:"center",padding:"8px 14px",
                   background:idx%2===0?C.white:"#f5f5f0",
                   borderLeft:`1px solid ${C.gray}`,borderRight:`1px solid ${C.gray}`,
                   borderBottom:`1px solid ${C.gray}`,
                   borderRadius:idx===jugadoresFilt.length-1?"0 0 12px 12px":"0"}}>
-                  {/* Nombre + datos en una sola línea */}
-                  <div style={{minWidth:0,paddingRight:8,display:"flex",flexDirection:"column",gap:2}}>
-                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:16,
-                      color:C.navy,textTransform:"uppercase",overflow:"hidden",textOverflow:"ellipsis",
-                      whiteSpace:"nowrap"}}>{j.nombre}</div>
-                    <div style={{display:"flex",gap:10,flexWrap:"nowrap",alignItems:"center"}}>
-                      {j.fecha_nacimiento&&<span style={{fontSize:11,color:C.grayMid,whiteSpace:"nowrap"}}>📅 {j.fecha_nacimiento}</span>}
-                      {j.ci&&<span style={{fontSize:11,color:C.grayMid,whiteSpace:"nowrap"}}>🪪 {j.ci}</span>}
-                      {j.numero_camiseta&&<span style={{fontSize:11,color:C.grayMid,whiteSpace:"nowrap"}}>👕 #{j.numero_camiseta}</span>}
+                  {/* Nombre en una línea */}
+                  <div style={{minWidth:0,paddingRight:6,display:"flex",alignItems:"center",gap:10}}>
+                    <div style={{minWidth:0}}>
+                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,
+                        color:C.navy,textTransform:"uppercase",overflow:"hidden",textOverflow:"ellipsis",
+                        whiteSpace:"nowrap"}}>{j.nombre}</div>
+                      <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"nowrap"}}>
+                        {j.ci&&<span style={{fontSize:10,color:C.grayMid,whiteSpace:"nowrap"}}>CI {j.ci}</span>}
+                        {j.numero_camiseta&&<span style={{fontSize:10,color:C.grayMid,whiteSpace:"nowrap"}}>👕#{j.numero_camiseta}</span>}
+                      </div>
                     </div>
                   </div>
+                  {/* Fecha nacimiento */}
+                  <div style={{fontSize:12,color:C.grayMid,textAlign:"center",whiteSpace:"nowrap"}}>
+                    {j.fecha_nacimiento||"-"}
+                  </div>
                   {/* Categoría */}
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:17,
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:16,
                     color:C.navy,textAlign:"center"}}>{j.categoria_id}</div>
                   {/* Código */}
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,
-                    color:C.lilacDark,letterSpacing:".06em",textAlign:"center"}}>{j.id}</div>
-                  {/* Link directo */}
-                  <div style={{display:"flex",gap:5,justifyContent:"center",alignItems:"center"}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:12,
+                    color:C.lilacDark,letterSpacing:".05em",textAlign:"center"}}>{j.id}</div>
+                  {/* Link */}
+                  <div style={{display:"flex",justifyContent:"center"}}>
                     <button onClick={()=>{
                         navigator.clipboard?.writeText(linkAcceso).then(()=>{
-                          alert("✅ Link copiado para " + j.nombre + ". Podés pegarlo en WhatsApp o email para que acceda directamente a su ficha.");
+                          alert("✅ Link copiado para " + j.nombre + ". Al abrirlo entra directo a su ficha.");
                         });
                       }}
-                      title="Copiar link de acceso directo"
-                      style={{padding:"7px 12px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
-                        color:C.white,border:"none",borderRadius:8,fontFamily:"'Barlow Condensed',sans-serif",
-                        fontWeight:700,fontSize:12,cursor:"pointer",textTransform:"uppercase",
-                        whiteSpace:"nowrap"}}>🔗 Copiar link</button>
+                      style={{padding:"6px 12px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                        color:C.white,border:"none",borderRadius:7,fontFamily:"'Barlow Condensed',sans-serif",
+                        fontWeight:700,fontSize:12,cursor:"pointer",whiteSpace:"nowrap"}}>🔗 Link</button>
                   </div>
                   {/* Acciones */}
-                  <div style={{display:"flex",gap:6,justifyContent:"center"}}>
+                  <div style={{display:"flex",gap:5,justifyContent:"center"}}>
                     <button onClick={()=>{setSelJugador(j);setModal("editJug");}}
-                      style={{flex:1,padding:"8px 12px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
-                        color:C.white,border:"none",borderRadius:8,fontFamily:"'Barlow Condensed',sans-serif",
-                        fontWeight:700,fontSize:13,cursor:"pointer",textTransform:"uppercase"}}>✏ Editar</button>
+                      style={{flex:1,padding:"7px 10px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                        color:C.white,border:"none",borderRadius:7,fontFamily:"'Barlow Condensed',sans-serif",
+                        fontWeight:700,fontSize:12,cursor:"pointer",textTransform:"uppercase"}}>✏ Editar</button>
                     <button onClick={()=>deleteJugador(j.id)}
-                      style={{padding:"8px 10px",background:"#fff5f5",border:"1px solid #fca5a5",
-                        borderRadius:8,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
-                        fontSize:13,cursor:"pointer",color:"#dc2626"}}>🗑</button>
+                      style={{padding:"7px 9px",background:"#fff5f5",border:"1px solid #fca5a5",
+                        borderRadius:7,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                        fontSize:12,cursor:"pointer",color:"#dc2626"}}>🗑</button>
                   </div>
                 </div>
               );
@@ -1130,11 +1153,17 @@ function AdminScreen({ user, onLogout }) {
 function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
   filtCat, setFiltCat, onRegistrarPago, añoActual }) {
   const [selJug,    setSelJug]   = useState(null);
-  const [verHistorial, setVerHistorial] = useState(null); // jugador para ver historial
-  const [selMes,    setSelMes]   = useState(null);
+  const [verHistorial, setVerHistorial] = useState(null);
+  const [selMeses,  setSelMeses] = useState([]); // múltiples meses
   const [metodo,    setMetodo]   = useState(null);
   const [saving,    setSaving]   = useState(false);
   const [done,      setDone]     = useState(false);
+
+  const toggleMes = (mes) => setSelMeses(prev =>
+    prev.includes(mes) ? prev.filter(m=>m!==mes) : [...prev, mes]
+  );
+  const totalSeleccionado = selJug
+    ? selMeses.reduce((acc,mes)=>acc+cuotaMes(selJug,mes),0) : 0;
 
   const cuotaMes = (jug, mes) => {
     const planMes = planPagos.find(p=>p.mes===mes);
@@ -1159,11 +1188,13 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
   };
 
   const confirmar = async () => {
-    if (!selJug||!selMes||!metodo) return;
+    if (!selJug||selMeses.length===0||!metodo) return;
     setSaving(true);
-    await onRegistrarPago(selJug.id, selMes, cuotaMes(selJug,selMes), metodo);
+    for (const mes of selMeses) {
+      await onRegistrarPago(selJug.id, mes, cuotaMes(selJug,mes), metodo);
+    }
     setSaving(false); setDone(true);
-    setTimeout(()=>{setDone(false);setSelJug(null);setSelMes(null);setMetodo(null);},2000);
+    setTimeout(()=>{setDone(false);setSelJug(null);setSelMeses([]);setMetodo(null);},2500);
   };
 
   // Ordenar jugadores: por categoría luego alfabético
@@ -1280,7 +1311,7 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
                   return monto>0&&!pagoJugMes(verHistorial.id,mes)&&mes<=mesActual;
                 });
                 return deudaMeses.length>0 ? (
-                  <button onClick={()=>{setSelJug(verHistorial);setVerHistorial(null);setSelMes(null);setMetodo(null);}}
+                  <button onClick={()=>{setSelJug(verHistorial);setVerHistorial(null);setSelMeses([]);setMetodo(null);}}
                     style={{flex:1,padding:"11px",background:`linear-gradient(135deg,${C.green},#15803d)`,
                       color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
                       fontWeight:900,fontSize:15,textTransform:"uppercase",cursor:"pointer"}}>
@@ -1318,8 +1349,12 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
               </div>
             ):(
               <>
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
-                  color:C.navy,textTransform:"uppercase",marginBottom:8}}>Seleccioná el mes</div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
+                    color:C.navy,textTransform:"uppercase"}}>Seleccioná los meses a pagar</div>
+                  {selMeses.length>0&&<div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+                    fontSize:14,color:C.green}}>Total: {fmt(totalSeleccionado)}</div>}
+                </div>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:16}}>
                   {MESES.map((_,i)=>{
                     const mes=i+1;
@@ -1327,12 +1362,15 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
                     const pago=pagoJugMes(selJug.id,mes);
                     if(monto===0||pago) return null;
                     if(mes>mesActual+1) return null;
+                    const sel=selMeses.includes(mes);
                     return(
-                      <button key={mes} onClick={()=>setSelMes(mes)}
-                        style={{padding:"8px 4px",borderRadius:8,border:`2px solid ${selMes===mes?C.navy:C.gray}`,
-                          background:selMes===mes?C.navy:C.white,cursor:"pointer",
+                      <button key={mes} onClick={()=>toggleMes(mes)}
+                        style={{padding:"10px 4px",borderRadius:8,
+                          border:`2px solid ${sel?C.green:C.gray}`,
+                          background:sel?"#dcfce7":C.white,cursor:"pointer",
                           fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
-                          color:selMes===mes?C.white:C.navy}}>
+                          color:sel?"#16a34a":C.navy,position:"relative"}}>
+                        {sel&&<span style={{position:"absolute",top:3,right:5,fontSize:10}}>✓</span>}
                         <div>{MESES[i].slice(0,3)}</div>
                         <div style={{fontWeight:900,fontSize:13}}>{fmt(monto)}</div>
                       </button>
@@ -1358,11 +1396,14 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
                     style={{flex:1,padding:"10px",background:"transparent",color:C.navy,
                       border:`2px solid ${C.navy}`,borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
                       fontWeight:700,fontSize:13,textTransform:"uppercase"}}>Cancelar</button>
-                  <button onClick={confirmar} disabled={!selMes||!metodo||saving}
-                    style={{flex:2,padding:"10px",background:selMes&&metodo?`linear-gradient(135deg,${C.green},#15803d)`:"#e2e2da",
-                      color:selMes&&metodo?C.white:C.grayMid,border:"none",borderRadius:10,
+                  <button onClick={confirmar} disabled={selMeses.length===0||!metodo||saving}
+                    style={{flex:2,padding:"10px",
+                      background:selMeses.length>0&&metodo?`linear-gradient(135deg,${C.green},#15803d)`:"#e2e2da",
+                      color:selMeses.length>0&&metodo?C.white:C.grayMid,border:"none",borderRadius:10,
                       fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,
-                      textTransform:"uppercase"}}>{saving?"...":"✅ Confirmar"}</button>
+                      textTransform:"uppercase"}}>
+                    {saving?"⏳ Guardando...":`✅ Confirmar ${selMeses.length>1?"("+selMeses.length+" meses)":""}`}
+                  </button>
                 </div>
               </>
             )}
