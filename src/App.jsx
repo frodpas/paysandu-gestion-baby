@@ -1005,13 +1005,14 @@ function AdminScreen({ user, onLogout }) {
               <button onClick={()=>{
                   const base=window.location.origin;
                   const link=`${base}?form=jugador&org=paysandu`;
-                  navigator.clipboard?.writeText(link).then(()=>{
-                    alert("✅ Enlace copiado. Podés pegarlo en WhatsApp o email para que completen el formulario.");
+                  const msg = "Acceso a Alta de Jugadores - Paysandú FC - Baby Fútbol\n" + link;
+                  navigator.clipboard?.writeText(msg).then(()=>{
+                    alert("✅ Enlace de alta copiado. Incluye el título y el link. Pegalo en WhatsApp o email.");
                   });
                 }}
                 style={{background:C.offWhite,color:C.navy,border:`2px solid ${C.navy}`,borderRadius:10,
                   padding:"11px 18px",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
-                  fontSize:15,textTransform:"uppercase"}}>🔗 Copiar link formulario</button>
+                  fontSize:15,textTransform:"uppercase"}}>📋 Crear acceso alta jugadores</button>
               <div style={{display:"flex",gap:6,flexWrap:"wrap",marginLeft:"auto"}}>
                 {["todos",...categorias.map(c=>c.id)].map(cid=>(
                   <button key={cid} onClick={()=>setFiltCat(cid)}
@@ -1028,9 +1029,9 @@ function AdminScreen({ user, onLogout }) {
               {jugadoresFilt.length} jugador{jugadoresFilt.length!==1?"es":""}
             </div>
             {/* Encabezado tabla */}
-            <div style={{display:"grid",gridTemplateColumns:"minmax(180px,1fr) 100px 70px 80px 110px 120px 180px",gap:0,
+            <div style={{display:"grid",gridTemplateColumns:"minmax(200px,1fr) 100px 70px 80px 110px 220px",gap:0,
               padding:"9px 14px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
-              {["Nombre","Nacimiento","Cat.","Código","Estado","Link / Pago","Acciones"].map((h,i)=>(
+              {["Nombre","Nacimiento","Cat.","Código","Estado","Acciones"].map((h,i)=>(
                 <div key={i} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
                   fontSize:12,color:C.white,textTransform:"uppercase",
                   textAlign:i>=2?"center":"left",padding:"0 4px"}}>{h}</div>
@@ -1054,7 +1055,7 @@ function AdminScreen({ user, onLogout }) {
                   : {icon:"🔴",label:`${deudaMeses.length} meses`,color:"#dc2626",bg:"#fee2e2"};
               return(
                 <div key={j.id} style={{display:"grid",
-                  gridTemplateColumns:"minmax(180px,1fr) 100px 70px 80px 110px 120px 180px",gap:0,
+                  gridTemplateColumns:"minmax(200px,1fr) 100px 70px 80px 110px 220px",gap:0,
                   alignItems:"center",padding:"8px 14px",
                   background:idx%2===0?C.white:"#f5f5f0",
                   borderLeft:`1px solid ${C.gray}`,borderRight:`1px solid ${C.gray}`,
@@ -1096,34 +1097,43 @@ function AdminScreen({ user, onLogout }) {
                       fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:12,
                       whiteSpace:"nowrap"}}>{est.icon} {est.label}</span>
                   </div>
-                  {/* Link / Pago */}
-                  <div style={{display:"flex",gap:4,justifyContent:"center",flexDirection:"column",alignItems:"center"}}>
+                  {/* Acciones: todos iguales, cuadrados, en línea */}
+                  <div style={{display:"flex",gap:5,justifyContent:"center",alignItems:"center"}}>
+                    {/* Link pago */}
                     <button onClick={()=>{
-                        const msg = j.nombre+" (Cat."+j.categoria_id+") - Link de pago: "+linkAcceso;
+                        const msg=j.nombre+" (Cat."+j.categoria_id+") - Link de pago: "+linkAcceso;
                         navigator.clipboard?.writeText(msg).then(()=>{
-                          alert("✅ Link de pago copiado para "+j.nombre+" (Cat."+j.categoria_id+"). Incluye nombre y categoría.");
+                          alert("✅ Link de pago copiado para "+j.nombre+" (Cat."+j.categoria_id+")");
                         });
                       }}
-                      style={{width:"100%",padding:"5px 8px",background:`linear-gradient(135deg,${C.green},#15803d)`,
-                        color:C.white,border:"none",borderRadius:6,fontFamily:"'Barlow Condensed',sans-serif",
-                        fontWeight:700,fontSize:11,cursor:"pointer",whiteSpace:"nowrap"}}>💳 Link pago</button>
+                      title="Copiar link de pago"
+                      style={{width:34,height:34,padding:0,background:`linear-gradient(135deg,${C.green},#15803d)`,
+                        color:C.white,border:"none",borderRadius:8,fontSize:15,cursor:"pointer",
+                        display:"flex",alignItems:"center",justifyContent:"center"}}>🔗</button>
+                    {/* Pagos registrados */}
                     <button onClick={()=>setJugPagosVer(j)}
-                      style={{width:"100%",padding:"5px 8px",background:C.offWhite,
-                        border:`1px solid ${C.navy}`,borderRadius:6,fontFamily:"'Barlow Condensed',sans-serif",
-                        fontWeight:700,fontSize:11,cursor:"pointer",color:C.navy,whiteSpace:"nowrap"}}>💳 Pagos reg.</button>
-                  </div>
-                  {/* Acciones */}
-                  <div style={{display:"flex",gap:4,justifyContent:"center"}}>
+                      title="Ver pagos registrados"
+                      style={{width:34,height:34,padding:0,background:C.offWhite,
+                        border:`1px solid ${C.navy}`,borderRadius:8,fontSize:15,cursor:"pointer",
+                        display:"flex",alignItems:"center",justifyContent:"center"}}>💳</button>
+                    {/* Ficha */}
                     <button onClick={()=>{setSelJugador(j);setModal("fichaJug");}}
-                      style={{padding:"6px 7px",background:C.offWhite,border:`1px solid ${C.gray}`,
-                        borderRadius:6,fontSize:12,cursor:"pointer",color:C.navy}}>👤</button>
+                      title="Ver ficha"
+                      style={{width:34,height:34,padding:0,background:C.offWhite,border:`1px solid ${C.gray}`,
+                        borderRadius:8,fontSize:15,cursor:"pointer",
+                        display:"flex",alignItems:"center",justifyContent:"center"}}>👤</button>
+                    {/* Editar */}
                     <button onClick={()=>{setSelJugador(j);setModal("editJug");}}
-                      style={{flex:1,padding:"6px 8px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
-                        color:C.white,border:"none",borderRadius:6,fontFamily:"'Barlow Condensed',sans-serif",
-                        fontWeight:700,fontSize:11,cursor:"pointer",textTransform:"uppercase"}}>✏</button>
+                      title="Editar"
+                      style={{width:34,height:34,padding:0,background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                        color:C.white,border:"none",borderRadius:8,fontSize:15,cursor:"pointer",
+                        display:"flex",alignItems:"center",justifyContent:"center"}}>✏️</button>
+                    {/* Eliminar */}
                     <button onClick={()=>deleteJugador(j.id)}
-                      style={{padding:"6px 7px",background:"#fff5f5",border:"1px solid #fca5a5",
-                        borderRadius:6,fontSize:11,cursor:"pointer",color:"#dc2626"}}>🗑</button>
+                      title="Eliminar"
+                      style={{width:34,height:34,padding:0,background:"#fff5f5",border:"1px solid #fca5a5",
+                        borderRadius:8,fontSize:15,cursor:"pointer",color:"#dc2626",
+                        display:"flex",alignItems:"center",justifyContent:"center"}}>🗑</button>
                   </div>
                 </div>
               );
@@ -1412,6 +1422,8 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
   const [selJug,    setSelJug]   = useState(null);
   const [verHistorial, setVerHistorial] = useState(null);
   const [selMeses,  setSelMeses] = useState([]); // múltiples meses
+  const [verReporte, setVerReporte] = useState(false);
+  const [reporteCat, setReporteCat] = useState("todos");
   const [metodo,    setMetodo]   = useState(null);
   const [saving,    setSaving]   = useState(false);
   const [done,      setDone]     = useState(false);
@@ -1465,9 +1477,10 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
 
   return (
     <div style={{maxWidth:900}}>
-      {/* Filtro categoría */}
-      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
-        {["todos",...categorias.map(c=>c.id)].map(cid=>(
+      {/* Barra superior: filtro + reporte */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10,marginBottom:14}}>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+          {["todos",...categorias.map(c=>c.id)].map(cid=>(
           <button key={cid} onClick={()=>setFiltCat(cid)}
             style={{background:filtCat===cid?C.navy:C.white,color:filtCat===cid?C.white:C.navy,
               border:`2px solid ${filtCat===cid?C.navy:C.gray}`,borderRadius:20,padding:"6px 14px",
@@ -1476,10 +1489,17 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
             {cid==="todos"?"Todos":cid}
           </button>
         ))}
+        </div>
+        <button onClick={()=>setVerReporte(true)}
+          style={{padding:"9px 18px",background:`linear-gradient(135deg,${C.amber},#b45309)`,
+            color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+            fontWeight:800,fontSize:14,textTransform:"uppercase",cursor:"pointer",whiteSpace:"nowrap"}}>
+          📊 Generar reporte
+        </button>
       </div>
 
       {/* Encabezado lista */}
-      <div style={{display:"grid",gridTemplateColumns:"50px 1fr 100px 130px 160px",gap:8,
+      <div style={{display:"grid",gridTemplateColumns:"50px 1fr 100px 130px 200px",gap:8,
         padding:"10px 16px",background:C.navy,borderRadius:"10px 10px 0 0",alignItems:"center"}}>
         {["","Nombre","Cat.","Estado","Acciones"].map((h,i)=>(
           <div key={i} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
@@ -1493,7 +1513,7 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
           return monto>0&&!pagoJugMes(j.id,mes)&&mes<=mesActual;
         });
         return(
-          <div key={j.id} style={{display:"grid",gridTemplateColumns:"50px 1fr 100px 130px 160px",gap:8,
+          <div key={j.id} style={{display:"grid",gridTemplateColumns:"50px 1fr 100px 130px 200px",gap:8,
             alignItems:"center",padding:"12px 16px",
             background:idx%2===0?C.white:"#f8f8f5",border:`1px solid ${C.gray}`,
             borderRadius:idx===jugFiltrados.length-1?"0 0 10px 10px":"0",borderTop:"none"}}>
@@ -1516,13 +1536,24 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
               fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
               color:est.color,whiteSpace:"nowrap"}}>{est.label}</div>
             {/* Acciones */}
-            <div style={{display:"flex",gap:6}}>
+            <div style={{display:"flex",gap:6,alignItems:"center"}}>
               <button onClick={()=>setVerHistorial(j)}
-                style={{flex:1,padding:"9px 12px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                style={{flex:1,padding:"9px 10px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
                   color:C.white,border:"none",borderRadius:8,fontFamily:"'Barlow Condensed',sans-serif",
                   fontWeight:800,fontSize:13,cursor:"pointer",textTransform:"uppercase"}}>
-                💳 Pagos registrados
+                💳 Pagos
               </button>
+              <button onClick={()=>{
+                  const link=window.location.origin+"?id="+j.id;
+                  const msg=j.nombre+" (Cat."+j.categoria_id+") - Link de pago: "+link;
+                  navigator.clipboard?.writeText(msg).then(()=>{
+                    alert("✅ Link de pago copiado para "+j.nombre);
+                  });
+                }}
+                title="Enviar link de pago"
+                style={{width:38,height:38,padding:0,background:`linear-gradient(135deg,${C.green},#15803d)`,
+                  color:C.white,border:"none",borderRadius:8,fontSize:17,cursor:"pointer",
+                  display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🔗</button>
             </div>
           </div>
         );
@@ -1682,6 +1713,169 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
           </div>
         </Modal>
       )}
+
+      {/* ── MODAL REPORTE ── */}
+      {verReporte&&(
+        <Modal onClose={()=>setVerReporte(false)} maxWidth={980}>
+          <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"16px 24px",
+            display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10}}>
+            <div>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,
+                color:C.white,textTransform:"uppercase"}}>📊 Reporte de pagos {añoActual}</div>
+              <div style={{color:C.lilac,fontSize:12,marginTop:2}}>
+                Verde = pagado · Rojo = pendiente · Gris = sin cuota
+              </div>
+            </div>
+            <div style={{display:"flex",gap:8,alignItems:"center"}}>
+              <select value={reporteCat} onChange={e=>setReporteCat(e.target.value)}
+                style={{padding:"8px 12px",border:`1px solid rgba(255,255,255,.3)`,borderRadius:8,
+                  background:"rgba(255,255,255,.1)",color:C.white,fontSize:13,cursor:"pointer",
+                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}>
+                <option value="todos" style={{color:C.navy}}>Todas las categorías</option>
+                {categorias.map(c=><option key={c.id} value={c.id} style={{color:C.navy}}>{c.nombre}</option>)}
+              </select>
+              <button onClick={()=>{
+                  // Imprimir/exportar
+                  const el = document.getElementById("reporte-tabla");
+                  if(!el) return;
+                  const w = window.open("","_blank");
+                  w.document.write("<!DOCTYPE html><html><head><meta charset='utf-8'><title>Reporte Pagos</title><style>body{font-family:Arial,sans-serif;font-size:11px;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ccc;padding:4px 6px;text-align:center;}th{background:#1e2a6e;color:white;}.verde{background:#dcfce7;color:#16a34a;font-weight:700;}.rojo{background:#fee2e2;color:#dc2626;font-weight:700;}.gris{background:#f3f4f6;color:#9ca3af;}.nombre{text-align:left;font-weight:700;text-transform:uppercase;}</style></head><body>"+el.outerHTML+"<script>window.onload=function(){window.print();}<\/script></body></html>");
+                  w.document.close();
+                }}
+                style={{padding:"8px 14px",background:C.gold,color:C.navyDark,border:"none",borderRadius:8,
+                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,cursor:"pointer",
+                  textTransform:"uppercase"}}>🖨 Imprimir</button>
+            </div>
+          </div>
+          <div style={{padding:"16px",overflowX:"auto",maxHeight:"75dvh",overflowY:"auto"}}>
+            {(()=>{
+              const jugRep = reporteCat==="todos"
+                ? [...jugadores].sort((a,b)=>{
+                    if(a.categoria_id<b.categoria_id) return -1;
+                    if(a.categoria_id>b.categoria_id) return 1;
+                    return a.nombre.localeCompare(b.nombre);
+                  })
+                : [...jugadores].filter(j=>j.categoria_id===reporteCat)
+                    .sort((a,b)=>a.nombre.localeCompare(b.nombre));
+
+              // Meses que tienen cuota definida (algún jugador tiene monto > 0)
+              const mesesActivos = MESES.map((_,i)=>i+1).filter(mes=>{
+                const plan=planPagos.find(p=>p.mes===mes);
+                return plan&&plan.monto>0;
+              });
+
+              return(
+                <table id="reporte-tabla" style={{borderCollapse:"collapse",width:"100%",fontSize:12}}>
+                  <thead>
+                    <tr>
+                      <th style={{background:C.navy,color:C.white,padding:"8px 10px",
+                        textAlign:"left",fontFamily:"'Barlow Condensed',sans-serif",
+                        fontSize:12,textTransform:"uppercase",position:"sticky",left:0,zIndex:1,
+                        borderRight:`2px solid ${C.navyLight}`}}>Cat.</th>
+                      <th style={{background:C.navy,color:C.white,padding:"8px 10px",
+                        textAlign:"left",fontFamily:"'Barlow Condensed',sans-serif",
+                        fontSize:12,textTransform:"uppercase",minWidth:160,
+                        borderRight:`2px solid ${C.navyLight}`}}>Nombre</th>
+                      <th style={{background:C.navy,color:C.white,padding:"8px 10px",
+                        fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,textTransform:"uppercase",
+                        borderRight:`2px solid ${C.navyLight}`}}>Tipo</th>
+                      <th style={{background:"#b45309",color:C.white,padding:"8px 10px",
+                        fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,textTransform:"uppercase",
+                        borderRight:`2px solid ${C.navyLight}`}}>Saldo pend.</th>
+                      {mesesActivos.map(mes=>(
+                        <th key={mes} style={{background:C.navy,color:C.white,padding:"8px 8px",
+                          fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,textTransform:"uppercase",
+                          minWidth:52,borderRight:`1px solid ${C.navyLight}`}}>
+                          {MESES[mes-1].slice(0,3)}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {jugRep.map((j,idx)=>{
+                      const tipo=(tiposCuota||TIPOS_CUOTA_DEFAULT).find(t=>t.id===j.tipo_cuota)||(tiposCuota||TIPOS_CUOTA_DEFAULT)[0];
+                      const mesActual=new Date().getMonth()+1;
+                      // Saldo pendiente = meses pasados sin pagar
+                      const saldo=mesesActivos.filter(mes=>{
+                        if(mes>mesActual) return false;
+                        const plan=planPagos.find(p=>p.mes===mes);
+                        if(!plan||plan.monto===0) return false;
+                        const monto=Math.round(plan.monto*tipo.porcentaje/100);
+                        return monto>0&&!pagos.find(p=>p.jugador_id===j.id&&p.mes===mes);
+                      }).reduce((acc,mes)=>{
+                        const plan=planPagos.find(p=>p.mes===mes);
+                        const monto=Math.round(plan.monto*tipo.porcentaje/100);
+                        return acc+monto;
+                      },0);
+
+                      return(
+                        <tr key={j.id} style={{background:idx%2===0?C.white:"#f8f8f5"}}>
+                          <td style={{padding:"7px 10px",fontFamily:"'Barlow Condensed',sans-serif",
+                            fontWeight:800,fontSize:14,color:C.navy,textAlign:"center",
+                            borderRight:`2px solid ${C.gray}`,borderBottom:`1px solid ${C.gray}`}}>
+                            {j.categoria_id}
+                          </td>
+                          <td style={{padding:"7px 10px",fontFamily:"'Barlow Condensed',sans-serif",
+                            fontWeight:700,fontSize:13,color:C.navy,textTransform:"uppercase",
+                            borderRight:`2px solid ${C.gray}`,borderBottom:`1px solid ${C.gray}`}}>
+                            {j.foto_url&&<img src={j.foto_url} style={{width:22,height:22,borderRadius:"50%",
+                              objectFit:"cover",verticalAlign:"middle",marginRight:6}}
+                              onError={e=>e.target.style.display="none"}/>}
+                            {j.nombre}
+                          </td>
+                          <td style={{padding:"7px 8px",textAlign:"center",fontSize:11,color:C.grayMid,
+                            borderRight:`2px solid ${C.gray}`,borderBottom:`1px solid ${C.gray}`}}>
+                            {tipo.nombre.replace("Cuota ","")}
+                          </td>
+                          <td style={{padding:"7px 8px",textAlign:"center",
+                            fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,
+                            color:saldo>0?"#dc2626":"#16a34a",
+                            background:saldo>0?"#fee2e2":"#dcfce7",
+                            borderRight:`2px solid ${C.gray}`,borderBottom:`1px solid ${C.gray}`}}>
+                            {saldo>0?("$"+saldo.toLocaleString("es-UY")):"✓"}
+                          </td>
+                          {mesesActivos.map(mes=>{
+                            const plan=planPagos.find(p=>p.mes===mes);
+                            const monto=plan?Math.round(plan.monto*tipo.porcentaje/100):0;
+                            const pago=pagos.find(p=>p.jugador_id===j.id&&p.mes===mes);
+                            const futuro=mes>mesActual;
+                            if(monto===0) return(
+                              <td key={mes} style={{background:"#f3f4f6",borderRight:`1px solid ${C.gray}`,
+                                borderBottom:`1px solid ${C.gray}`}}></td>
+                            );
+                            if(pago) return(
+                              <td key={mes} style={{background:"#dcfce7",color:"#16a34a",
+                                fontWeight:700,fontSize:11,textAlign:"center",padding:"4px",
+                                borderRight:`1px solid ${C.gray}`,borderBottom:`1px solid ${C.gray}`}}>
+                                ✓
+                              </td>
+                            );
+                            if(futuro) return(
+                              <td key={mes} style={{background:"#fef9c3",color:"#ca8a04",
+                                fontWeight:600,fontSize:10,textAlign:"center",padding:"4px",
+                                borderRight:`1px solid ${C.gray}`,borderBottom:`1px solid ${C.gray}`}}>
+                                —
+                              </td>
+                            );
+                            return(
+                              <td key={mes} style={{background:"#fee2e2",color:"#dc2626",
+                                fontWeight:700,fontSize:11,textAlign:"center",padding:"4px",
+                                borderRight:`1px solid ${C.gray}`,borderBottom:`1px solid ${C.gray}`}}>
+                                ✗
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              );
+            })()}
+          </div>
+        </Modal>
+      )}
+
     </div>
   );
 }
@@ -2094,13 +2288,14 @@ function DelegadoScreen({ user, onLogout }) {
               <button onClick={()=>{
                   const base=window.location.origin;
                   const link=`${base}?form=jugador&org=paysandu`;
-                  navigator.clipboard?.writeText(link).then(()=>{
-                    alert("✅ Enlace copiado. Podés pegarlo en WhatsApp o email para que completen el formulario.");
+                  const msg = "Acceso a Alta de Jugadores - Paysandú FC - Baby Fútbol\n" + link;
+                  navigator.clipboard?.writeText(msg).then(()=>{
+                    alert("✅ Enlace de alta copiado. Incluye el título y el link. Pegalo en WhatsApp o email.");
                   });
                 }}
                 style={{background:C.offWhite,color:C.navy,border:`2px solid ${C.navy}`,borderRadius:8,
                   padding:"8px 14px",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
-                  fontSize:13,textTransform:"uppercase"}}>🔗 Copiar link formulario</button>
+                  fontSize:13,textTransform:"uppercase"}}>📋 Crear acceso alta jugadores</button>
               <div style={{display:"flex",gap:6,flexWrap:"wrap",marginLeft:"auto"}}>
                 {["todos",...categorias.map(c=>c.id)].map(cid=>(
                   <button key={cid} onClick={()=>setFiltCat(cid)}
