@@ -351,10 +351,6 @@ function PublicoView({ user, onLogout }) {
   const [selectedMeses, setSelectedMeses] = useState([]); // multi-selección
   const [paying, setPaying] = useState(false);
 
-  const toggleMesPub = (mes) => setSelectedMeses(prev =>
-    prev.includes(mes) ? prev.filter(m=>m!==mes) : [...prev, mes]
-  );
-  const totalPub = selectedMeses.reduce((acc,mes)=>acc+cuotaMes(mes),0);
   const añoActual = new Date().getFullYear();
 
   useEffect(()=>{
@@ -377,6 +373,11 @@ function PublicoView({ user, onLogout }) {
     if (!planMes || planMes.monto===0) return 0;
     return Math.round(planMes.monto * tipoCuota.porcentaje / 100);
   };
+
+  const toggleMesPub = (mes) => setSelectedMeses(prev =>
+    prev.includes(mes) ? prev.filter(m=>m!==mes) : [...prev, mes]
+  );
+  const totalPub = selectedMeses.reduce((acc,mes)=>acc+cuotaMes(mes),0);
 
   const pagoMes = (mes) => pagos.find(p=>p.mes===mes);
 
