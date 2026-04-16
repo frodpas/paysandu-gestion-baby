@@ -39,7 +39,7 @@ const fdate = () => new Date().toLocaleDateString("es-UY");
 async function sbFetch(path, method="GET", body=null) {
   try {
     // Limpiar undefined del body (Supabase los rechaza)
-    const cleanBody = body ? JSON.parse(JSON.stringify(body, (k,v)=>v===undefined?null:v)) : null;
+    const cleanBody = body ? JSON.parse(JSON.stringify(body, (_key,_val)=>_val===undefined?null:_val)) : null;
     const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
       method,
       headers: {
