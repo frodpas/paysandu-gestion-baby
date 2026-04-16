@@ -870,14 +870,32 @@ function AdminScreen({ user, onLogout }) {
   const pagoJugMes = (jugId, mes) => pagos.find(p=>p.jugador_id===jugId&&p.mes===mes);
 
   const saveJugador = async (data) => {
+    // Si foto es base64 muy grande (>200KB), no la guardamos en este campo
+    const fotoOk = data.foto_url && data.foto_url.length < 200000 ? data.foto_url : (data.foto_url?.startsWith("http") ? data.foto_url : "");
+    const payload = {
+      nombre: data.nombre||"",
+      celular: data.celular||"",
+      mail: data.mail||"",
+      ci: data.ci||"",
+      categoria_id: data.categoria_id||"",
+      fecha_nacimiento: data.fecha_nacimiento||"",
+      numero_camiseta: data.numero_camiseta||"",
+      direccion: data.direccion||"",
+      foto_url: fotoOk,
+      tipo_cuota: data.tipo_cuota||"base",
+      org_id: "paysandu",
+      estado: "activo",
+      pendiente_validacion: false,
+    };
     if (selJugador) {
-      await sbFetch(`baby_jugadores?id=eq.${selJugador.id}`, "PATCH", data);
+      const res = await sbFetch(`baby_jugadores?id=eq.${selJugador.id}`, "PATCH", payload);
+      if (!res) { alert("Error al guardar. Revisá la consola del navegador (F12)."); return; }
     } else {
       const newId = uid();
-      await sbFetch("baby_jugadores", "POST", {
-        ...data, id:newId, org_id:"paysandu", estado:"activo",
-        pendiente_validacion:false, created_at:new Date().toISOString(),
+      const res = await sbFetch("baby_jugadores", "POST", {
+        ...payload, id:newId, created_at:new Date().toISOString(),
       });
+      if (!res) { alert("Error al crear jugador. Revisá que las tablas de Supabase estén correctas y sin RLS."); return; }
     }
     setModal(null); setSelJugador(null);
     load();
@@ -891,11 +909,35 @@ function AdminScreen({ user, onLogout }) {
 
   const validarPendiente = async (pend) => {
     const datos = typeof pend.datos_json==="string" ? JSON.parse(pend.datos_json) : pend.datos_json;
-    // Separar foto_url (puede ser base64 grande) del resto
-    const { foto_url, tipo_cuota, ...resto } = datos;
+
+    // Si es formulario de delegado
+    if (datos._tipo === "delegado") {
+      const { _tipo, ...ddata } = datos;
+      const res = await sbFetch("baby_delegados", "POST", {
+        id: uid(), org_id: "paysandu", activo: true,
+        nombre: ddata.nombre||"", celular: ddata.celular||"",
+        mail: ddata.mail||"", pin: ddata.pin||"0000",
+        categorias: ddata.categorias||[],
+      });
+      if (!res) { alert("Error al crear delegado. Revisá la consola."); return; }
+      await sbFetch(`baby_formularios_pendientes?id=eq.${pend.id}`, "DELETE");
+      load();
+      return;
+    }
+
+    // Jugador normal
+    const { foto_url, tipo_cuota, _tipo:_t, ...resto } = datos;
+    const fotoOk = foto_url && foto_url.length < 200000 ? foto_url : (foto_url?.startsWith("http") ? foto_url : "");
     const jugador = {
-      ...resto,
-      foto_url: foto_url || "",
+      nombre: resto.nombre||"",
+      celular: resto.celular||"",
+      mail: resto.mail||"",
+      ci: resto.ci||"",
+      categoria_id: resto.categoria_id||"",
+      fecha_nacimiento: resto.fecha_nacimiento||"",
+      numero_camiseta: resto.numero_camiseta||"",
+      direccion: resto.direccion||"",
+      foto_url: fotoOk,
       tipo_cuota: tipo_cuota || "base",
       id: uid(),
       org_id: "paysandu",
@@ -908,11 +950,13 @@ function AdminScreen({ user, onLogout }) {
       await sbFetch(`baby_formularios_pendientes?id=eq.${pend.id}`, "DELETE");
       load();
     } else {
-      // Si falla por foto grande, intentar sin foto
+      alert("Error al crear jugador. Si tiene foto grande, intenta de nuevo sin foto.");
       const sinFoto = {...jugador, foto_url:""};
-      await sbFetch("baby_jugadores", "POST", sinFoto);
-      await sbFetch(`baby_formularios_pendientes?id=eq.${pend.id}`, "DELETE");
-      load();
+      const res2 = await sbFetch("baby_jugadores", "POST", sinFoto);
+      if (res2) {
+        await sbFetch(`baby_formularios_pendientes?id=eq.${pend.id}`, "DELETE");
+        load();
+      }
     }
   };
 
@@ -1201,10 +1245,23 @@ function AdminScreen({ user, onLogout }) {
         {/* ── TAB DELEGADOS ── */}
         {!loading&&tab==="delegados"&&(
           <div style={{maxWidth:"100%"}}>
-            <button onClick={()=>setModal("newDel")}
-              style={{background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,color:C.white,
-                border:"none",borderRadius:10,padding:"11px 22px",fontFamily:"'Barlow Condensed',sans-serif",
-                fontWeight:800,fontSize:15,textTransform:"uppercase",marginBottom:16}}>➕ Nuevo delegado</button>
+            <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap"}}>
+              <button onClick={()=>setModal("newDel")}
+                style={{background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,color:C.white,
+                  border:"none",borderRadius:10,padding:"11px 22px",fontFamily:"'Barlow Condensed',sans-serif",
+                  fontWeight:800,fontSize:15,textTransform:"uppercase"}}>➕ Nuevo delegado</button>
+              <button onClick={()=>{
+                  const base=window.location.origin;
+                  const link=`${base}?form=delegado&org=paysandu`;
+                  const msg="Registro de Delegado - Paysandú FC - Baby Fútbol\n"+link;
+                  navigator.clipboard?.writeText(msg).then(()=>{
+                    alert("✅ Link de registro de delegado copiado. Pegalo en WhatsApp o email.");
+                  });
+                }}
+                style={{background:C.offWhite,color:C.navy,border:`2px solid ${C.navy}`,borderRadius:10,
+                  padding:"11px 18px",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
+                  fontSize:15,textTransform:"uppercase"}}>📋 Link registro delegado</button>
+            </div>
             {/* Encabezado */}
             <div style={{display:"grid",gridTemplateColumns:"1.5fr 140px 90px 140px 200px",gap:0,
               padding:"11px 16px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
@@ -2476,11 +2533,19 @@ export default function App() {
     }
   },[directId]);
 
-  if (formType) {
+  if (formType === "jugador") {
     return (
       <>
         <GlobalStyle/>
         <FormularioPublico tipo={formType} org={params.get("org")||"paysandu"}/>
+      </>
+    );
+  }
+  if (formType === "delegado") {
+    return (
+      <>
+        <GlobalStyle/>
+        <FormularioDelegado org={params.get("org")||"paysandu"}/>
       </>
     );
   }
@@ -2515,6 +2580,117 @@ export default function App() {
       {currentUser.role==="delegado" && <DelegadoScreen user={currentUser} onLogout={()=>setCurrentUser(null)}/>}
       {currentUser.role==="publico"  && <PublicoView    user={currentUser} onLogout={()=>setCurrentUser(null)}/>}
     </>
+  );
+}
+
+
+/* ══ FORMULARIO DELEGADO (via link externo) ══════════════════════════ */
+function FormularioDelegado({ org }) {
+  const [f, setF] = useState({nombre:"",celular:"",mail:"",pin:"",categorias:[]});
+  const [cats, setCats] = useState([]);
+  const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(()=>{
+    sbFetch("baby_categorias?select=*&order=nombre.asc").then(d=>setCats(d||[]));
+  },[]);
+
+  const set = (k,v) => setF(p=>({...p,[k]:v}));
+  const toggleCat = (id) => setF(p=>({...p,
+    categorias: p.categorias.includes(id) ? p.categorias.filter(c=>c!==id) : [...p.categorias,id]
+  }));
+  const valid = f.nombre && f.pin.length===4;
+
+  const enviar = async () => {
+    if (!valid) return;
+    setLoading(true);
+    // Guardar directamente en baby_delegados_pendientes o en baby_delegados inactivo
+    await sbFetch("baby_formularios_pendientes","POST",{
+      id:uid(), org_id:org,
+      datos_json: JSON.stringify({...f, _tipo:"delegado"}),
+      created_at: new Date().toISOString(),
+    });
+    setSent(true);
+    setLoading(false);
+  };
+
+  if (sent) return (
+    <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${C.navyDark},${C.navy})`,
+      display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div style={{background:C.white,borderRadius:24,padding:"40px 28px",maxWidth:380,width:"100%",
+        textAlign:"center",boxShadow:"0 32px 80px rgba(20,28,78,.5)"}}>
+        <ClubLogo size={56}/>
+        <div style={{fontSize:52,margin:"16px 0"}}>✅</div>
+        <h2 style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:24,
+          color:C.navy,textTransform:"uppercase",marginBottom:10}}>¡Solicitud enviada!</h2>
+        <p style={{color:C.grayMid,fontSize:14,lineHeight:1.6}}>
+          Tu solicitud de registro fue recibida. El administrador la revisará y te confirmará el acceso.
+        </p>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${C.navyDark},${C.navy})`,padding:20,paddingBottom:40}}>
+      <div style={{maxWidth:480,margin:"0 auto"}}>
+        <div style={{textAlign:"center",marginBottom:24}}>
+          <ClubLogo size={70}/>
+          <h1 style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:28,fontWeight:900,
+            color:C.white,textTransform:"uppercase",marginTop:14,lineHeight:1.1}}>Paysandú FC</h1>
+          <div style={{color:C.gold,fontFamily:"'Barlow Condensed',sans-serif",fontSize:20,fontWeight:700,
+            textTransform:"uppercase",letterSpacing:".08em",marginTop:4}}>Baby Fútbol</div>
+          <div style={{color:"rgba(255,255,255,.7)",fontSize:14,marginTop:6,
+            fontFamily:"'Barlow Condensed',sans-serif",fontWeight:600}}>
+            Registro de Delegado
+          </div>
+        </div>
+        <div style={{background:C.white,borderRadius:20,padding:"24px 22px",
+          boxShadow:"0 24px 64px rgba(20,28,78,.4)"}}>
+          {[["nombre","Nombre completo *","text"],["celular","Celular *","tel"],["mail","Email","email"]].map(([k,l,t])=>(
+            <div key={k} style={{marginBottom:14}}>
+              <label style={{display:"block",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                fontSize:12,color:C.navy,textTransform:"uppercase",marginBottom:5}}>{l}</label>
+              <input type={t} value={f[k]||""} onChange={e=>set(k,e.target.value)}
+                style={{width:"100%",padding:"10px 14px",border:`1px solid ${C.gray}`,
+                  borderRadius:10,fontSize:14,outline:"none"}}/>
+            </div>
+          ))}
+          <div style={{marginBottom:16}}>
+            <label style={{display:"block",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+              fontSize:12,color:C.navy,textTransform:"uppercase",marginBottom:8}}>PIN de 4 dígitos *</label>
+            <input type="number" value={f.pin} onChange={e=>set("pin",e.target.value.slice(0,4))}
+              placeholder="Elegí un PIN de 4 números"
+              style={{width:"100%",padding:"12px 14px",border:`1px solid ${C.gray}`,borderRadius:10,
+                fontSize:22,fontWeight:900,textAlign:"center",letterSpacing:".2em",outline:"none"}}/>
+            <div style={{fontSize:11,color:C.grayMid,marginTop:4}}>Este será tu código de acceso al sistema</div>
+          </div>
+          <div style={{marginBottom:20}}>
+            <label style={{display:"block",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+              fontSize:12,color:C.navy,textTransform:"uppercase",marginBottom:8}}>
+              Categorías a cargo (opcional)
+            </label>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+              {cats.map(c=>(
+                <button key={c.id} type="button" onClick={()=>toggleCat(c.id)}
+                  style={{padding:"6px 14px",borderRadius:16,
+                    border:`2px solid ${f.categorias.includes(c.id)?C.navy:C.gray}`,
+                    background:f.categorias.includes(c.id)?C.navy:C.white,cursor:"pointer",
+                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,
+                    color:f.categorias.includes(c.id)?C.white:C.navy,textTransform:"uppercase"}}>
+                  {c.nombre}
+                </button>
+              ))}
+            </div>
+          </div>
+          <button onClick={enviar} disabled={!valid||loading}
+            style={{width:"100%",padding:"14px",background:valid?`linear-gradient(135deg,${C.green},#15803d)`:"#e2e2da",
+              color:valid?C.white:C.grayMid,border:"none",borderRadius:12,fontFamily:"'Barlow Condensed',sans-serif",
+              fontWeight:900,fontSize:17,textTransform:"uppercase"}}>
+            {loading?"Enviando...":"✅ Enviar solicitud"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -2572,10 +2748,15 @@ function FormularioPublico({ tipo, org }) {
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${C.navyDark},${C.navy})`,padding:20,paddingBottom:40}}>
       <div style={{maxWidth:480,margin:"0 auto"}}>
         <div style={{textAlign:"center",marginBottom:24}}>
-          <ClubLogo size={60}/>
-          <h1 style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:26,fontWeight:900,
-            color:C.white,textTransform:"uppercase",marginTop:12}}>Paysandú FC — Baby</h1>
-          <div style={{color:C.lilac,fontSize:15,marginTop:4}}>Formulario de inscripción</div>
+          <ClubLogo size={70}/>
+          <h1 style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:28,fontWeight:900,
+            color:C.white,textTransform:"uppercase",marginTop:14,lineHeight:1.1}}>Paysandú FC</h1>
+          <div style={{color:C.gold,fontFamily:"'Barlow Condensed',sans-serif",fontSize:20,fontWeight:700,
+            textTransform:"uppercase",letterSpacing:".08em",marginTop:4}}>Baby Fútbol</div>
+          <div style={{color:"rgba(255,255,255,.7)",fontSize:14,marginTop:6,
+            fontFamily:"'Barlow Condensed',sans-serif",fontWeight:600}}>
+            Acceso a Alta de Jugadores
+          </div>
         </div>
         <div className="fi" style={{background:C.white,borderRadius:20,padding:"24px 22px",
           boxShadow:"0 24px 64px rgba(20,28,78,.4)"}}>
