@@ -1077,10 +1077,9 @@ function AdminScreen({ user, onLogout }) {
       {/* Layout: sidebar izquierdo + contenido derecho */}
       <div style={{flex:1,display:"flex",overflow:"hidden"}}>
         {/* Sidebar navegación */}
-        <div style={{width:200,background:C.white,borderRight:`2px solid ${C.gray}`,
-          padding:"16px 12px",display:"flex",flexDirection:"column",gap:10,
-          overflowY:"auto",flexShrink:0}}>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,flex:1}}>
+        <div style={{width:230,background:C.white,borderRight:`2px solid ${C.gray}`,
+          padding:"20px 16px",flexShrink:0,overflowY:"auto"}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
             {TABS.map(([id,label])=>{
               const active = tab===id;
               const parts = label.split(" ");
@@ -1093,18 +1092,18 @@ function AdminScreen({ user, onLogout }) {
                     background:active?`linear-gradient(135deg,${C.navy},${C.navyLight})`:C.offWhite,
                     color:active?C.white:C.navy,
                     border:`2px solid ${active?C.navy:C.gray}`,
-                    borderRadius:14,padding:"16px 8px",
+                    borderRadius:16,padding:"10px 8px",
                     fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
                     textTransform:"uppercase",
-                    boxShadow:active?"0 4px 16px rgba(20,28,78,.3)":"none",
-                    transition:"all .15s",display:"flex",flexDirection:"column",
-                    alignItems:"center",justifyContent:"center",gap:6,
+                    boxShadow:active?"0 6px 18px rgba(20,28,78,.3)":"none",
+                    transition:"all .12s",display:"flex",flexDirection:"column",
+                    alignItems:"center",justifyContent:"center",gap:8,
                     cursor:"pointer",aspectRatio:"1",position:"relative"}}>
-                  {hasBadge&&<span style={{position:"absolute",top:6,right:6,
-                    background:C.red,color:C.white,borderRadius:"50%",width:18,height:18,
+                  {hasBadge&&<span style={{position:"absolute",top:7,right:7,
+                    background:C.red,color:C.white,borderRadius:"50%",width:19,height:19,
                     fontSize:10,fontWeight:900,display:"flex",alignItems:"center",
                     justifyContent:"center",lineHeight:1}}>{pendientes.length}</span>}
-                  <span style={{fontSize:30,lineHeight:1}}>{icon}</span>
+                  <span style={{fontSize:32,lineHeight:1}}>{icon}</span>
                   <span style={{fontSize:11,fontWeight:800,letterSpacing:".02em",
                     textAlign:"center",lineHeight:1.2}}>{text}</span>
                 </button>
@@ -1120,12 +1119,17 @@ function AdminScreen({ user, onLogout }) {
         {/* ── TAB PLANTELES ── */}
         {!loading&&tab==="planteles"&&(
           <div style={{maxWidth:"100%"}}>
-            {/* Barra acciones */}
-            <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:14,alignItems:"center"}}>
+            {/* Barra acciones — botones cuadrados */}
+            <div style={{display:"flex",gap:10,marginBottom:12,alignItems:"flex-start",flexWrap:"wrap"}}>
               <button onClick={()=>{setSelJugador(null);setModal("newJug");}}
-                style={{background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,color:C.white,
-                  border:"none",borderRadius:10,padding:"11px 20px",fontFamily:"'Barlow Condensed',sans-serif",
-                  fontWeight:800,fontSize:15,textTransform:"uppercase"}}>➕ Nuevo jugador</button>
+                style={{width:110,height:80,background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                  color:C.white,border:"none",borderRadius:12,
+                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:12,
+                  textTransform:"uppercase",cursor:"pointer",display:"flex",flexDirection:"column",
+                  alignItems:"center",justifyContent:"center",gap:6,
+                  boxShadow:"0 4px 12px rgba(20,28,78,.25)"}}>
+                <span style={{fontSize:24}}>➕</span>Nuevo jugador
+              </button>
               <button onClick={()=>{
                   const base=window.location.origin;
                   const link=`${base}?form=jugador&org=paysandu`;
@@ -1134,20 +1138,25 @@ function AdminScreen({ user, onLogout }) {
                     alert("✅ Enlace de alta copiado. Incluye el título y el link. Pegalo en WhatsApp o email.");
                   });
                 }}
-                style={{background:C.offWhite,color:C.navy,border:`2px solid ${C.navy}`,borderRadius:10,
-                  padding:"11px 18px",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
-                  fontSize:15,textTransform:"uppercase"}}>📋 Crear acceso alta jugadores</button>
-              <div style={{display:"flex",gap:6,flexWrap:"wrap",marginLeft:"auto"}}>
-                {["todos",...categorias.map(c=>c.id)].map(cid=>(
-                  <button key={cid} onClick={()=>setFiltCat(cid)}
-                    style={{background:filtCat===cid?C.navy:C.white,color:filtCat===cid?C.white:C.navy,
-                      border:`2px solid ${filtCat===cid?C.navy:C.gray}`,borderRadius:20,padding:"7px 16px",
-                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,
-                      textTransform:"uppercase",cursor:"pointer"}}>
-                    {cid==="todos"?"Todos":cid}
-                  </button>
-                ))}
-              </div>
+                style={{width:110,height:80,background:C.offWhite,color:C.navy,
+                  border:`2px solid ${C.navy}`,borderRadius:12,
+                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:12,
+                  textTransform:"uppercase",cursor:"pointer",display:"flex",flexDirection:"column",
+                  alignItems:"center",justifyContent:"center",gap:6,lineHeight:1.2,textAlign:"center"}}>
+                <span style={{fontSize:24}}>📋</span>Crear acceso alta
+              </button>
+            </div>
+            {/* Filtros categoría — alineados con la tabla */}
+            <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
+              {["todos",...categorias.map(c=>c.id)].map(cid=>(
+                <button key={cid} onClick={()=>setFiltCat(cid)}
+                  style={{background:filtCat===cid?C.navy:C.white,color:filtCat===cid?C.white:C.navy,
+                    border:`2px solid ${filtCat===cid?C.navy:C.gray}`,borderRadius:20,
+                    padding:"6px 14px",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                    fontSize:12,textTransform:"uppercase",cursor:"pointer"}}>
+                  {cid==="todos"?"Todos":cid}
+                </button>
+              ))}
             </div>
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:C.grayMid,marginBottom:8}}>
               {jugadoresFilt.length} jugador{jugadoresFilt.length!==1?"es":""}
@@ -1190,11 +1199,16 @@ function AdminScreen({ user, onLogout }) {
                     {j.foto_url
                       ? <img src={j.foto_url} style={{width:36,height:36,borderRadius:"50%",
                           objectFit:"cover",border:`2px solid ${C.navy}`,flexShrink:0}}
-                          onError={e=>e.target.style.display="none"}/>
-                      : <div style={{width:36,height:36,borderRadius:"50%",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
-                          display:"flex",alignItems:"center",justifyContent:"center",
-                          fontSize:14,flexShrink:0}}>⚽</div>
-                    }
+                          onError={e=>{e.target.style.display="none";e.target.nextSibling&&(e.target.nextSibling.style.display="flex");}}/>
+                      : null}
+                    {!j.foto_url&&(
+                      <div style={{width:36,height:36,borderRadius:"50%",flexShrink:0,
+                        background:"linear-gradient(135deg,#c9d4f0,#a8b8e8)",
+                        border:"2px solid #c0cce8",display:"flex",alignItems:"center",
+                        justifyContent:"center",overflow:"hidden"}}>
+                        <svg viewBox="0 0 24 24" width="26" height="26"><circle cx="12" cy="8" r="4" fill="#6b7db3"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" fill="#6b7db3"/></svg>
+                      </div>
+                    )}
                     <div style={{minWidth:0}}>
                       <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,
                         color:C.navy,textTransform:"uppercase",overflow:"hidden",textOverflow:"ellipsis",
@@ -1287,11 +1301,16 @@ function AdminScreen({ user, onLogout }) {
         {/* ── TAB DELEGADOS ── */}
         {!loading&&tab==="delegados"&&(
           <div style={{maxWidth:"100%"}}>
-            <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap"}}>
+            <div style={{display:"flex",gap:10,marginBottom:16,alignItems:"flex-start"}}>
               <button onClick={()=>setModal("newDel")}
-                style={{background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,color:C.white,
-                  border:"none",borderRadius:10,padding:"11px 22px",fontFamily:"'Barlow Condensed',sans-serif",
-                  fontWeight:800,fontSize:15,textTransform:"uppercase"}}>➕ Nuevo delegado</button>
+                style={{width:110,height:80,background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                  color:C.white,border:"none",borderRadius:12,
+                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:12,
+                  textTransform:"uppercase",cursor:"pointer",display:"flex",flexDirection:"column",
+                  alignItems:"center",justifyContent:"center",gap:6,
+                  boxShadow:"0 4px 12px rgba(20,28,78,.25)"}}>
+                <span style={{fontSize:24}}>➕</span>Nuevo delegado
+              </button>
               <button onClick={()=>{
                   const base=window.location.origin;
                   const link=`${base}?form=delegado&org=paysandu`;
@@ -1300,9 +1319,13 @@ function AdminScreen({ user, onLogout }) {
                     alert("✅ Link de registro de delegado copiado. Pegalo en WhatsApp o email.");
                   });
                 }}
-                style={{background:C.offWhite,color:C.navy,border:`2px solid ${C.navy}`,borderRadius:10,
-                  padding:"11px 18px",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
-                  fontSize:15,textTransform:"uppercase"}}>📋 Link registro delegado</button>
+                style={{width:110,height:80,background:C.offWhite,color:C.navy,
+                  border:`2px solid ${C.navy}`,borderRadius:12,
+                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:12,
+                  textTransform:"uppercase",cursor:"pointer",display:"flex",flexDirection:"column",
+                  alignItems:"center",justifyContent:"center",gap:6,lineHeight:1.2,textAlign:"center"}}>
+                <span style={{fontSize:24}}>📋</span>Link registro
+              </button>
             </div>
             {/* Encabezado */}
             <div style={{display:"grid",gridTemplateColumns:"1.5fr 140px 90px 140px 200px",gap:0,
@@ -1625,10 +1648,21 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
 
   return (
     <div style={{maxWidth:900}}>
-      {/* Barra superior: filtro + reporte */}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10,marginBottom:14}}>
-        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-          {["todos",...categorias.map(c=>c.id)].map(cid=>(
+      {/* Barra superior: botón reporte cuadrado */}
+      <div style={{display:"flex",gap:10,marginBottom:12,alignItems:"flex-start"}}>
+        <button onClick={()=>setVerReporte(true)}
+          style={{width:110,height:80,background:`linear-gradient(135deg,#b45309,#d97706)`,
+            color:C.white,border:"none",borderRadius:12,
+            fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:12,
+            textTransform:"uppercase",cursor:"pointer",display:"flex",flexDirection:"column",
+            alignItems:"center",justifyContent:"center",gap:6,
+            boxShadow:"0 4px 12px rgba(180,83,9,.3)"}}>
+          <span style={{fontSize:24}}>📊</span>Generar reporte
+        </button>
+      </div>
+      {/* Filtros categoría */}
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
+        {["todos",...categorias.map(c=>c.id)].map(cid=>(
           <button key={cid} onClick={()=>setFiltCat(cid)}
             style={{background:filtCat===cid?C.navy:C.white,color:filtCat===cid?C.white:C.navy,
               border:`2px solid ${filtCat===cid?C.navy:C.gray}`,borderRadius:20,padding:"6px 14px",
@@ -1637,13 +1671,6 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
             {cid==="todos"?"Todos":cid}
           </button>
         ))}
-        </div>
-        <button onClick={()=>setVerReporte(true)}
-          style={{padding:"9px 18px",background:`linear-gradient(135deg,${C.amber},#b45309)`,
-            color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
-            fontWeight:800,fontSize:14,textTransform:"uppercase",cursor:"pointer",whiteSpace:"nowrap"}}>
-          📊 Generar reporte
-        </button>
       </div>
 
       {/* Encabezado lista */}
@@ -1669,9 +1696,17 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
             <div style={{fontSize:24,textAlign:"center"}}>{est.icon}</div>
             {/* Nombre */}
             <div style={{minWidth:0,display:"flex",alignItems:"center",gap:8}}>
-              {j.foto_url&&<img src={j.foto_url} style={{width:32,height:32,borderRadius:"50%",
-                objectFit:"cover",border:`2px solid ${C.navy}`,flexShrink:0}}
-                onError={e=>e.target.style.display="none"}/>}
+              {j.foto_url
+                ? <img src={j.foto_url} style={{width:32,height:32,borderRadius:"50%",
+                    objectFit:"cover",border:`2px solid ${C.navy}`,flexShrink:0}}
+                    onError={e=>e.target.style.display="none"}/>
+                : <div style={{width:32,height:32,borderRadius:"50%",flexShrink:0,
+                    background:"linear-gradient(135deg,#c9d4f0,#a8b8e8)",
+                    border:"2px solid #c0cce8",display:"flex",alignItems:"center",
+                    justifyContent:"center",overflow:"hidden"}}>
+                    <svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="8" r="4" fill="#6b7db3"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" fill="#6b7db3"/></svg>
+                  </div>
+              }
               <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:16,
                 color:C.navy,textTransform:"uppercase",overflow:"hidden",textOverflow:"ellipsis",
                 whiteSpace:"nowrap"}}>{j.nombre}</div>
@@ -2471,8 +2506,11 @@ function DelegadoScreen({ user, onLogout }) {
                       objectFit:"cover",border:`2px solid ${C.navy}`,flexShrink:0}}
                       onError={e=>e.target.style.display="none"}/>
                   : <div style={{width:44,height:44,borderRadius:"50%",flexShrink:0,
-                      background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
-                      display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>⚽</div>
+                      background:"linear-gradient(135deg,#c9d4f0,#a8b8e8)",
+                      border:"2px solid #c0cce8",display:"flex",alignItems:"center",
+                      justifyContent:"center",overflow:"hidden"}}>
+                      <svg viewBox="0 0 24 24" width="32" height="32"><circle cx="12" cy="8" r="4" fill="#6b7db3"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" fill="#6b7db3"/></svg>
+                    </div>
                 }
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,
