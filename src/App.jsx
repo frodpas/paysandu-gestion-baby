@@ -2131,11 +2131,11 @@ export default function App() {
 
 /* ══ FORMULARIO PÚBLICO (via QR/link) ════════════════════════════════ */
 function FormularioPublico({ tipo, org }) {
-  const [f, setF] = useState({nombre:"",celular:"",mail:"",categoria_id:"",
-    fecha_nacimiento:"",numero_camiseta:"",direccion:"",tipo_cuota:"base"});
-  const [categorias, setCat] = useState([]);
-  const [sent, setSent] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [f, setF] = useState({nombre:"",celular:"",mail:"",ci:"",categoria_id:"",
+    fecha_nacimiento:"",numero_camiseta:"",direccion:"",foto_url:"",tipo_cuota:"base"});
+  const [categorias, setCat]   = useState([]);
+  const [sent,       setSent]  = useState(false);
+  const [loading,    setLoading]= useState(false);
 
   useEffect(()=>{
     sbFetch("baby_categorias?select=*&order=nombre.asc").then(d=>setCat(d||[]));
@@ -2143,6 +2143,14 @@ function FormularioPublico({ tipo, org }) {
 
   const set = (k,v) => setF(p=>({...p,[k]:v}));
   const valid = f.nombre&&f.celular&&f.categoria_id&&f.fecha_nacimiento;
+
+  const handleFoto = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => set("foto_url", ev.target.result);
+    reader.readAsDataURL(file);
+  };
 
   const enviar = async () => {
     if (!valid) return;
@@ -2172,7 +2180,7 @@ function FormularioPublico({ tipo, org }) {
   );
 
   return (
-    <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${C.navyDark},${C.navy})`,padding:20}}>
+    <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${C.navyDark},${C.navy})`,padding:20,paddingBottom:40}}>
       <div style={{maxWidth:480,margin:"0 auto"}}>
         <div style={{textAlign:"center",marginBottom:24}}>
           <ClubLogo size={60}/>
@@ -2182,15 +2190,62 @@ function FormularioPublico({ tipo, org }) {
         </div>
         <div className="fi" style={{background:C.white,borderRadius:20,padding:"24px 22px",
           boxShadow:"0 24px 64px rgba(20,28,78,.4)"}}>
+
+          {/* FOTO */}
+          <div style={{marginBottom:18}}>
+            <label style={{display:"block",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+              fontSize:12,color:C.navy,textTransform:"uppercase",marginBottom:8}}>
+              Foto del jugador — opcional
+            </label>
+            {/* Preview */}
+            {f.foto_url&&(
+              <div style={{textAlign:"center",marginBottom:10}}>
+                <img src={f.foto_url} alt="preview"
+                  style={{width:90,height:90,borderRadius:"50%",objectFit:"cover",
+                    border:`3px solid ${C.navy}`}}/>
+              </div>
+            )}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+              <label style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,
+                padding:"14px 8px",border:`2px dashed ${C.navy}`,borderRadius:12,
+                cursor:"pointer",background:"#f0f4ff",textAlign:"center"}}>
+                <span style={{fontSize:28}}>📸</span>
+                <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                  fontSize:13,color:C.navy,textTransform:"uppercase"}}>Sacar foto</span>
+                <span style={{fontSize:10,color:C.grayMid}}>Abre la cámara</span>
+                <input type="file" accept="image/*" capture="environment"
+                  style={{display:"none"}} onChange={handleFoto}/>
+              </label>
+              <label style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,
+                padding:"14px 8px",border:`2px dashed ${C.gray}`,borderRadius:12,
+                cursor:"pointer",background:C.offWhite,textAlign:"center"}}>
+                <span style={{fontSize:28}}>🖼</span>
+                <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                  fontSize:13,color:C.navy,textTransform:"uppercase"}}>Galería</span>
+                <span style={{fontSize:10,color:C.grayMid}}>Elegir imagen</span>
+                <input type="file" accept="image/*"
+                  style={{display:"none"}} onChange={handleFoto}/>
+              </label>
+            </div>
+            {f.foto_url&&(
+              <button onClick={()=>set("foto_url","")}
+                style={{marginTop:6,background:"none",border:"none",color:"#dc2626",
+                  fontSize:12,cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",
+                  fontWeight:600}}>✕ Eliminar foto</button>
+            )}
+          </div>
+
+          {/* CAMPOS TEXTO */}
           {[
             ["nombre","Nombre completo del jugador *","text"],
+            ["ci","Cédula de identidad (opcional)","text"],
             ["celular","Celular del tutor *","tel"],
-            ["mail","Email del tutor","email"],
+            ["mail","Email del tutor (opcional)","email"],
             ["fecha_nacimiento","Fecha de nacimiento *","date"],
             ["numero_camiseta","Número de camiseta (opcional)","text"],
             ["direccion","Dirección (opcional)","text"],
           ].map(([k,l,t])=>(
-            <div key={k} style={{marginBottom:14}}>
+            <div key={k} style={{marginBottom:12}}>
               <label style={{display:"block",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
                 fontSize:12,color:C.navy,textTransform:"uppercase",marginBottom:5}}>{l}</label>
               <input type={t} value={f[k]||""} onChange={e=>set(k,e.target.value)}
@@ -2198,6 +2253,8 @@ function FormularioPublico({ tipo, org }) {
                   borderRadius:10,fontSize:14,outline:"none"}}/>
             </div>
           ))}
+
+          {/* CATEGORÍA */}
           <div style={{marginBottom:20}}>
             <label style={{display:"block",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
               fontSize:12,color:C.navy,textTransform:"uppercase",marginBottom:5}}>Categoría *</label>
@@ -2207,8 +2264,9 @@ function FormularioPublico({ tipo, org }) {
               {categorias.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}
             </select>
           </div>
+
           <button onClick={enviar} disabled={!valid||loading}
-            style={{width:"100%",padding:"13px",background:valid?`linear-gradient(135deg,${C.green},#15803d)`:"#e2e2da",
+            style={{width:"100%",padding:"14px",background:valid?`linear-gradient(135deg,${C.green},#15803d)`:"#e2e2da",
               color:valid?C.white:C.grayMid,border:"none",borderRadius:12,fontFamily:"'Barlow Condensed',sans-serif",
               fontWeight:900,fontSize:17,textTransform:"uppercase"}}>
             {loading?"Enviando...":"✅ Enviar formulario"}
