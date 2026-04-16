@@ -1077,45 +1077,40 @@ function AdminScreen({ user, onLogout }) {
       {/* Layout: sidebar izquierdo + contenido derecho */}
       <div style={{flex:1,display:"flex",overflow:"hidden"}}>
         {/* Sidebar navegación */}
-        <div style={{width:160,background:C.white,borderRight:`2px solid ${C.gray}`,
-          padding:"14px 10px",display:"flex",flexDirection:"column",gap:8,
+        <div style={{width:200,background:C.white,borderRight:`2px solid ${C.gray}`,
+          padding:"16px 12px",display:"flex",flexDirection:"column",gap:10,
           overflowY:"auto",flexShrink:0}}>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,flex:1}}>
             {TABS.map(([id,label])=>{
               const active = tab===id;
               const parts = label.split(" ");
               const icon = parts[0];
               const text = parts.slice(1).join(" ");
+              const hasBadge = id==="pendientes" && pendientes.length>0;
               return(
                 <button key={id} onClick={()=>setTab(id)}
                   style={{
                     background:active?`linear-gradient(135deg,${C.navy},${C.navyLight})`:C.offWhite,
                     color:active?C.white:C.navy,
                     border:`2px solid ${active?C.navy:C.gray}`,
-                    borderRadius:12,padding:"12px 6px",
+                    borderRadius:14,padding:"16px 8px",
                     fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
                     textTransform:"uppercase",
-                    boxShadow:active?"0 4px 12px rgba(20,28,78,.25)":"none",
+                    boxShadow:active?"0 4px 16px rgba(20,28,78,.3)":"none",
                     transition:"all .15s",display:"flex",flexDirection:"column",
-                    alignItems:"center",justifyContent:"center",gap:4,
-                    cursor:"pointer",aspectRatio:"1",minHeight:68}}>
-                  <span style={{fontSize:24,lineHeight:1}}>{icon}</span>
-                  <span style={{fontSize:10,fontWeight:800,letterSpacing:".02em",
-                    textAlign:"center",lineHeight:1.1}}>{text}</span>
+                    alignItems:"center",justifyContent:"center",gap:6,
+                    cursor:"pointer",aspectRatio:"1",position:"relative"}}>
+                  {hasBadge&&<span style={{position:"absolute",top:6,right:6,
+                    background:C.red,color:C.white,borderRadius:"50%",width:18,height:18,
+                    fontSize:10,fontWeight:900,display:"flex",alignItems:"center",
+                    justifyContent:"center",lineHeight:1}}>{pendientes.length}</span>}
+                  <span style={{fontSize:30,lineHeight:1}}>{icon}</span>
+                  <span style={{fontSize:11,fontWeight:800,letterSpacing:".02em",
+                    textAlign:"center",lineHeight:1.2}}>{text}</span>
                 </button>
               );
             })}
           </div>
-          {/* Pendientes badge */}
-          {pendientes.length>0&&(
-            <div style={{background:"#fef3c7",borderRadius:10,padding:"6px 10px",
-              textAlign:"center",border:"1px solid #fde68a",marginTop:4}}>
-              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
-                fontSize:11,color:"#d97706",textTransform:"uppercase"}}>
-                ⏳ {pendientes.length} pendiente{pendientes.length!==1?"s":""}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Contenido principal */}
