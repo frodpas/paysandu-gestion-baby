@@ -1074,34 +1074,52 @@ function AdminScreen({ user, onLogout }) {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div style={{background:C.white,borderBottom:`3px solid ${C.gray}`,padding:"12px 16px",
-        display:"flex",gap:10,overflowX:"auto",flexShrink:0}}>
-        {TABS.map(([id,label])=>{
-          const active = tab===id;
-          const parts = label.split(" ");
-          const icon = parts[0];
-          const text = parts.slice(1).join(" ");
-          return(
-            <button key={id} onClick={()=>setTab(id)}
-              style={{background:active?`linear-gradient(135deg,${C.navy},${C.navyLight})`:C.offWhite,
-                color:active?C.white:C.navy,
-                border:`2px solid ${active?C.navy:C.gray}`,borderRadius:16,
-                padding:"12px 22px",
-                fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,
-                textTransform:"uppercase",whiteSpace:"nowrap",flex:"1 1 auto",
-                boxShadow:active?"0 6px 18px rgba(20,28,78,.3)":"none",
-                transition:"all .15s",display:"flex",flexDirection:"column",
-                alignItems:"center",gap:3,cursor:"pointer"}}>
-              <span style={{fontSize:22,lineHeight:1}}>{icon}</span>
-              <span style={{fontSize:13,fontWeight:800,letterSpacing:".04em"}}>{text}</span>
-            </button>
-          );
-        })}
-      </div>
+      {/* Layout: sidebar izquierdo + contenido derecho */}
+      <div style={{flex:1,display:"flex",overflow:"hidden"}}>
+        {/* Sidebar navegación */}
+        <div style={{width:160,background:C.white,borderRight:`2px solid ${C.gray}`,
+          padding:"14px 10px",display:"flex",flexDirection:"column",gap:8,
+          overflowY:"auto",flexShrink:0}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            {TABS.map(([id,label])=>{
+              const active = tab===id;
+              const parts = label.split(" ");
+              const icon = parts[0];
+              const text = parts.slice(1).join(" ");
+              return(
+                <button key={id} onClick={()=>setTab(id)}
+                  style={{
+                    background:active?`linear-gradient(135deg,${C.navy},${C.navyLight})`:C.offWhite,
+                    color:active?C.white:C.navy,
+                    border:`2px solid ${active?C.navy:C.gray}`,
+                    borderRadius:12,padding:"12px 6px",
+                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+                    textTransform:"uppercase",
+                    boxShadow:active?"0 4px 12px rgba(20,28,78,.25)":"none",
+                    transition:"all .15s",display:"flex",flexDirection:"column",
+                    alignItems:"center",justifyContent:"center",gap:4,
+                    cursor:"pointer",aspectRatio:"1",minHeight:68}}>
+                  <span style={{fontSize:24,lineHeight:1}}>{icon}</span>
+                  <span style={{fontSize:10,fontWeight:800,letterSpacing:".02em",
+                    textAlign:"center",lineHeight:1.1}}>{text}</span>
+                </button>
+              );
+            })}
+          </div>
+          {/* Pendientes badge */}
+          {pendientes.length>0&&(
+            <div style={{background:"#fef3c7",borderRadius:10,padding:"6px 10px",
+              textAlign:"center",border:"1px solid #fde68a",marginTop:4}}>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+                fontSize:11,color:"#d97706",textTransform:"uppercase"}}>
+                ⏳ {pendientes.length} pendiente{pendientes.length!==1?"s":""}
+              </div>
+            </div>
+          )}
+        </div>
 
-      {/* Content */}
-      <div style={{flex:1,overflowY:"auto",padding:16}}>
+        {/* Contenido principal */}
+        <div style={{flex:1,overflowY:"auto",padding:20,minWidth:0}}>
         {loading&&<div style={{textAlign:"center",padding:"40px 0",color:C.grayMid}}>⏳ Cargando...</div>}
 
         {/* ── TAB PLANTELES ── */}
@@ -1422,7 +1440,8 @@ function AdminScreen({ user, onLogout }) {
         {!loading&&tab==="categorias"&&(
           <CategoriasTab categorias={categorias} onRefresh={load}/>
         )}
-      </div>
+      </div>{/* fin contenido principal */}
+      </div>{/* fin layout sidebar+contenido */}
 
       {/* Modales */}
       {(modal==="newJug"||modal==="editJug")&&(
