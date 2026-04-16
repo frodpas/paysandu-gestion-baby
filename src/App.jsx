@@ -38,6 +38,8 @@ const fdate = () => new Date().toLocaleDateString("es-UY");
 
 async function sbFetch(path, method="GET", body=null) {
   try {
+    // Limpiar undefined del body (Supabase los rechaza)
+    const cleanBody = body ? JSON.parse(JSON.stringify(body, (k,v)=>v===undefined?null:v)) : null;
     const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
       method,
       headers: {
@@ -46,12 +48,17 @@ async function sbFetch(path, method="GET", body=null) {
         "Content-Type": "application/json",
         "Prefer": method==="POST"?"return=representation":"",
       },
-      body: body ? JSON.stringify(body) : undefined,
+      body: cleanBody ? JSON.stringify(cleanBody) : undefined,
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const err = await res.text().catch(()=>"");
+      console.error("sbFetch error", method, path, res.status, err.slice(0,200));
+      return null;
+    }
     if (method==="DELETE"||res.status===204) return true;
-    return await res.json();
-  } catch { return null; }
+    const txt = await res.text();
+    return txt ? JSON.parse(txt) : true;
+  } catch(e) { console.error("sbFetch catch", e); return null; }
 }
 
 /* ══ ESCUDO COMPONENTE ════════════════════════════════════════════════ */
@@ -318,8 +325,13 @@ function PublicoView({ user, onLogout }) {
   const [plan,  setPlan]  = useState([]);
   const [modal, setModal] = useState(null);
   const [payMethod, setPayMethod] = useState(null);
-  const [selectedMes, setSelectedMes] = useState(null);
+  const [selectedMeses, setSelectedMeses] = useState([]); // multi-selección
   const [paying, setPaying] = useState(false);
+
+  const toggleMesPub = (mes) => setSelectedMeses(prev =>
+    prev.includes(mes) ? prev.filter(m=>m!==mes) : [...prev, mes]
+  );
+  const totalPub = selectedMeses.reduce((acc,mes)=>acc+cuotaMes(mes),0);
   const añoActual = new Date().getFullYear();
 
   useEffect(()=>{
@@ -354,25 +366,27 @@ function PublicoView({ user, onLogout }) {
   };
 
   const confirmarPago = async () => {
-    if (!payMethod || !selectedMes) return;
+    if (!payMethod || selectedMeses.length===0) return;
     setPaying(true);
-    const monto = cuotaMes(selectedMes);
-    await sbFetch("baby_pagos","POST",{
-      id: uid(),
-      jugador_id: jug.id,
-      org_id: jug.org_id,
-      año: añoActual,
-      mes: selectedMes,
-      monto,
-      metodo_pago: payMethod,
-      fecha_pago: fdate(),
-    });
+    for (const mes of selectedMeses) {
+      const monto = cuotaMes(mes);
+      await sbFetch("baby_pagos","POST",{
+        id: uid(),
+        jugador_id: jug.id,
+        org_id: jug.org_id||"paysandu",
+        año: añoActual,
+        mes,
+        monto,
+        metodo_pago: payMethod,
+        fecha_pago: fdate(),
+      });
+    }
     const p = await sbFetch(`baby_pagos?jugador_id=eq.${jug.id}&año=eq.${añoActual}&select=*`);
     setPagos(p||[]);
     setPaying(false);
     setModal("success");
     setPayMethod(null);
-    setSelectedMes(null);
+    setSelectedMeses([]);
   };
 
   return (
@@ -476,19 +490,28 @@ function PublicoView({ user, onLogout }) {
               color:C.white,textTransform:"uppercase"}}>💳 Registrar Pago</div>
           </div>
           <div style={{padding:"20px 22px"}}>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,
-              color:C.navy,textTransform:"uppercase",marginBottom:10}}>Seleccioná el mes a pagar</div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,
+                color:C.navy,textTransform:"uppercase"}}>Seleccioná los meses a pagar</div>
+              {selectedMeses.length>0&&<div style={{fontFamily:"'Barlow Condensed',sans-serif",
+                fontWeight:900,fontSize:14,color:C.green}}>Total: {fmt(totalPub)}</div>}
+            </div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:18}}>
-              {mesesConDeuda().map(mes=>(
-                <button key={mes} onClick={()=>setSelectedMes(mes)}
-                  style={{padding:"10px 6px",borderRadius:10,border:`2px solid ${selectedMes===mes?C.navy:C.gray}`,
-                    background:selectedMes===mes?C.navy:C.white,cursor:"pointer",
-                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,
-                    color:selectedMes===mes?C.white:C.navy}}>
-                  <div>{MESES[mes-1]}</div>
-                  <div style={{fontWeight:900,fontSize:15}}>{fmt(cuotaMes(mes))}</div>
-                </button>
-              ))}
+              {mesesConDeuda().map(mes=>{
+                const sel=selectedMeses.includes(mes);
+                return(
+                  <button key={mes} onClick={()=>toggleMesPub(mes)}
+                    style={{padding:"10px 6px",borderRadius:10,position:"relative",
+                      border:`2px solid ${sel?"#16a34a":C.gray}`,
+                      background:sel?"#dcfce7":C.white,cursor:"pointer",
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,
+                      color:sel?"#16a34a":C.navy}}>
+                    {sel&&<span style={{position:"absolute",top:3,right:5,fontSize:10}}>✓</span>}
+                    <div>{MESES[mes-1]}</div>
+                    <div style={{fontWeight:900,fontSize:15}}>{fmt(cuotaMes(mes))}</div>
+                  </button>
+                );
+              })}
             </div>
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,
               color:C.navy,textTransform:"uppercase",marginBottom:10}}>Medio de pago</div>
@@ -509,11 +532,14 @@ function PublicoView({ user, onLogout }) {
                 style={{flex:1,padding:"11px",background:"transparent",color:C.navy,
                   border:`2px solid ${C.navy}`,borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
                   fontWeight:700,fontSize:14,textTransform:"uppercase"}}>Cancelar</button>
-              <button onClick={confirmarPago} disabled={!payMethod||!selectedMes||paying}
-                style={{flex:2,padding:"11px",background:payMethod&&selectedMes?`linear-gradient(135deg,${C.green},#15803d)`:"#e2e2da",
-                  color:payMethod&&selectedMes?C.white:C.grayMid,border:"none",borderRadius:10,
+              <button onClick={confirmarPago} disabled={!payMethod||selectedMeses.length===0||paying}
+                style={{flex:2,padding:"11px",
+                  background:payMethod&&selectedMeses.length>0?`linear-gradient(135deg,${C.green},#15803d)`:"#e2e2da",
+                  color:payMethod&&selectedMeses.length>0?C.white:C.grayMid,border:"none",borderRadius:10,
                   fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:15,
-                  textTransform:"uppercase"}}>{paying?"...":"✅ Confirmar"}</button>
+                  textTransform:"uppercase"}}>
+                {paying?"⏳ Procesando...":`✅ Confirmar${selectedMeses.length>1?" ("+selectedMeses.length+" meses)":""}`}
+              </button>
             </div>
           </div>
         </Modal>
@@ -913,6 +939,18 @@ function AdminScreen({ user, onLogout }) {
       ...data, id:uid(), org_id:"paysandu", activo:true
     });
     setModal(null); load();
+  };
+
+  const saveEditDelegado = async (data) => {
+    if (!selJugador) return;
+    await sbFetch(`baby_delegados?id=eq.${selJugador.id}`, "PATCH", {
+      nombre: data.nombre,
+      celular: data.celular,
+      mail: data.mail,
+      pin: data.pin,
+      categorias: data.categorias,
+    });
+    setModal(null); setSelJugador(null); load();
   };
 
   const deleteDelegado = async (id) => {
@@ -1325,6 +1363,16 @@ function AdminScreen({ user, onLogout }) {
         </Modal>
       )}
       {modal==="newDel"&&<Modal onClose={()=>setModal(null)}><FormDelegado categorias={categorias} onSave={saveDelegado} onCancel={()=>setModal(null)}/></Modal>}
+      {modal==="editDel"&&selJugador&&(
+        <Modal onClose={()=>{setModal(null);setSelJugador(null);}}>
+          <FormDelegado
+            categorias={categorias}
+            initialData={selJugador}
+            onSave={saveEditDelegado}
+            onCancel={()=>{setModal(null);setSelJugador(null);}}
+          />
+        </Modal>
+      )}
       {modal==="qr"&&qrLink&&(
         <Modal onClose={()=>setModal(null)} maxWidth={380}>
           <div style={{padding:"28px",textAlign:"center"}}>
@@ -2111,10 +2159,17 @@ Si la eliminás, esos jugadores quedarán sin categoría asignada (no se borrar�
 }
 
 /* ══ FORM DELEGADO ════════════════════════════════════════════════════ */
-function FormDelegado({ categorias, onSave, onCancel }) {
-  const [f, setF] = useState({nombre:"",celular:"",mail:"",pin:"",categorias:[]});
+function FormDelegado({ categorias, onSave, onCancel, initialData=null }) {
+  const [f, setF] = useState(initialData ? {
+    nombre: initialData.nombre||"",
+    celular: initialData.celular||"",
+    mail: initialData.mail||"",
+    pin: initialData.pin||"",
+    categorias: initialData.categorias||[],
+  } : {nombre:"",celular:"",mail:"",pin:"",categorias:[]});
   const set = (k,v) => setF(p=>({...p,[k]:v}));
   const valid = f.nombre&&f.pin.length===4;
+  const esEdicion = !!initialData;
 
   const toggleCat = (id) => {
     setF(p=>({...p, categorias: p.categorias.includes(id)
@@ -2125,7 +2180,7 @@ function FormDelegado({ categorias, onSave, onCancel }) {
     <div>
       <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"18px 22px"}}>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,
-          color:C.white,textTransform:"uppercase"}}>🏃 Nuevo Delegado</div>
+          color:C.white,textTransform:"uppercase"}}>{esEdicion?"✏️ Editar Delegado":"🏃 Nuevo Delegado"}</div>
       </div>
       <div style={{padding:"20px 22px"}}>
         {[["nombre","Nombre *"],["celular","Celular"],["mail","Email"]].map(([k,l])=>(
@@ -2325,13 +2380,28 @@ function DelegadoScreen({ user, onLogout }) {
                     whiteSpace:"nowrap"}}>{j.nombre}</div>
                   <div style={{fontSize:11,color:C.grayMid}}>{j.categoria_id} · {j.celular}</div>
                 </div>
-                <div style={{display:"flex",gap:6,flexShrink:0}}>
+                <div style={{display:"flex",gap:5,flexShrink:0,alignItems:"center"}}>
+                  <button onClick={()=>{
+                      const link=window.location.origin+"?id="+j.id;
+                      const msg=j.nombre+" (Cat."+j.categoria_id+") - Link de pago: "+link;
+                      navigator.clipboard?.writeText(msg).then(()=>{
+                        alert("✅ Link de pago copiado para "+j.nombre);
+                      });
+                    }}
+                    title="Copiar link de pago"
+                    style={{width:34,height:34,padding:0,background:`linear-gradient(135deg,${C.green},#15803d)`,
+                      color:C.white,border:"none",borderRadius:7,fontSize:15,cursor:"pointer",
+                      display:"flex",alignItems:"center",justifyContent:"center"}}>🔗</button>
                   <button onClick={()=>{setSelJug(j);setModal("ficha");}}
-                    style={{padding:"7px 10px",background:C.offWhite,border:`1px solid ${C.gray}`,
-                      borderRadius:7,fontSize:13,cursor:"pointer",color:C.navy,fontWeight:600}}>👤</button>
+                    title="Ver ficha"
+                    style={{width:34,height:34,padding:0,background:C.offWhite,border:`1px solid ${C.gray}`,
+                      borderRadius:7,fontSize:14,cursor:"pointer",color:C.navy,
+                      display:"flex",alignItems:"center",justifyContent:"center"}}>👤</button>
                   <button onClick={()=>{setSelJug(j);setModal("form");}}
-                    style={{padding:"7px 10px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
-                      color:C.white,border:"none",borderRadius:7,fontSize:13,cursor:"pointer",fontWeight:600}}>✏</button>
+                    title="Editar"
+                    style={{width:34,height:34,padding:0,background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                      color:C.white,border:"none",borderRadius:7,fontSize:14,cursor:"pointer",
+                      display:"flex",alignItems:"center",justifyContent:"center"}}>✏️</button>
                 </div>
               </div>
             ))}
