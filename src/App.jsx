@@ -794,6 +794,7 @@ function AdminScreen({ user, onLogout }) {
   const [selJugador,   setSelJugador]  = useState(null);
   const [loading,      setLoading]     = useState(true);
   const [qrLink,       setQrLink]      = useState(null);
+  const [jugPagosVer,  setJugPagosVer] = useState(null); // jugador para ver historial desde planteles
   const añoActual = new Date().getFullYear();
 
   const load = useCallback(async () => {
@@ -864,12 +865,29 @@ function AdminScreen({ user, onLogout }) {
 
   const validarPendiente = async (pend) => {
     const datos = typeof pend.datos_json==="string" ? JSON.parse(pend.datos_json) : pend.datos_json;
-    await sbFetch("baby_jugadores", "POST", {
-      ...datos, id:uid(), org_id:"paysandu", estado:"activo",
-      pendiente_validacion:false, created_at:new Date().toISOString(),
-    });
-    await sbFetch(`baby_formularios_pendientes?id=eq.${pend.id}`, "DELETE");
-    load();
+    // Separar foto_url (puede ser base64 grande) del resto
+    const { foto_url, tipo_cuota, ...resto } = datos;
+    const jugador = {
+      ...resto,
+      foto_url: foto_url || "",
+      tipo_cuota: tipo_cuota || "base",
+      id: uid(),
+      org_id: "paysandu",
+      estado: "activo",
+      pendiente_validacion: false,
+      created_at: new Date().toISOString(),
+    };
+    const res = await sbFetch("baby_jugadores", "POST", jugador);
+    if (res) {
+      await sbFetch(`baby_formularios_pendientes?id=eq.${pend.id}`, "DELETE");
+      load();
+    } else {
+      // Si falla por foto grande, intentar sin foto
+      const sinFoto = {...jugador, foto_url:""};
+      await sbFetch("baby_jugadores", "POST", sinFoto);
+      await sbFetch(`baby_formularios_pendientes?id=eq.${pend.id}`, "DELETE");
+      load();
+    }
   };
 
   const rechazarPendiente = async (id) => {
@@ -1010,9 +1028,9 @@ function AdminScreen({ user, onLogout }) {
               {jugadoresFilt.length} jugador{jugadoresFilt.length!==1?"es":""}
             </div>
             {/* Encabezado tabla */}
-            <div style={{display:"grid",gridTemplateColumns:"minmax(180px,1fr) 110px 80px 90px 160px 160px",gap:0,
+            <div style={{display:"grid",gridTemplateColumns:"minmax(180px,1fr) 100px 70px 80px 110px 120px 180px",gap:0,
               padding:"9px 14px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
-              {["Nombre","Nacimiento","Cat.","Código","Link","Acciones"].map((h,i)=>(
+              {["Nombre","Nacimiento","Cat.","Código","Estado","Link / Pago","Acciones"].map((h,i)=>(
                 <div key={i} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
                   fontSize:12,color:C.white,textTransform:"uppercase",
                   textAlign:i>=2?"center":"left",padding:"0 4px"}}>{h}</div>
@@ -1020,15 +1038,29 @@ function AdminScreen({ user, onLogout }) {
             </div>
             {jugadoresFilt.map((j,idx)=>{
               const linkAcceso = window.location.origin + "?id=" + j.id;
+              const mesActual = new Date().getMonth()+1;
+              // Calcular estado de pago
+              const deudaMeses = MESES.map((_,i)=>i+1).filter(mes=>{
+                const plan=planPagos.find(p=>p.mes===mes);
+                if(!plan||plan.monto===0) return false;
+                const tipo=tiposCuota.find(t=>t.id===j.tipo_cuota)||tiposCuota[0];
+                const monto=Math.round(plan.monto*tipo.porcentaje/100);
+                return monto>0 && !pagos.find(p=>p.jugador_id===j.id&&p.mes===mes) && mes<mesActual;
+              });
+              const est = deudaMeses.length===0
+                ? {icon:"🟢",label:"Al día",color:"#16a34a",bg:"#dcfce7"}
+                : deudaMeses.length===1
+                  ? {icon:"🟡",label:"1 mes",color:"#d97706",bg:"#fef3c7"}
+                  : {icon:"🔴",label:`${deudaMeses.length} meses`,color:"#dc2626",bg:"#fee2e2"};
               return(
                 <div key={j.id} style={{display:"grid",
-                  gridTemplateColumns:"minmax(180px,1fr) 110px 80px 90px 160px 160px",gap:0,
+                  gridTemplateColumns:"minmax(180px,1fr) 100px 70px 80px 110px 120px 180px",gap:0,
                   alignItems:"center",padding:"8px 14px",
                   background:idx%2===0?C.white:"#f5f5f0",
                   borderLeft:`1px solid ${C.gray}`,borderRight:`1px solid ${C.gray}`,
                   borderBottom:`1px solid ${C.gray}`,
                   borderRadius:idx===jugadoresFilt.length-1?"0 0 12px 12px":"0"}}>
-                  {/* Nombre en una línea */}
+                  {/* Nombre */}
                   <div style={{minWidth:0,paddingRight:6,display:"flex",alignItems:"center",gap:8}}>
                     {j.foto_url
                       ? <img src={j.foto_url} style={{width:36,height:36,borderRadius:"50%",
@@ -1048,41 +1080,50 @@ function AdminScreen({ user, onLogout }) {
                       </div>
                     </div>
                   </div>
-                  {/* Fecha nacimiento */}
-                  <div style={{fontSize:12,color:C.grayMid,textAlign:"center",whiteSpace:"nowrap"}}>
+                  {/* Nacimiento */}
+                  <div style={{fontSize:11,color:C.grayMid,textAlign:"center",whiteSpace:"nowrap"}}>
                     {j.fecha_nacimiento||"-"}
                   </div>
-                  {/* Categoría */}
+                  {/* Cat */}
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:16,
                     color:C.navy,textAlign:"center"}}>{j.categoria_id}</div>
                   {/* Código */}
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:12,
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:11,
                     color:C.lilacDark,letterSpacing:".05em",textAlign:"center"}}>{j.id}</div>
-                  {/* Link */}
-                  <div style={{display:"flex",justifyContent:"center"}}>
+                  {/* Estado pago */}
+                  <div style={{textAlign:"center"}}>
+                    <span style={{background:est.bg,color:est.color,borderRadius:20,padding:"3px 8px",
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:12,
+                      whiteSpace:"nowrap"}}>{est.icon} {est.label}</span>
+                  </div>
+                  {/* Link / Pago */}
+                  <div style={{display:"flex",gap:4,justifyContent:"center",flexDirection:"column",alignItems:"center"}}>
                     <button onClick={()=>{
-                        navigator.clipboard?.writeText(linkAcceso).then(()=>{
-                          alert("✅ Link copiado para " + j.nombre + ". Al abrirlo entra directo a su ficha.");
+                        const msg = j.nombre+" (Cat."+j.categoria_id+") - Link de pago: "+linkAcceso;
+                        navigator.clipboard?.writeText(msg).then(()=>{
+                          alert("✅ Link de pago copiado para "+j.nombre+" (Cat."+j.categoria_id+"). Incluye nombre y categoría.");
                         });
                       }}
-                      style={{padding:"6px 12px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
-                        color:C.white,border:"none",borderRadius:7,fontFamily:"'Barlow Condensed',sans-serif",
-                        fontWeight:700,fontSize:12,cursor:"pointer",whiteSpace:"nowrap"}}>🔗 Link</button>
+                      style={{width:"100%",padding:"5px 8px",background:`linear-gradient(135deg,${C.green},#15803d)`,
+                        color:C.white,border:"none",borderRadius:6,fontFamily:"'Barlow Condensed',sans-serif",
+                        fontWeight:700,fontSize:11,cursor:"pointer",whiteSpace:"nowrap"}}>💳 Link pago</button>
+                    <button onClick={()=>setJugPagosVer(j)}
+                      style={{width:"100%",padding:"5px 8px",background:C.offWhite,
+                        border:`1px solid ${C.navy}`,borderRadius:6,fontFamily:"'Barlow Condensed',sans-serif",
+                        fontWeight:700,fontSize:11,cursor:"pointer",color:C.navy,whiteSpace:"nowrap"}}>💳 Pagos reg.</button>
                   </div>
                   {/* Acciones */}
-                  <div style={{display:"flex",gap:5,justifyContent:"center"}}>
+                  <div style={{display:"flex",gap:4,justifyContent:"center"}}>
                     <button onClick={()=>{setSelJugador(j);setModal("fichaJug");}}
-                      style={{padding:"7px 9px",background:C.offWhite,border:`1px solid ${C.gray}`,
-                        borderRadius:7,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
-                        fontSize:12,cursor:"pointer",color:C.navy}}>👤</button>
+                      style={{padding:"6px 7px",background:C.offWhite,border:`1px solid ${C.gray}`,
+                        borderRadius:6,fontSize:12,cursor:"pointer",color:C.navy}}>👤</button>
                     <button onClick={()=>{setSelJugador(j);setModal("editJug");}}
-                      style={{flex:1,padding:"7px 10px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
-                        color:C.white,border:"none",borderRadius:7,fontFamily:"'Barlow Condensed',sans-serif",
-                        fontWeight:700,fontSize:12,cursor:"pointer",textTransform:"uppercase"}}>✏</button>
+                      style={{flex:1,padding:"6px 8px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                        color:C.white,border:"none",borderRadius:6,fontFamily:"'Barlow Condensed',sans-serif",
+                        fontWeight:700,fontSize:11,cursor:"pointer",textTransform:"uppercase"}}>✏</button>
                     <button onClick={()=>deleteJugador(j.id)}
-                      style={{padding:"7px 9px",background:"#fff5f5",border:"1px solid #fca5a5",
-                        borderRadius:7,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
-                        fontSize:12,cursor:"pointer",color:"#dc2626"}}>🗑</button>
+                      style={{padding:"6px 7px",background:"#fff5f5",border:"1px solid #fca5a5",
+                        borderRadius:6,fontSize:11,cursor:"pointer",color:"#dc2626"}}>🗑</button>
                   </div>
                 </div>
               );
@@ -1293,6 +1334,69 @@ function AdminScreen({ user, onLogout }) {
           </div>
         </Modal>
       )}
+      {/* Modal historial pagos desde planteles */}
+      {jugPagosVer&&(
+        <Modal onClose={()=>setJugPagosVer(null)} maxWidth={500}>
+          <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"14px 20px",
+            display:"flex",alignItems:"center",gap:12}}>
+            {jugPagosVer.foto_url&&<img src={jugPagosVer.foto_url} style={{width:40,height:40,
+              borderRadius:"50%",objectFit:"cover",border:"2px solid rgba(255,255,255,.4)"}}
+              onError={e=>e.target.style.display="none"}/>}
+            <div>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
+                color:C.white,textTransform:"uppercase"}}>💳 Historial de pagos</div>
+              <div style={{color:C.lilac,fontSize:12}}>{jugPagosVer.nombre} · Cat. {jugPagosVer.categoria_id}</div>
+            </div>
+          </div>
+          <div style={{padding:"16px 20px",maxHeight:"65dvh",overflowY:"auto"}}>
+            {MESES.map((m,i)=>{
+              const mes=i+1;
+              const plan=planPagos.find(p=>p.mes===mes);
+              if(!plan||plan.monto===0) return null;
+              const tipo=tiposCuota.find(t=>t.id===jugPagosVer.tipo_cuota)||tiposCuota[0];
+              const monto=Math.round(plan.monto*tipo.porcentaje/100);
+              const pago=pagos.find(p=>p.jugador_id===jugPagosVer.id&&p.mes===mes);
+              return(
+                <div key={mes} style={{display:"flex",justifyContent:"space-between",alignItems:"center",
+                  padding:"9px 0",borderBottom:`1px solid ${C.gray}`}}>
+                  <div>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,
+                      color:C.navy}}>{m}</div>
+                    {pago&&<div style={{fontSize:11,color:C.grayMid}}>{pago.fecha_pago} · {pago.metodo_pago}</div>}
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,
+                      color:C.navy}}>{fmt(monto)}</div>
+                    <span style={{background:pago?"#dcfce7":"#fee2e2",color:pago?"#16a34a":"#dc2626",
+                      borderRadius:16,padding:"2px 10px",fontSize:11,fontWeight:700}}>
+                      {pago?"✓ Pagado":"Pendiente"}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+            <div style={{marginTop:14,display:"flex",gap:8}}>
+              <button onClick={()=>{
+                  const link = window.location.origin+"?id="+jugPagosVer.id;
+                  const msg = jugPagosVer.nombre+" (Cat."+jugPagosVer.categoria_id+") - Link de pago: "+link;
+                  navigator.clipboard?.writeText(msg).then(()=>{
+                    alert("✅ Link de pago copiado para "+jugPagosVer.nombre);
+                  });
+                }}
+                style={{flex:1,padding:"10px",background:`linear-gradient(135deg,${C.green},#15803d)`,
+                  color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+                  fontWeight:700,fontSize:13,cursor:"pointer",textTransform:"uppercase"}}>
+                💳 Enviar link de pago
+              </button>
+              <button onClick={()=>setJugPagosVer(null)}
+                style={{padding:"10px 16px",background:C.offWhite,color:C.navy,
+                  border:`1px solid ${C.gray}`,borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+                  fontWeight:700,fontSize:13,cursor:"pointer"}}>Cerrar</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
       {modal==="qrJugador"&&qrLink&&<ModalQRJugador
         jugId={qrLink}
         jug={jugadores.find(j=>j.id===qrLink)||null}
@@ -1460,29 +1564,41 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
                 </div>
               );
             })}
-            <div style={{marginTop:14,display:"flex",gap:8}}>
-              {(() => {
+            <div style={{marginTop:14,display:"flex",flexDirection:"column",gap:8}}>
+              {(()=>{
                 const deudaMeses=MESES.map((_,i)=>i+1).filter(mes=>{
                   const monto=cuotaMes(verHistorial,mes);
                   return monto>0&&!pagoJugMes(verHistorial.id,mes)&&mes<=mesActual;
                 });
                 return deudaMeses.length>0 ? (
                   <button onClick={()=>{setSelJug(verHistorial);setVerHistorial(null);setSelMeses([]);setMetodo(null);}}
-                    style={{flex:1,padding:"11px",background:`linear-gradient(135deg,${C.green},#15803d)`,
+                    style={{padding:"10px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
                       color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
-                      fontWeight:900,fontSize:15,textTransform:"uppercase",cursor:"pointer"}}>
-                    💳 Registrar pago
+                      fontWeight:800,fontSize:14,textTransform:"uppercase",cursor:"pointer"}}>
+                    ✏ Registrar pago
                   </button>
                 ) : (
-                  <div style={{flex:1,padding:"11px",background:"#dcfce7",borderRadius:10,
+                  <div style={{padding:"10px",background:"#dcfce7",borderRadius:10,
                     textAlign:"center",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
-                    fontSize:15,color:"#16a34a"}}>✅ Al día</div>
+                    fontSize:14,color:"#16a34a"}}>✅ Al día con los pagos</div>
                 );
               })()}
+              <button onClick={()=>{
+                  const link=window.location.origin+"?id="+verHistorial.id;
+                  const msg=verHistorial.nombre+" (Cat."+verHistorial.categoria_id+") - Link de pago: "+link;
+                  navigator.clipboard?.writeText(msg).then(()=>{
+                    alert("✅ Link de pago copiado para "+verHistorial.nombre+" (Cat."+verHistorial.categoria_id+")");
+                  });
+                }}
+                style={{padding:"10px",background:`linear-gradient(135deg,${C.green},#15803d)`,
+                  color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+                  fontWeight:800,fontSize:14,cursor:"pointer",textTransform:"uppercase"}}>
+                🔗 Enviar link de pago
+              </button>
               <button onClick={()=>setVerHistorial(null)}
-                style={{padding:"11px 18px",background:C.offWhite,color:C.navy,
+                style={{padding:"9px",background:C.offWhite,color:C.navy,
                   border:`1px solid ${C.gray}`,borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
-                  fontWeight:700,fontSize:14,textTransform:"uppercase",cursor:"pointer"}}>Cerrar</button>
+                  fontWeight:700,fontSize:13,cursor:"pointer"}}>Cerrar</button>
             </div>
           </div>
         </Modal>
@@ -1917,10 +2033,18 @@ function DelegadoScreen({ user, onLogout }) {
 
   const validarPend = async (p) => {
     const datos = typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
-    await sbFetch("baby_jugadores","POST",{
-      ...datos,id:uid(),org_id:"paysandu",estado:"activo",
-      pendiente_validacion:false,created_at:new Date().toISOString(),
-    });
+    const { foto_url, tipo_cuota, ...resto } = datos;
+    const jugador = {
+      ...resto,
+      foto_url: foto_url || "",
+      tipo_cuota: tipo_cuota || "base",
+      id: uid(), org_id:"paysandu", estado:"activo",
+      pendiente_validacion:false, created_at:new Date().toISOString(),
+    };
+    const res = await sbFetch("baby_jugadores","POST",jugador);
+    if (!res) {
+      await sbFetch("baby_jugadores","POST",{...jugador, foto_url:""});
+    }
     await sbFetch(`baby_formularios_pendientes?id=eq.${p.id}`,"DELETE");
     setPend(prev=>prev.filter(x=>x.id!==p.id));
     const jugs = await sbFetch("baby_jugadores?select=*&order=nombre.asc");
