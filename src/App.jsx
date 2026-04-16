@@ -398,10 +398,13 @@ function PublicoView({ user, onLogout }) {
           boxShadow:"0 4px 16px rgba(20,28,78,.08)"}}>
           <div style={{display:"flex",gap:14,alignItems:"center",marginBottom:16}}>
             {jug.foto_url
-              ? <img src={jug.foto_url} style={{width:72,height:72,borderRadius:"50%",objectFit:"cover",border:`3px solid ${C.navy}`}}/>
-              : <div style={{width:72,height:72,borderRadius:"50%",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
-                  display:"flex",alignItems:"center",justifyContent:"center",fontSize:28}}>⚽</div>
-            }
+              ? <img src={jug.foto_url} style={{width:80,height:80,borderRadius:"50%",objectFit:"cover",border:`3px solid ${C.navy}`}}
+                  onError={e=>{e.target.style.display="none";e.target.nextSibling&&(e.target.nextSibling.style.display="flex");}}/>
+              : null}
+            {(!jug.foto_url)&&(
+              <div style={{width:80,height:80,borderRadius:"50%",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                display:"flex",alignItems:"center",justifyContent:"center",fontSize:32}}>⚽</div>
+            )}
             <div>
               <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,
                 color:C.navy,textTransform:"uppercase",lineHeight:1}}>{jug.nombre}</div>
@@ -534,7 +537,7 @@ function PublicoView({ user, onLogout }) {
 }
 
 /* ══ FORM ALTA JUGADOR ════════════════════════════════════════════════ */
-function FormAltaJugador({ categorias, onSave, onCancel, initialData=null, readonlyPagos=false }) {
+function FormAltaJugador({ categorias, onSave, onCancel, initialData=null, readonlyPagos=false, showTipoCuota=true, readOnly=false }) {
   const [f, setF] = useState(initialData || {
     nombre:"", celular:"", mail:"", categoria_id:"",
     fecha_nacimiento:"", ci:"", numero_camiseta:"", direccion:"",
@@ -552,9 +555,22 @@ function FormAltaJugador({ categorias, onSave, onCancel, initialData=null, reado
 
   return (
     <div>
-      <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"18px 22px"}}>
-        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,
-          color:C.white,textTransform:"uppercase"}}>{initialData?"✏ Editar Jugador":"➕ Nuevo Jugador"}</div>
+      <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"18px 22px",
+        display:"flex",alignItems:"center",gap:14}}>
+        {initialData?.foto_url&&(
+          <img src={initialData.foto_url} style={{width:48,height:48,borderRadius:"50%",
+            objectFit:"cover",border:"2px solid rgba(255,255,255,.4)",flexShrink:0}}
+            onError={e=>e.target.style.display="none"}/>
+        )}
+        <div>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,
+            color:C.white,textTransform:"uppercase"}}>
+            {readOnly?"👤 Ficha del jugador":initialData?"✏ Editar Jugador":"➕ Nuevo Jugador"}
+          </div>
+          {readOnly&&initialData&&<div style={{color:"rgba(255,255,255,.6)",fontSize:12,marginTop:2}}>
+            ID: {initialData.id}
+          </div>}
+        </div>
       </div>
       <div style={{padding:"20px 22px",maxHeight:"70dvh",overflowY:"auto"}}>
         {/* Foto */}
@@ -654,26 +670,30 @@ function FormAltaJugador({ categorias, onSave, onCancel, initialData=null, reado
           </div>
         )}
 
-        <div style={{marginBottom:20}}>
-          <label style={{display:"block",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
-            fontSize:12,color:C.navy,textTransform:"uppercase",marginBottom:5}}>Tipo de cuota</label>
-          <select value={f.tipo_cuota||"base"} onChange={e=>set("tipo_cuota",e.target.value)}
-            style={{width:"100%",padding:"9px 12px",border:`1px solid ${C.gray}`,borderRadius:8,fontSize:14}}>
-            {TIPOS_CUOTA_DEFAULT.map(t=>(
-              <option key={t.id} value={t.id}>{t.nombre} ({t.porcentaje}%)</option>
-            ))}
-          </select>
-        </div>
+        {showTipoCuota&&(
+          <div style={{marginBottom:20}}>
+            <label style={{display:"block",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+              fontSize:12,color:C.navy,textTransform:"uppercase",marginBottom:5}}>Tipo de cuota</label>
+            <select value={f.tipo_cuota||"base"} onChange={e=>set("tipo_cuota",e.target.value)}
+              style={{width:"100%",padding:"9px 12px",border:`1px solid ${C.gray}`,borderRadius:8,fontSize:14}}>
+              {TIPOS_CUOTA_DEFAULT.map(t=>(
+                <option key={t.id} value={t.id}>{t.nombre} ({t.porcentaje}%)</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div style={{display:"flex",gap:10}}>
           <button onClick={onCancel}
             style={{flex:1,padding:"11px",background:"transparent",color:C.navy,
               border:`2px solid ${C.navy}`,borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
-              fontWeight:700,fontSize:14,textTransform:"uppercase"}}>Cancelar</button>
-          <button onClick={()=>valid&&onSave(f)} disabled={!valid}
-            style={{flex:2,padding:"11px",background:valid?`linear-gradient(135deg,${C.navy},${C.navyLight})`:"#e2e2da",
-              color:valid?C.white:C.grayMid,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
-              fontWeight:900,fontSize:15,textTransform:"uppercase"}}>Guardar</button>
+              fontWeight:700,fontSize:14,textTransform:"uppercase"}}>{readOnly?"Cerrar":"Cancelar"}</button>
+          {!readOnly&&(
+            <button onClick={()=>valid&&onSave(f)} disabled={!valid}
+              style={{flex:2,padding:"11px",background:valid?`linear-gradient(135deg,${C.navy},${C.navyLight})`:"#e2e2da",
+                color:valid?C.white:C.grayMid,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+                fontWeight:900,fontSize:15,textTransform:"uppercase"}}>Guardar</button>
+          )}
         </div>
       </div>
     </div>
@@ -770,7 +790,7 @@ function AdminScreen({ user, onLogout }) {
   const [pagos,        setPagos]       = useState([]);
   const [tiposCuota,   setTiposCuota]  = useState(TIPOS_CUOTA_DEFAULT);
   const [filtCat,      setFiltCat]     = useState("todos");
-  const [modal,        setModal]       = useState(null); // null | "newJug" | "editJug" | "newCat" | "newDel" | "pagos"
+  const [modal,        setModal]       = useState(null); // null | "newJug" | "editJug" | "fichaJug" | "newDel" | "editDel"
   const [selJugador,   setSelJugador]  = useState(null);
   const [loading,      setLoading]     = useState(true);
   const [qrLink,       setQrLink]      = useState(null);
@@ -1009,7 +1029,15 @@ function AdminScreen({ user, onLogout }) {
                   borderBottom:`1px solid ${C.gray}`,
                   borderRadius:idx===jugadoresFilt.length-1?"0 0 12px 12px":"0"}}>
                   {/* Nombre en una línea */}
-                  <div style={{minWidth:0,paddingRight:6,display:"flex",alignItems:"center",gap:10}}>
+                  <div style={{minWidth:0,paddingRight:6,display:"flex",alignItems:"center",gap:8}}>
+                    {j.foto_url
+                      ? <img src={j.foto_url} style={{width:36,height:36,borderRadius:"50%",
+                          objectFit:"cover",border:`2px solid ${C.navy}`,flexShrink:0}}
+                          onError={e=>e.target.style.display="none"}/>
+                      : <div style={{width:36,height:36,borderRadius:"50%",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                          display:"flex",alignItems:"center",justifyContent:"center",
+                          fontSize:14,flexShrink:0}}>⚽</div>
+                    }
                     <div style={{minWidth:0}}>
                       <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,
                         color:C.navy,textTransform:"uppercase",overflow:"hidden",textOverflow:"ellipsis",
@@ -1043,10 +1071,14 @@ function AdminScreen({ user, onLogout }) {
                   </div>
                   {/* Acciones */}
                   <div style={{display:"flex",gap:5,justifyContent:"center"}}>
+                    <button onClick={()=>{setSelJugador(j);setModal("fichaJug");}}
+                      style={{padding:"7px 9px",background:C.offWhite,border:`1px solid ${C.gray}`,
+                        borderRadius:7,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                        fontSize:12,cursor:"pointer",color:C.navy}}>👤</button>
                     <button onClick={()=>{setSelJugador(j);setModal("editJug");}}
                       style={{flex:1,padding:"7px 10px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
                         color:C.white,border:"none",borderRadius:7,fontFamily:"'Barlow Condensed',sans-serif",
-                        fontWeight:700,fontSize:12,cursor:"pointer",textTransform:"uppercase"}}>✏ Editar</button>
+                        fontWeight:700,fontSize:12,cursor:"pointer",textTransform:"uppercase"}}>✏</button>
                     <button onClick={()=>deleteJugador(j.id)}
                       style={{padding:"7px 9px",background:"#fff5f5",border:"1px solid #fca5a5",
                         borderRadius:7,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
@@ -1225,6 +1257,19 @@ function AdminScreen({ user, onLogout }) {
             initialData={selJugador}
             onSave={saveJugador}
             onCancel={()=>{setModal(null);setSelJugador(null);}}
+            showTipoCuota={true}
+          />
+        </Modal>
+      )}
+      {modal==="fichaJug"&&selJugador&&(
+        <Modal onClose={()=>{setModal(null);setSelJugador(null);}}>
+          <FormAltaJugador
+            categorias={categorias}
+            initialData={selJugador}
+            onSave={()=>{}}
+            onCancel={()=>{setModal(null);setSelJugador(null);}}
+            showTipoCuota={true}
+            readOnly={true}
           />
         </Modal>
       )}
@@ -1351,7 +1396,10 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
             {/* Semáforo */}
             <div style={{fontSize:24,textAlign:"center"}}>{est.icon}</div>
             {/* Nombre */}
-            <div style={{minWidth:0}}>
+            <div style={{minWidth:0,display:"flex",alignItems:"center",gap:8}}>
+              {j.foto_url&&<img src={j.foto_url} style={{width:32,height:32,borderRadius:"50%",
+                objectFit:"cover",border:`2px solid ${C.navy}`,flexShrink:0}}
+                onError={e=>e.target.style.display="none"}/>}
               <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:16,
                 color:C.navy,textTransform:"uppercase",overflow:"hidden",textOverflow:"ellipsis",
                 whiteSpace:"nowrap"}}>{j.nombre}</div>
@@ -1942,16 +1990,30 @@ function DelegadoScreen({ user, onLogout }) {
               </div>
             </div>
             {jugFiltrados.map(j=>(
-              <div key={j.id} style={{background:C.white,borderRadius:12,padding:"12px 16px",
-                marginBottom:8,border:`1px solid ${C.gray}`,display:"flex",gap:12,alignItems:"center"}}>
-                <div style={{flex:1}}>
+              <div key={j.id} style={{background:C.white,borderRadius:12,padding:"10px 14px",
+                marginBottom:6,border:`1px solid ${C.gray}`,display:"flex",gap:12,alignItems:"center"}}>
+                {j.foto_url
+                  ? <img src={j.foto_url} style={{width:44,height:44,borderRadius:"50%",
+                      objectFit:"cover",border:`2px solid ${C.navy}`,flexShrink:0}}
+                      onError={e=>e.target.style.display="none"}/>
+                  : <div style={{width:44,height:44,borderRadius:"50%",flexShrink:0,
+                      background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                      display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>⚽</div>
+                }
+                <div style={{flex:1,minWidth:0}}>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,
-                    color:C.navy,textTransform:"uppercase"}}>{j.nombre}</div>
+                    color:C.navy,textTransform:"uppercase",overflow:"hidden",textOverflow:"ellipsis",
+                    whiteSpace:"nowrap"}}>{j.nombre}</div>
                   <div style={{fontSize:11,color:C.grayMid}}>{j.categoria_id} · {j.celular}</div>
                 </div>
-                <button onClick={()=>{setSelJug(j);setModal("form");}}
-                  style={{background:C.offWhite,border:`1px solid ${C.gray}`,borderRadius:6,
-                    padding:"5px 10px",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏</button>
+                <div style={{display:"flex",gap:6,flexShrink:0}}>
+                  <button onClick={()=>{setSelJug(j);setModal("ficha");}}
+                    style={{padding:"7px 10px",background:C.offWhite,border:`1px solid ${C.gray}`,
+                      borderRadius:7,fontSize:13,cursor:"pointer",color:C.navy,fontWeight:600}}>👤</button>
+                  <button onClick={()=>{setSelJug(j);setModal("form");}}
+                    style={{padding:"7px 10px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                      color:C.white,border:"none",borderRadius:7,fontSize:13,cursor:"pointer",fontWeight:600}}>✏</button>
+                </div>
               </div>
             ))}
           </div>
@@ -1986,7 +2048,15 @@ function DelegadoScreen({ user, onLogout }) {
       {modal==="form"&&(
         <Modal onClose={()=>{setModal(null);setSelJug(null);}}>
           <FormAltaJugador categorias={categorias} initialData={selJugador}
-            onSave={saveJugador} onCancel={()=>{setModal(null);setSelJug(null);}}/>
+            onSave={saveJugador} onCancel={()=>{setModal(null);setSelJug(null);}}
+            showTipoCuota={false}/>
+        </Modal>
+      )}
+      {modal==="ficha"&&selJugador&&(
+        <Modal onClose={()=>{setModal(null);setSelJug(null);}}>
+          <FormAltaJugador categorias={categorias} initialData={selJugador}
+            onSave={()=>{}} onCancel={()=>{setModal(null);setSelJug(null);}}
+            showTipoCuota={false} readOnly={true}/>
         </Modal>
       )}
     </div>
