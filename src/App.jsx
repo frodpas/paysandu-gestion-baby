@@ -63,6 +63,27 @@ async function sbFetch(path, method="GET", body=null) {
   } catch(e) { console.error("sbFetch catch", e); return null; }
 }
 
+/* ══ COMPRIMIR IMAGEN ════════════════════════════════════════════════ */
+// Redimensiona y comprime una imagen base64 a máx 400px y calidad 0.6
+// Resultado: base64 de ~30-60KB, guardable en Supabase sin problemas
+function comprimirImagen(dataUrl, maxPx=400, quality=0.6) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      let w = img.width, h = img.height;
+      if (w > h && w > maxPx) { h = Math.round(h * maxPx / w); w = maxPx; }
+      else if (h > maxPx)      { w = Math.round(w * maxPx / h); h = maxPx; }
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL("image/jpeg", quality));
+    };
+    img.onerror = () => resolve(dataUrl); // si falla, devolver original
+    img.src = dataUrl;
+  });
+}
+
 /* ══ ESCUDO COMPONENTE ════════════════════════════════════════════════ */
 function ClubLogo({ size=40 }) {
   return <img src={ESCUDO} alt="Escudo" style={{width:size,height:size,objectFit:"contain",borderRadius:"50%"}}/>;
@@ -627,7 +648,7 @@ function FormAltaJugador({ categorias, onSave, onCancel, initialData=null, reado
                   const file=e.target.files?.[0];
                   if(!file) return;
                   const reader=new FileReader();
-                  reader.onload=ev=>set("foto_url",ev.target.result);
+                  reader.onload=async ev=>{ const c=await comprimirImagen(ev.target.result); set("foto_url",c); };
                   reader.readAsDataURL(file);
                 }}/>
             </label>
@@ -642,7 +663,7 @@ function FormAltaJugador({ categorias, onSave, onCancel, initialData=null, reado
                   const file=e.target.files?.[0];
                   if(!file) return;
                   const reader=new FileReader();
-                  reader.onload=ev=>set("foto_url",ev.target.result);
+                  reader.onload=async ev=>{ const c=await comprimirImagen(ev.target.result); set("foto_url",c); };
                   reader.readAsDataURL(file);
                 }}/>
             </label>
@@ -873,7 +894,7 @@ function AdminScreen({ user, onLogout }) {
 
   const saveJugador = async (data) => {
     // Si foto es base64 muy grande (>200KB), no la guardamos en este campo
-    const fotoOk = data.foto_url && data.foto_url.length < 200000 ? data.foto_url : (data.foto_url?.startsWith("http") ? data.foto_url : "");
+    const fotoOk = data.foto_url && data.foto_url.length < 500000 ? data.foto_url : (data.foto_url?.startsWith("http") ? data.foto_url : "");
     const payload = {
       nombre: data.nombre||"",
       celular: data.celular||"",
@@ -933,7 +954,7 @@ function AdminScreen({ user, onLogout }) {
 
     // Jugador normal
     const { foto_url, tipo_cuota, _tipo:_t, ...resto } = datos;
-    const fotoOk = foto_url && foto_url.length < 200000 ? foto_url : (foto_url?.startsWith("http") ? foto_url : "");
+    const fotoOk = foto_url && foto_url.length < 500000 ? foto_url : (foto_url?.startsWith("http") ? foto_url : "");
     const jugador = {
       nombre: resto.nombre||"",
       celular: resto.celular||"",
@@ -2720,7 +2741,10 @@ function FormularioPublico({ tipo, org }) {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = ev => set("foto_url", ev.target.result);
+    reader.onload = async ev => {
+      const compressed = await comprimirImagen(ev.target.result, 400, 0.65);
+      set("foto_url", compressed);
+    };
     reader.readAsDataURL(file);
   };
 
