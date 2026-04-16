@@ -96,26 +96,37 @@ function Modal({ children, onClose, maxWidth=480 }) {
 
 /* ══ LOGIN SCREEN ═════════════════════════════════════════════════════ */
 function LoginScreen({ onLogin }) {
-  const [mode,     setMode]    = useState("publico"); // publico | admin | delegado
-  const [user,     setUser]    = useState("");
-  const [pass,     setPass]    = useState("");
-  const [pin,      setPin]     = useState("");
-  const [jugId,    setJugId]   = useState("");
-  const [err,      setErr]     = useState("");
-  const [loading,  setLoading] = useState(false);
+  const [mode,        setMode]       = useState("publico"); // publico | admin | delegado
+  const [user,        setUser]       = useState("");
+  const [pass,        setPass]       = useState("");
+  const [pin,         setPin]        = useState("");
+  const [jugId,       setJugId]      = useState("");
+  const [err,         setErr]        = useState("");
+  const [loading,     setLoading]    = useState(false);
+  const [delegados,   setDelegados]  = useState([]);
+  const [selDelegado, setSelDelegado]= useState(null); // delegado elegido antes del PIN
 
   const handleAdmin = async () => {
     onLogin({role:"admin", name:"Administrador"});
   };
 
+  // Cargar delegados activos cuando se abre el panel
+  const abrirDelegado = async () => {
+    if (mode === "delegado") { setMode("publico"); return; }
+    setMode("delegado"); setErr(""); setPin(""); setSelDelegado(null);
+    const data = await sbFetch("baby_delegados?activo=eq.true&select=id,nombre,categorias&order=nombre.asc");
+    setDelegados(data||[]);
+  };
+
   const handleDelegado = async () => {
+    if (!selDelegado) return;
     setLoading(true);
-    const data = await sbFetch(`baby_delegados?pin=eq.${pin}&activo=eq.true&select=*`);
+    const data = await sbFetch(`baby_delegados?id=eq.${selDelegado.id}&pin=eq.${pin}&activo=eq.true&select=*`);
     setLoading(false);
     if (data && data.length > 0) {
       onLogin({role:"delegado", ...data[0]});
     } else {
-      setErr("PIN incorrecto o delegado inactivo");
+      setErr("PIN incorrecto");
     }
   };
 
@@ -145,7 +156,7 @@ function LoginScreen({ onLogin }) {
             textTransform:"uppercase",backdropFilter:"blur(8px)"}}>
           👤 Admin
         </button>
-        <button onClick={()=>{setMode(mode==="delegado"?"publico":"delegado");setErr("");setPin("");}}
+        <button onClick={abrirDelegado}
           title="Delegado"
           style={{background:mode==="delegado"?"rgba(134,239,172,.2)":"rgba(255,255,255,.1)",
             border:`1px solid ${mode==="delegado"?"#86efac":"rgba(255,255,255,.25)"}`,
@@ -219,34 +230,80 @@ function LoginScreen({ onLogin }) {
           <div className="fi" style={{background:"rgba(255,255,255,.08)",borderRadius:20,padding:28,
             backdropFilter:"blur(8px)",border:"1px solid rgba(134,239,172,.3)"}}>
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,
-              color:"#86efac",textTransform:"uppercase",marginBottom:8,textAlign:"center"}}>🏃 Delegado</div>
-            <div style={{color:"rgba(255,255,255,.6)",fontSize:13,marginBottom:20,textAlign:"center"}}>
-              Ingresá tu PIN de 4 dígitos
-            </div>
-            <div style={{display:"flex",gap:10,justifyContent:"center",marginBottom:16}}>
-              {[0,1,2,3].map(i=>(
-                <input key={i} type="password" maxLength={1} value={pin[i]||""}
-                  onChange={e=>{
-                    const v=e.target.value.replace(/\D/g,"");
-                    const arr=pin.split("");
-                    arr[i]=v;
-                    const np=arr.join("").slice(0,4);
-                    setPin(np);
-                    if(v&&i<3) document.getElementById(`pin-${i+1}`)?.focus();
-                  }}
-                  id={`pin-${i}`}
-                  style={{width:60,height:60,borderRadius:14,border:"2px solid rgba(134,239,172,.5)",
-                    background:"rgba(255,255,255,.1)",color:C.white,fontSize:30,fontWeight:900,
-                    textAlign:"center",outline:"none"}}/>
-              ))}
-            </div>
-            {err&&<div style={{color:"#fca5a5",fontSize:12,marginBottom:10,textAlign:"center"}}>{err}</div>}
-            <button onClick={handleDelegado} disabled={loading||pin.length<4}
-              style={{width:"100%",padding:"13px",background:`linear-gradient(135deg,${C.green},#15803d)`,
-                color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
-                fontWeight:900,fontSize:16,textTransform:"uppercase"}}>
-              {loading?"...":"Ingresar"}
-            </button>
+              color:"#86efac",textTransform:"uppercase",marginBottom:16,textAlign:"center"}}>🏃 Delegado</div>
+
+            {/* Paso 1: elegir delegado */}
+            {!selDelegado ? (
+              <>
+                <div style={{color:"rgba(255,255,255,.6)",fontSize:13,marginBottom:14,textAlign:"center"}}>
+                  Seleccioná tu nombre
+                </div>
+                {delegados.length===0 && (
+                  <div style={{color:"rgba(255,255,255,.4)",fontSize:13,textAlign:"center",padding:"20px 0"}}>
+                    ⏳ Cargando delegados...
+                  </div>
+                )}
+                <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:16,maxHeight:240,overflowY:"auto"}}>
+                  {delegados.map(d=>(
+                    <button key={d.id} onClick={()=>{setSelDelegado(d);setPin("");setErr("");}}
+                      style={{padding:"12px 16px",background:"rgba(255,255,255,.12)",
+                        border:"1px solid rgba(134,239,172,.3)",borderRadius:12,
+                        color:C.white,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                        fontSize:16,textTransform:"uppercase",textAlign:"left",cursor:"pointer",
+                        display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                      <span>{d.nombre}</span>
+                      <span style={{fontSize:11,color:"rgba(255,255,255,.5)",textTransform:"none",fontWeight:400}}>
+                        {(d.categorias||[]).length>0?(d.categorias||[]).join(", "):"Todas"}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              /* Paso 2: ingresar PIN */
+              <>
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20,
+                  background:"rgba(255,255,255,.1)",borderRadius:12,padding:"10px 14px"}}>
+                  <div style={{flex:1}}>
+                    <div style={{color:"rgba(255,255,255,.5)",fontSize:11,textTransform:"uppercase"}}>Delegado</div>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:18,
+                      color:C.white,textTransform:"uppercase"}}>{selDelegado.nombre}</div>
+                  </div>
+                  <button onClick={()=>{setSelDelegado(null);setPin("");setErr("");}}
+                    style={{background:"rgba(255,255,255,.15)",border:"none",borderRadius:8,
+                      padding:"6px 10px",color:"rgba(255,255,255,.7)",fontSize:12,cursor:"pointer"}}>
+                    Cambiar
+                  </button>
+                </div>
+                <div style={{color:"rgba(255,255,255,.6)",fontSize:13,marginBottom:14,textAlign:"center"}}>
+                  Ingresá tu PIN de 4 dígitos
+                </div>
+                <div style={{display:"flex",gap:10,justifyContent:"center",marginBottom:16}}>
+                  {[0,1,2,3].map(i=>(
+                    <input key={i} type="password" maxLength={1} value={pin[i]||""}
+                      onChange={e=>{
+                        const v=e.target.value.replace(/\D/g,"");
+                        const arr=pin.split("");
+                        arr[i]=v;
+                        const np=arr.join("").slice(0,4);
+                        setPin(np);
+                        if(v&&i<3) document.getElementById(`pin-${i+1}`)?.focus();
+                      }}
+                      id={`pin-${i}`}
+                      style={{width:60,height:60,borderRadius:14,border:"2px solid rgba(134,239,172,.5)",
+                        background:"rgba(255,255,255,.1)",color:C.white,fontSize:30,fontWeight:900,
+                        textAlign:"center",outline:"none"}}/>
+                  ))}
+                </div>
+                {err&&<div style={{color:"#fca5a5",fontSize:13,marginBottom:10,textAlign:"center"}}>{err}</div>}
+                <button onClick={handleDelegado} disabled={loading||pin.length<4}
+                  style={{width:"100%",padding:"13px",background:`linear-gradient(135deg,${C.green},#15803d)`,
+                    color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+                    fontWeight:900,fontSize:16,textTransform:"uppercase",cursor:pin.length<4?"default":"pointer"}}>
+                  {loading?"...":"Ingresar"}
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -356,9 +413,9 @@ function PublicoView({ user, onLogout }) {
             {[
               ["📅","Nacimiento",jug.fecha_nacimiento],
               ["🏷","Categoría",jug.categoria_id],
-              ["💳","Tipo cuota",tipoCuota.nombre],
               ["📱","Contacto",jug.celular],
-            ].map(([ico,lbl,val])=>(
+              jug.numero_camiseta ? ["👕","Camiseta","#"+jug.numero_camiseta] : null,
+            ].filter(Boolean).map(([ico,lbl,val])=>(
               <div key={lbl} style={{background:C.offWhite,borderRadius:10,padding:"8px 12px"}}>
                 <div style={{fontSize:10,color:C.grayMid,textTransform:"uppercase",fontWeight:600}}>{ico} {lbl}</div>
                 <div style={{fontSize:13,fontWeight:700,color:C.navy,marginTop:2}}>{val||"-"}</div>
@@ -501,11 +558,62 @@ function FormAltaJugador({ categorias, onSave, onCancel, initialData=null, reado
       </div>
       <div style={{padding:"20px 22px",maxHeight:"70dvh",overflowY:"auto"}}>
         {/* Foto */}
-        <div style={{marginBottom:14}}>
+        <div style={{marginBottom:16}}>
           <label style={{display:"block",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
-            fontSize:12,color:C.navy,textTransform:"uppercase",marginBottom:6}}>Foto (URL) — opcional</label>
-          <input value={f.foto_url} onChange={e=>set("foto_url",e.target.value)} placeholder="https://..."
-            style={{width:"100%",padding:"9px 12px",border:`1px solid ${C.gray}`,borderRadius:8,fontSize:13}}/>
+            fontSize:12,color:C.navy,textTransform:"uppercase",marginBottom:8}}>Foto — opcional</label>
+          {/* Preview */}
+          {f.foto_url&&(
+            <div style={{textAlign:"center",marginBottom:10}}>
+              <img src={f.foto_url} alt="preview"
+                style={{width:80,height:80,borderRadius:"50%",objectFit:"cover",
+                  border:`3px solid ${C.navy}`}}
+                onError={e=>e.target.style.display="none"}/>
+            </div>
+          )}
+          {/* Opciones foto */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+            <label style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,
+              padding:"12px 8px",border:`2px dashed ${C.navy}`,borderRadius:10,cursor:"pointer",
+              background:C.offWhite,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+              fontSize:12,color:C.navy,textTransform:"uppercase",textAlign:"center"}}>
+              📸 Sacar foto
+              <input type="file" accept="image/*" capture="environment"
+                style={{display:"none"}}
+                onChange={e=>{
+                  const file=e.target.files?.[0];
+                  if(!file) return;
+                  const reader=new FileReader();
+                  reader.onload=ev=>set("foto_url",ev.target.result);
+                  reader.readAsDataURL(file);
+                }}/>
+            </label>
+            <label style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,
+              padding:"12px 8px",border:`2px dashed ${C.gray}`,borderRadius:10,cursor:"pointer",
+              background:C.offWhite,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+              fontSize:12,color:C.navy,textTransform:"uppercase",textAlign:"center"}}>
+              🖼 Elegir imagen
+              <input type="file" accept="image/*"
+                style={{display:"none"}}
+                onChange={e=>{
+                  const file=e.target.files?.[0];
+                  if(!file) return;
+                  const reader=new FileReader();
+                  reader.onload=ev=>set("foto_url",ev.target.result);
+                  reader.readAsDataURL(file);
+                }}/>
+            </label>
+          </div>
+          <input value={f.foto_url&&f.foto_url.startsWith("data:")?"":(f.foto_url||"")}
+            onChange={e=>set("foto_url",e.target.value)}
+            placeholder="O pegá una URL de imagen..."
+            style={{width:"100%",padding:"8px 12px",border:`1px solid ${C.gray}`,borderRadius:8,
+              fontSize:12,color:C.grayMid}}/>
+          {f.foto_url&&(
+            <button onClick={()=>set("foto_url","")}
+              style={{marginTop:4,background:"none",border:"none",color:"#dc2626",
+                fontSize:11,cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",
+                fontWeight:600}}>✕ Eliminar foto</button>
+          )}
         </div>
 
         {[
@@ -1811,6 +1919,16 @@ function DelegadoScreen({ user, onLogout }) {
                 style={{background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,color:C.white,
                   border:"none",borderRadius:8,padding:"8px 16px",fontFamily:"'Barlow Condensed',sans-serif",
                   fontWeight:700,fontSize:13,textTransform:"uppercase"}}>➕ Nuevo jugador</button>
+              <button onClick={()=>{
+                  const base=window.location.origin;
+                  const link=`${base}?form=jugador&org=paysandu`;
+                  navigator.clipboard?.writeText(link).then(()=>{
+                    alert("✅ Enlace copiado. Podés pegarlo en WhatsApp o email para que completen el formulario.");
+                  });
+                }}
+                style={{background:C.offWhite,color:C.navy,border:`2px solid ${C.navy}`,borderRadius:8,
+                  padding:"8px 14px",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                  fontSize:13,textTransform:"uppercase"}}>🔗 Copiar link formulario</button>
               <div style={{display:"flex",gap:6,flexWrap:"wrap",marginLeft:"auto"}}>
                 {["todos",...categorias.map(c=>c.id)].map(cid=>(
                   <button key={cid} onClick={()=>setFiltCat(cid)}
