@@ -52,7 +52,9 @@ async function sbFetch(path, method="GET", body=null) {
     });
     if (!res.ok) {
       const err = await res.text().catch(()=>"");
-      console.error("sbFetch error", method, path, res.status, err.slice(0,200));
+      console.error("sbFetch error", method, path, res.status, err.slice(0,300));
+      // Guardar el último error para mostrarlo
+      window._lastSbError = `HTTP ${res.status}: ${err.slice(0,200)}`;
       return null;
     }
     if (method==="DELETE"||res.status===204) return true;
@@ -895,7 +897,11 @@ function AdminScreen({ user, onLogout }) {
       const res = await sbFetch("baby_jugadores", "POST", {
         ...payload, id:newId, created_at:new Date().toISOString(),
       });
-      if (!res) { alert("Error al crear jugador. Revisá que las tablas de Supabase estén correctas y sin RLS."); return; }
+      if (!res) {
+        const detail = window._lastSbError || "Sin detalle";
+        alert("❌ Error al crear jugador:\n\n" + detail + "\n\n¿Ya ejecutaste el SQL para deshabilitar RLS en Supabase?");
+        return;
+      }
     }
     setModal(null); setSelJugador(null);
     load();
@@ -950,7 +956,8 @@ function AdminScreen({ user, onLogout }) {
       await sbFetch(`baby_formularios_pendientes?id=eq.${pend.id}`, "DELETE");
       load();
     } else {
-      alert("Error al crear jugador. Si tiene foto grande, intenta de nuevo sin foto.");
+      const detail = window._lastSbError || "Sin detalle";
+      alert("❌ Error al crear jugador:\n\n" + detail + "\n\nSi tiene foto grande, intentando sin foto...");
       const sinFoto = {...jugador, foto_url:""};
       const res2 = await sbFetch("baby_jugadores", "POST", sinFoto);
       if (res2) {
