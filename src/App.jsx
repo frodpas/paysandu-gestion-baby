@@ -148,16 +148,9 @@ function LoginScreen({ onLogin }) {
     setDelegados(data||[]);
   };
 
-  const handleDelegado = async () => {
-    if (!selDelegado) return;
-    setLoading(true);
-    const data = await sbFetch(`baby_delegados?id=eq.${selDelegado.id}&pin=eq.${pin}&activo=eq.true&select=*`);
-    setLoading(false);
-    if (data && data.length > 0) {
-      onLogin({role:"delegado", ...data[0]});
-    } else {
-      setErr("PIN incorrecto");
-    }
+  const handleDelegado = async (delegado) => {
+    // Período de prueba: sin PIN
+    onLogin({role:"delegado", ...delegado});
   };
 
   const handlePublico = async () => {
@@ -175,39 +168,39 @@ function LoginScreen({ onLogin }) {
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${C.navyDark} 0%,${C.navy} 50%,${C.navyLight} 100%)`,
       display:"flex",alignItems:"center",justifyContent:"center",padding:20,position:"relative"}}>
 
-      {/* Iconos pequeños Admin y Delegado — esquina superior derecha */}
-      <div style={{position:"fixed",top:16,right:16,display:"flex",gap:8,zIndex:10}}>
-        <button onClick={()=>{setMode(mode==="admin"?"publico":"admin");setErr("");setUser("");setPass("");}}
-          title="Administrador"
-          style={{background:mode==="admin"?"rgba(232,184,75,.3)":"rgba(255,255,255,.1)",
-            border:`1px solid ${mode==="admin"?C.gold:"rgba(255,255,255,.25)"}`,
-            borderRadius:10,padding:"8px 12px",color:C.white,fontSize:12,
-            fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,cursor:"pointer",
-            textTransform:"uppercase",backdropFilter:"blur(8px)"}}>
-          👤 Admin
-        </button>
-        <button onClick={abrirDelegado}
-          title="Delegado"
-          style={{background:mode==="delegado"?"rgba(134,239,172,.2)":"rgba(255,255,255,.1)",
-            border:`1px solid ${mode==="delegado"?"#86efac":"rgba(255,255,255,.25)"}`,
-            borderRadius:10,padding:"8px 12px",color:C.white,fontSize:12,
-            fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,cursor:"pointer",
-            textTransform:"uppercase",backdropFilter:"blur(8px)"}}>
-          🏃 Delegado
-        </button>
-      </div>
-
-      <div className="fi" style={{maxWidth:400,width:"100%"}}>
-        {/* Header siempre visible */}
-        <div style={{textAlign:"center",marginBottom:28}}>
-          <ClubLogo size={80}/>
-          <h1 style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:32,fontWeight:900,
-            color:C.white,textTransform:"uppercase",letterSpacing:".05em",marginTop:16,lineHeight:1}}>
+      <div className="fi" style={{maxWidth:440,width:"100%"}}>
+        {/* Header con logo grande */}
+        <div style={{textAlign:"center",marginBottom:24}}>
+          <ClubLogo size={120}/>
+          <h1 style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:36,fontWeight:900,
+            color:C.white,textTransform:"uppercase",letterSpacing:".05em",marginTop:18,lineHeight:1}}>
             Paysandú FC
           </h1>
-          <div style={{color:C.lilac,fontFamily:"'Barlow Condensed',sans-serif",fontSize:18,fontWeight:700,
-            textTransform:"uppercase",letterSpacing:".1em",marginTop:4}}>Baby Fútbol</div>
+          <div style={{color:C.lilac,fontFamily:"'Barlow Condensed',sans-serif",fontSize:20,fontWeight:700,
+            textTransform:"uppercase",letterSpacing:".1em",marginTop:6}}>Baby Fútbol</div>
         </div>
+
+        {/* Botones de acceso — los 3 del mismo tamaño */}
+        {mode==="publico"&&(
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+            <button onClick={()=>{setMode("admin");setErr("");setUser("");setPass("");}}
+              style={{padding:"14px 10px",background:"rgba(232,184,75,.15)",
+                border:`2px solid ${C.gold}`,borderRadius:14,color:C.white,
+                fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,
+                cursor:"pointer",textTransform:"uppercase",backdropFilter:"blur(8px)",
+                display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
+              <span style={{fontSize:28}}>👤</span>Admin
+            </button>
+            <button onClick={abrirDelegado}
+              style={{padding:"14px 10px",background:"rgba(134,239,172,.15)",
+                border:"2px solid #86efac",borderRadius:14,color:C.white,
+                fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,
+                cursor:"pointer",textTransform:"uppercase",backdropFilter:"blur(8px)",
+                display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
+              <span style={{fontSize:28}}>🏃</span>Delegado
+            </button>
+          </div>
+        )}
 
         {/* ── PANTALLA PÚBLICA (por defecto) ── */}
         {mode==="publico" && (
@@ -275,7 +268,7 @@ function LoginScreen({ onLogin }) {
                 )}
                 <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:16,maxHeight:240,overflowY:"auto"}}>
                   {delegados.map(d=>(
-                    <button key={d.id} onClick={()=>{setSelDelegado(d);setPin("");setErr("");}}
+                    <button key={d.id} onClick={()=>handleDelegado(d)}
                       style={{padding:"12px 16px",background:"rgba(255,255,255,.12)",
                         border:"1px solid rgba(134,239,172,.3)",borderRadius:12,
                         color:C.white,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
@@ -289,51 +282,7 @@ function LoginScreen({ onLogin }) {
                   ))}
                 </div>
               </>
-            ) : (
-              /* Paso 2: ingresar PIN */
-              <>
-                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20,
-                  background:"rgba(255,255,255,.1)",borderRadius:12,padding:"10px 14px"}}>
-                  <div style={{flex:1}}>
-                    <div style={{color:"rgba(255,255,255,.5)",fontSize:11,textTransform:"uppercase"}}>Delegado</div>
-                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:18,
-                      color:C.white,textTransform:"uppercase"}}>{selDelegado.nombre}</div>
-                  </div>
-                  <button onClick={()=>{setSelDelegado(null);setPin("");setErr("");}}
-                    style={{background:"rgba(255,255,255,.15)",border:"none",borderRadius:8,
-                      padding:"6px 10px",color:"rgba(255,255,255,.7)",fontSize:12,cursor:"pointer"}}>
-                    Cambiar
-                  </button>
-                </div>
-                <div style={{color:"rgba(255,255,255,.6)",fontSize:13,marginBottom:14,textAlign:"center"}}>
-                  Ingresá tu PIN de 4 dígitos
-                </div>
-                <div style={{display:"flex",gap:10,justifyContent:"center",marginBottom:16}}>
-                  {[0,1,2,3].map(i=>(
-                    <input key={i} type="password" maxLength={1} value={pin[i]||""}
-                      onChange={e=>{
-                        const v=e.target.value.replace(/\D/g,"");
-                        const arr=pin.split("");
-                        arr[i]=v;
-                        const np=arr.join("").slice(0,4);
-                        setPin(np);
-                        if(v&&i<3) document.getElementById(`pin-${i+1}`)?.focus();
-                      }}
-                      id={`pin-${i}`}
-                      style={{width:60,height:60,borderRadius:14,border:"2px solid rgba(134,239,172,.5)",
-                        background:"rgba(255,255,255,.1)",color:C.white,fontSize:30,fontWeight:900,
-                        textAlign:"center",outline:"none"}}/>
-                  ))}
-                </div>
-                {err&&<div style={{color:"#fca5a5",fontSize:13,marginBottom:10,textAlign:"center"}}>{err}</div>}
-                <button onClick={handleDelegado} disabled={loading||pin.length<4}
-                  style={{width:"100%",padding:"13px",background:`linear-gradient(135deg,${C.green},#15803d)`,
-                    color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
-                    fontWeight:900,fontSize:16,textTransform:"uppercase",cursor:pin.length<4?"default":"pointer"}}>
-                  {loading?"...":"Ingresar"}
-                </button>
-              </>
-            )}
+            ) : null }
           </div>
         )}
       </div>
@@ -418,7 +367,7 @@ function PublicoView({ user, onLogout }) {
       {/* Header */}
       <div className="app-header" style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"14px 20px"}}>
         <div style={{display:"flex",alignItems:"center",gap:12}}>
-          <ClubLogo size={36}/>
+          <ClubLogo size={48}/>
           <div style={{flex:1}}>
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
               color:C.white,textTransform:"uppercase"}}>Paysandú FC — Baby</div>
@@ -791,7 +740,7 @@ function ModalQRJugador({ jugId, jug, onClose }) {
   return (
     <Modal onClose={onClose} maxWidth={420}>
       <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"16px 20px",textAlign:"center"}}>
-        <ClubLogo size={40}/>
+        <ClubLogo size={52}/>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,
           color:C.white,textTransform:"uppercase",marginTop:8}}>Paysandú FC — Baby Fútbol</div>
       </div>
@@ -1062,7 +1011,7 @@ function AdminScreen({ user, onLogout }) {
       {/* Header */}
       <div className="app-header" style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"12px 18px"}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <ClubLogo size={32}/>
+          <ClubLogo size={44}/>
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:17,
               color:C.white,textTransform:"uppercase"}}>Admin — Paysandú FC Baby</div>
@@ -1222,7 +1171,8 @@ function AdminScreen({ user, onLogout }) {
                     </div>
                   </div>
                   {/* Nacimiento */}
-                  <div style={{fontSize:11,color:C.grayMid,textAlign:"center",whiteSpace:"nowrap"}}>
+                  <div style={{fontSize:13,fontFamily:"'Barlow Condensed',sans-serif",
+                    fontWeight:700,color:"#1a1a1a",textAlign:"center",whiteSpace:"nowrap"}}>
                     {j.fecha_nacimiento||"-"}
                   </div>
                   {/* Cat */}
@@ -1438,7 +1388,8 @@ function AdminScreen({ user, onLogout }) {
                       <div style={{fontSize:13,color:C.navy,fontWeight:600}}>{datos.celular||"-"}</div>
                       <div style={{fontSize:12,color:C.grayMid,overflow:"hidden",textOverflow:"ellipsis",
                         whiteSpace:"nowrap"}}>{datos.mail||"-"}</div>
-                      <div style={{fontSize:13,color:C.navy}}>{datos.fecha_nacimiento||"-"}</div>
+                      <div style={{fontSize:13,fontFamily:"'Barlow Condensed',sans-serif",
+                        fontWeight:700,color:"#1a1a1a"}}>{datos.fecha_nacimiento||"-"}</div>
                       <div style={{display:"flex",gap:6,justifyContent:"center"}}>
                         <button onClick={()=>validarPendiente(p)}
                           style={{flex:1,padding:"9px 10px",background:`linear-gradient(135deg,${C.green},#15803d)`,
@@ -2451,7 +2402,7 @@ function DelegadoScreen({ user, onLogout }) {
     <div style={{minHeight:"100dvh",background:C.offWhite,display:"flex",flexDirection:"column"}}>
       <div className="app-header" style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"12px 18px"}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <ClubLogo size={30}/>
+          <ClubLogo size={44}/>
           <div style={{flex:1}}>
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,
               color:C.white,textTransform:"uppercase"}}>Delegado — {user.nombre}</div>
@@ -2544,6 +2495,8 @@ function DelegadoScreen({ user, onLogout }) {
                 </button>
               ))}
             </div>
+            {/* Tabla delegado planteles — maxWidth fijo */}
+            <div style={{maxWidth:560}}>
             {/* Header tabla */}
             <div style={{display:"grid",gridTemplateColumns:"260px 65px 95px 110px",gap:0,
               padding:"9px 14px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
@@ -2585,7 +2538,8 @@ function DelegadoScreen({ user, onLogout }) {
                 <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:16,
                   color:C.navy,textAlign:"center"}}>{j.categoria_id}</div>
                 {/* Nacimiento */}
-                <div style={{fontSize:11,color:C.grayMid,textAlign:"center"}}>{j.fecha_nacimiento||"-"}</div>
+                <div style={{fontSize:13,fontFamily:"'Barlow Condensed',sans-serif",
+                  fontWeight:700,color:"#1a1a1a",textAlign:"center"}}>{j.fecha_nacimiento||"-"}</div>
                 {/* Acciones */}
                 <div style={{display:"flex",gap:4,justifyContent:"center",alignItems:"center"}}>
                   <button onClick={()=>{
@@ -2612,6 +2566,7 @@ function DelegadoScreen({ user, onLogout }) {
                 </div>
               </div>
             ))}
+            </div>{/* fin tabla delegado planteles */}
           </div>
         )}
 
@@ -2657,7 +2612,8 @@ function DelegadoScreen({ user, onLogout }) {
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
                     fontSize:16,color:C.navy,textAlign:"center"}}>{datos.categoria_id||"-"}</div>
                   <div style={{fontSize:12,color:C.navy}}>{datos.celular||"-"}</div>
-                  <div style={{fontSize:11,color:C.grayMid,textAlign:"center"}}>{datos.fecha_nacimiento||"-"}</div>
+                  <div style={{fontSize:13,fontFamily:"'Barlow Condensed',sans-serif",
+                    fontWeight:700,color:"#1a1a1a",textAlign:"center"}}>{datos.fecha_nacimiento||"-"}</div>
                   <div style={{display:"flex",gap:4,justifyContent:"center"}}>
                     <button onClick={()=>validarPend(p)}
                       style={{padding:"6px 12px",background:`linear-gradient(135deg,${C.green},#15803d)`,
@@ -2819,7 +2775,7 @@ function FormularioDelegado({ org }) {
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${C.navyDark},${C.navy})`,padding:20,paddingBottom:40}}>
       <div style={{maxWidth:480,margin:"0 auto"}}>
         <div style={{textAlign:"center",marginBottom:24}}>
-          <ClubLogo size={70}/>
+          <ClubLogo size={90}/>
           <h1 style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:28,fontWeight:900,
             color:C.white,textTransform:"uppercase",marginTop:14,lineHeight:1.1}}>Paysandú FC</h1>
           <div style={{color:C.gold,fontFamily:"'Barlow Condensed',sans-serif",fontSize:20,fontWeight:700,
@@ -2936,7 +2892,7 @@ function FormularioPublico({ tipo, org }) {
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${C.navyDark},${C.navy})`,padding:20,paddingBottom:40}}>
       <div style={{maxWidth:480,margin:"0 auto"}}>
         <div style={{textAlign:"center",marginBottom:24}}>
-          <ClubLogo size={70}/>
+          <ClubLogo size={90}/>
           <h1 style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:28,fontWeight:900,
             color:C.white,textTransform:"uppercase",marginTop:14,lineHeight:1.1}}>Paysandú FC</h1>
           <div style={{color:C.gold,fontFamily:"'Barlow Condensed',sans-serif",fontSize:20,fontWeight:700,
