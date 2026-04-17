@@ -1162,7 +1162,7 @@ function AdminScreen({ user, onLogout }) {
               {jugadoresFilt.length} jugador{jugadoresFilt.length!==1?"es":""}
             </div>
             {/* Encabezado tabla */}
-            <div style={{display:"grid",gridTemplateColumns:"minmax(160px,280px) 95px 65px 75px 100px fit-content(200px)",gap:0,
+            <div style={{display:"grid",gridTemplateColumns:"1fr 95px 65px 75px 100px 180px",gap:0,
               padding:"9px 14px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
               {["Nombre","Nacimiento","Cat.","Código","Estado","Acciones"].map((h,i)=>(
                 <div key={i} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
@@ -1188,7 +1188,7 @@ function AdminScreen({ user, onLogout }) {
                   : {icon:"🔴",label:`${deudaMeses.length} meses`,color:"#dc2626",bg:"#fee2e2"};
               return(
                 <div key={j.id} style={{display:"grid",
-                  gridTemplateColumns:"minmax(160px,280px) 95px 65px 75px 100px fit-content(200px)",gap:0,
+                  gridTemplateColumns:"1fr 95px 65px 75px 100px 180px",gap:0,
                   alignItems:"center",padding:"8px 14px",
                   background:idx%2===0?C.white:"#f5f5f0",
                   borderLeft:`1px solid ${C.gray}`,borderRight:`1px solid ${C.gray}`,
@@ -1236,7 +1236,7 @@ function AdminScreen({ user, onLogout }) {
                       whiteSpace:"nowrap"}}>{est.icon} {est.label}</span>
                   </div>
                   {/* Acciones: todos iguales, cuadrados, en línea */}
-                  <div style={{display:"flex",gap:5,justifyContent:"center",alignItems:"center"}}>
+                  <div style={{display:"flex",gap:5,justifyContent:"center",alignItems:"center",paddingLeft:8}}>
                     {/* Link pago */}
                     <button onClick={()=>{
                         const msg=j.nombre+" (Cat."+j.categoria_id+") - Link de pago: "+linkAcceso;
@@ -1328,7 +1328,7 @@ function AdminScreen({ user, onLogout }) {
               </button>
             </div>
             {/* Encabezado */}
-            <div style={{display:"grid",gridTemplateColumns:"minmax(160px,280px) 150px 65px 150px fit-content(150px)",gap:0,
+            <div style={{display:"grid",gridTemplateColumns:"1fr 150px 65px 150px 115px",gap:0,
               padding:"11px 16px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
               {["Nombre","Celular / Email","PIN","Categorías","Acciones"].map((h,i)=>(
                 <div key={i} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
@@ -1337,7 +1337,7 @@ function AdminScreen({ user, onLogout }) {
               ))}
             </div>
             {delegados.map((d,idx)=>(
-              <div key={d.id} style={{display:"grid",gridTemplateColumns:"minmax(160px,280px) 150px 65px 150px fit-content(150px)",gap:0,
+              <div key={d.id} style={{display:"grid",gridTemplateColumns:"1fr 150px 65px 150px 115px",gap:0,
                 alignItems:"center",padding:"14px 16px",
                 background:d.activo===false?"#fff5f5":idx%2===0?C.white:"#f8f8f5",
                 borderLeft:`1px solid ${d.activo===false?"#fca5a5":C.gray}`,
@@ -1359,7 +1359,7 @@ function AdminScreen({ user, onLogout }) {
                 <div style={{fontSize:13,color:C.navy,fontWeight:600,padding:"0 6px"}}>
                   {(d.categorias||[]).length>0?(d.categorias||[]).join(", "):"Todas"}
                 </div>
-                <div style={{display:"flex",gap:5,justifyContent:"center",alignItems:"center",padding:"0 4px"}}>
+                <div style={{display:"flex",gap:5,justifyContent:"center",alignItems:"center",paddingLeft:12}}>
                   <button onClick={()=>{setSelJugador(d);setModal("editDel");}}
                     title="Editar"
                     style={{width:34,height:34,padding:0,background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
@@ -1401,7 +1401,7 @@ function AdminScreen({ user, onLogout }) {
             {pendientes.length>0&&(
               <>
                 {/* Encabezado tabla */}
-                <div style={{display:"grid",gridTemplateColumns:"minmax(140px,280px) 80px 110px 120px 100px fit-content(150px)",gap:0,
+                <div style={{display:"grid",gridTemplateColumns:"1fr 80px 110px 120px 100px 130px",gap:0,
                   padding:"10px 16px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
                   {["Nombre","Cat.","Celular","Email","Nacimiento","Acciones"].map((h,i)=>(
                     <div key={i} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
@@ -1677,7 +1677,7 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
       </div>
 
       {/* Encabezado lista */}
-      <div style={{display:"grid",gridTemplateColumns:"50px 1fr 100px 130px fit-content(160px)",gap:8,
+      <div style={{display:"grid",gridTemplateColumns:"50px 1fr 100px 130px 155px",gap:8,
         padding:"10px 16px",background:C.navy,borderRadius:"10px 10px 0 0",alignItems:"center"}}>
         {["","Nombre","Cat.","Estado","Acciones"].map((h,i)=>(
           <div key={i} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
@@ -1691,7 +1691,7 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
           return monto>0&&!pagoJugMes(j.id,mes)&&mes<=mesActual;
         });
         return(
-          <div key={j.id} style={{display:"grid",gridTemplateColumns:"50px 1fr 100px 130px fit-content(160px)",gap:8,
+          <div key={j.id} style={{display:"grid",gridTemplateColumns:"50px 1fr 100px 130px 155px",gap:8,
             alignItems:"center",padding:"12px 16px",
             background:idx%2===0?C.white:"#f8f8f5",border:`1px solid ${C.gray}`,
             borderRadius:idx===jugFiltrados.length-1?"0 0 10px 10px":"0",borderTop:"none"}}>
@@ -2536,7 +2536,7 @@ function DelegadoScreen({ user, onLogout }) {
               ))}
             </div>
             {/* Header tabla */}
-            <div style={{display:"grid",gridTemplateColumns:"minmax(160px,280px) 65px 95px fit-content(120px)",gap:0,
+            <div style={{display:"grid",gridTemplateColumns:"1fr 65px 95px 110px",gap:0,
               padding:"9px 14px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
               {["Nombre","Cat.","Nacimiento","Acciones"].map((h,i)=>(
                 <div key={i} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
@@ -2546,7 +2546,7 @@ function DelegadoScreen({ user, onLogout }) {
             </div>
             {jugFiltrados.map((j,idx)=>(
               <div key={j.id} style={{display:"grid",
-                gridTemplateColumns:"minmax(160px,280px) 65px 95px fit-content(120px)",gap:0,
+                gridTemplateColumns:"1fr 65px 95px 110px",gap:0,
                 alignItems:"center",padding:"8px 14px",
                 background:idx%2===0?C.white:"#f8f8f5",
                 borderLeft:`1px solid ${C.gray}`,borderRight:`1px solid ${C.gray}`,
@@ -2619,7 +2619,7 @@ function DelegadoScreen({ user, onLogout }) {
               }
             </div>
             {/* Header tabla */}
-            <div style={{display:"grid",gridTemplateColumns:"minmax(140px,280px) 65px 110px 95px fit-content(120px)",gap:0,
+            <div style={{display:"grid",gridTemplateColumns:"1fr 65px 110px 95px 105px",gap:0,
               padding:"9px 14px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
               {["Nombre","Cat.","Celular","Nacimiento","Acciones"].map((h,i)=>(
                 <div key={i} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
@@ -2634,7 +2634,7 @@ function DelegadoScreen({ user, onLogout }) {
               const datos=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
               return(
                 <div key={p.id} style={{display:"grid",
-                  gridTemplateColumns:"minmax(140px,280px) 65px 110px 95px fit-content(120px)",gap:0,
+                  gridTemplateColumns:"1fr 65px 110px 95px 105px",gap:0,
                   alignItems:"center",padding:"10px 14px",
                   background:idx%2===0?"#fffbeb":"#fff8e1",
                   borderLeft:`2px solid ${C.gold}`,borderRight:`2px solid ${C.gold}`,
