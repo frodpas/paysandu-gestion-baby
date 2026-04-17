@@ -1026,9 +1026,9 @@ function AdminScreen({ user, onLogout }) {
       {/* Layout: sidebar izquierdo + contenido derecho */}
       <div style={{flex:1,display:"flex",overflow:"hidden"}}>
         {/* Sidebar navegación */}
-        <div style={{width:260,background:C.white,borderRight:`2px solid ${C.gray}`,
+        <div className="admin-sidebar" style={{width:260,background:C.white,borderRight:`2px solid ${C.gray}`,
           padding:"20px 18px",flexShrink:0,overflowY:"auto"}}>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+          <div className="sidebar-grid-admin" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
             {TABS.map(([id,label])=>{
               const active = tab===id;
               const parts = label.split(" ");
@@ -1037,6 +1037,7 @@ function AdminScreen({ user, onLogout }) {
               const hasBadge = id==="pendientes" && pendientes.length>0;
               return(
                 <button key={id} onClick={()=>setTab(id)}
+                  className="sidebar-navbtn"
                   style={{
                     background:active?`linear-gradient(135deg,${C.navy},${C.navyLight})`:C.offWhite,
                     color:active?C.white:C.navy,
@@ -1052,8 +1053,8 @@ function AdminScreen({ user, onLogout }) {
                     background:C.red,color:C.white,borderRadius:"50%",width:19,height:19,
                     fontSize:10,fontWeight:900,display:"flex",alignItems:"center",
                     justifyContent:"center",lineHeight:1}}>{pendientes.length}</span>}
-                  <span style={{fontSize:32,lineHeight:1}}>{icon}</span>
-                  <span style={{fontSize:11,fontWeight:800,letterSpacing:".02em",
+                  <span className="sic" style={{fontSize:32,lineHeight:1}}>{icon}</span>
+                  <span className="slb" style={{fontSize:11,fontWeight:800,letterSpacing:".02em",
                     textAlign:"center",lineHeight:1.2}}>{text}</span>
                 </button>
               );
@@ -1062,7 +1063,7 @@ function AdminScreen({ user, onLogout }) {
         </div>
 
         {/* Contenido principal */}
-        <div style={{flex:1,overflowY:"auto",padding:20,minWidth:0}}>
+        <div className="admin-content" style={{flex:1,overflowY:"auto",padding:20,minWidth:0}}>
         {loading&&<div style={{textAlign:"center",padding:"40px 0",color:C.grayMid}}>⏳ Cargando...</div>}
 
         {/* ── TAB PLANTELES ── */}
@@ -1071,7 +1072,7 @@ function AdminScreen({ user, onLogout }) {
             {/* Barra acciones — botones cuadrados */}
             <div style={{display:"flex",gap:10,marginBottom:12,alignItems:"flex-start",flexWrap:"wrap"}}>
               <button onClick={()=>{setSelJugador(null);setModal("newJug");}}
-                style={{width:110,height:80,background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                className="toolbar-bq" style={{width:110,height:80,background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
                   color:C.white,border:"none",borderRadius:12,
                   fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:12,
                   textTransform:"uppercase",cursor:"pointer",display:"flex",flexDirection:"column",
@@ -1111,7 +1112,7 @@ function AdminScreen({ user, onLogout }) {
               {jugadoresFilt.length} jugador{jugadoresFilt.length!==1?"es":""}
             </div>
             {/* Tabla — ancho máximo = suma columnas */}
-            <div style={{maxWidth:830}}>
+            <div className="tw-scroll" style={{maxWidth:830}}>
             {/* Encabezado tabla */}
             <div style={{display:"grid",gridTemplateColumns:"280px 95px 65px 75px 100px 180px",gap:0,
               padding:"9px 14px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
@@ -1256,7 +1257,7 @@ function AdminScreen({ user, onLogout }) {
           <div style={{maxWidth:"100%",overflowX:"auto"}}>
             <div style={{display:"flex",gap:10,marginBottom:16,alignItems:"flex-start"}}>
               <button onClick={()=>setModal("newDel")}
-                style={{width:110,height:80,background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                className="toolbar-bq" style={{width:110,height:80,background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
                   color:C.white,border:"none",borderRadius:12,
                   fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:12,
                   textTransform:"uppercase",cursor:"pointer",display:"flex",flexDirection:"column",
@@ -1281,7 +1282,7 @@ function AdminScreen({ user, onLogout }) {
               </button>
             </div>
             {/* Tabla delegados — maxWidth fijo */}
-            <div style={{maxWidth:800}}>
+            <div className="tw-scroll" style={{maxWidth:800}}>
             {/* Encabezado */}
             <div style={{display:"grid",gridTemplateColumns:"280px 150px 65px 150px 115px",gap:0,
               padding:"11px 16px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
@@ -1357,7 +1358,7 @@ function AdminScreen({ user, onLogout }) {
             {pendientes.length>0&&(
               <>
                 {/* Tabla pendientes — maxWidth fijo */}
-                <div style={{maxWidth:860}}>
+                <div className="tw-scroll" style={{maxWidth:860}}>
                 {/* Encabezado tabla */}
                 <div style={{display:"grid",gridTemplateColumns:"280px 80px 110px 120px 100px 130px",gap:0,
                   padding:"10px 16px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
@@ -2419,9 +2420,9 @@ function DelegadoScreen({ user, onLogout }) {
       {/* Layout sidebar + contenido igual que admin */}
       <div style={{flex:1,display:"flex",overflow:"hidden"}}>
         {/* Sidebar */}
-        <div style={{width:200,background:C.white,borderRight:`2px solid ${C.gray}`,
+        <div className="admin-sidebar" style={{width:200,background:C.white,borderRight:`2px solid ${C.gray}`,
           padding:"20px 14px",flexShrink:0,overflowY:"auto"}}>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+          <div className="sidebar-grid-admin" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
             {[["planteles","⚽","Planteles"],["pendientes","⏳","Pendientes"]].map(([id,icon,lbl])=>{
               const active=tab===id;
               const hasBadge=id==="pendientes"&&pendientes.length>0;
@@ -2458,7 +2459,7 @@ function DelegadoScreen({ user, onLogout }) {
           <div>
             <div style={{display:"flex",gap:10,marginBottom:12,alignItems:"flex-start",flexWrap:"wrap"}}>
               <button onClick={()=>{setSelJug(null);setModal("form");}}
-                style={{width:110,height:80,background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                className="toolbar-bq" style={{width:110,height:80,background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
                   color:C.white,border:"none",borderRadius:12,
                   fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:12,
                   textTransform:"uppercase",cursor:"pointer",display:"flex",flexDirection:"column",
@@ -2496,7 +2497,7 @@ function DelegadoScreen({ user, onLogout }) {
               ))}
             </div>
             {/* Tabla delegado planteles — maxWidth fijo */}
-            <div style={{maxWidth:560}}>
+            <div className="tw-scroll" style={{maxWidth:560}}>
             {/* Header tabla */}
             <div style={{display:"grid",gridTemplateColumns:"260px 65px 95px 110px",gap:0,
               padding:"9px 14px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
@@ -2651,6 +2652,17 @@ function DelegadoScreen({ user, onLogout }) {
 }
 
 /* ══ APP ROOT ═════════════════════════════════════════════════════════ */
+/* ══ ROTATE OVERLAY COMPONENT ════════════════════════════════════════ */
+function RotateOverlay() {
+  return (
+    <div id="rotate-overlay">
+      <div className="ri">📱</div>
+      <div className="rm">Girá la pantalla</div>
+      <div className="rs">Este sistema funciona mejor en modo horizontal</div>
+    </div>
+  );
+}
+
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [autoLoading, setAutoLoading] = useState(false);
@@ -2678,6 +2690,7 @@ export default function App() {
     return (
       <>
         <GlobalStyle/>
+        <RotateOverlay/>
         <FormularioPublico tipo={formType} org={params.get("org")||"paysandu"}/>
       </>
     );
@@ -2686,6 +2699,7 @@ export default function App() {
     return (
       <>
         <GlobalStyle/>
+        <RotateOverlay/>
         <FormularioDelegado org={params.get("org")||"paysandu"}/>
       </>
     );
@@ -2695,6 +2709,7 @@ export default function App() {
     return (
       <>
         <GlobalStyle/>
+        <RotateOverlay/>
         <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${C.navyDark},${C.navy})`,
           display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}>
           <ClubLogo size={64}/>
@@ -2709,6 +2724,7 @@ export default function App() {
     return (
       <>
         <GlobalStyle/>
+        <RotateOverlay/>
         <LoginScreen onLogin={setCurrentUser}/>
       </>
     );
@@ -2717,9 +2733,12 @@ export default function App() {
   return (
     <>
       <GlobalStyle/>
+      <RotateOverlay/>
+      <div id="app-root">
       {currentUser.role==="admin"    && <AdminScreen    user={currentUser} onLogout={()=>setCurrentUser(null)}/>}
       {currentUser.role==="delegado" && <DelegadoScreen user={currentUser} onLogout={()=>setCurrentUser(null)}/>}
       {currentUser.role==="publico"  && <PublicoView    user={currentUser} onLogout={()=>setCurrentUser(null)}/>}
+      </div>
     </>
   );
 }
