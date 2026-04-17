@@ -1077,8 +1077,8 @@ function AdminScreen({ user, onLogout }) {
       {/* Layout: sidebar izquierdo + contenido derecho */}
       <div style={{flex:1,display:"flex",overflow:"hidden"}}>
         {/* Sidebar navegación */}
-        <div style={{width:230,background:C.white,borderRight:`2px solid ${C.gray}`,
-          padding:"20px 16px",flexShrink:0,overflowY:"auto"}}>
+        <div style={{width:260,background:C.white,borderRight:`2px solid ${C.gray}`,
+          padding:"20px 18px",flexShrink:0,overflowY:"auto"}}>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
             {TABS.map(([id,label])=>{
               const active = tab===id;
@@ -1162,7 +1162,7 @@ function AdminScreen({ user, onLogout }) {
               {jugadoresFilt.length} jugador{jugadoresFilt.length!==1?"es":""}
             </div>
             {/* Encabezado tabla */}
-            <div style={{display:"grid",gridTemplateColumns:"minmax(200px,1fr) 100px 70px 80px 110px 220px",gap:0,
+            <div style={{display:"grid",gridTemplateColumns:"minmax(160px,1fr) 95px 65px 75px 100px 200px",gap:0,
               padding:"9px 14px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
               {["Nombre","Nacimiento","Cat.","Código","Estado","Acciones"].map((h,i)=>(
                 <div key={i} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
@@ -1188,7 +1188,7 @@ function AdminScreen({ user, onLogout }) {
                   : {icon:"🔴",label:`${deudaMeses.length} meses`,color:"#dc2626",bg:"#fee2e2"};
               return(
                 <div key={j.id} style={{display:"grid",
-                  gridTemplateColumns:"minmax(200px,1fr) 100px 70px 80px 110px 220px",gap:0,
+                  gridTemplateColumns:"minmax(160px,1fr) 95px 65px 75px 100px 200px",gap:0,
                   alignItems:"center",padding:"8px 14px",
                   background:idx%2===0?C.white:"#f5f5f0",
                   borderLeft:`1px solid ${C.gray}`,borderRight:`1px solid ${C.gray}`,
@@ -1328,7 +1328,7 @@ function AdminScreen({ user, onLogout }) {
               </button>
             </div>
             {/* Encabezado */}
-            <div style={{display:"grid",gridTemplateColumns:"1.5fr 140px 90px 140px 200px",gap:0,
+            <div style={{display:"grid",gridTemplateColumns:"minmax(160px,1fr) 160px 70px 160px 170px",gap:0,
               padding:"11px 16px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
               {["Nombre","Celular / Email","PIN","Categorías","Acciones"].map((h,i)=>(
                 <div key={i} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
@@ -1337,7 +1337,7 @@ function AdminScreen({ user, onLogout }) {
               ))}
             </div>
             {delegados.map((d,idx)=>(
-              <div key={d.id} style={{display:"grid",gridTemplateColumns:"1.5fr 140px 90px 140px 200px",gap:0,
+              <div key={d.id} style={{display:"grid",gridTemplateColumns:"minmax(160px,1fr) 160px 70px 160px 170px",gap:0,
                 alignItems:"center",padding:"14px 16px",
                 background:d.activo===false?"#fff5f5":idx%2===0?C.white:"#f8f8f5",
                 borderLeft:`1px solid ${d.activo===false?"#fca5a5":C.gray}`,
@@ -1359,26 +1359,29 @@ function AdminScreen({ user, onLogout }) {
                 <div style={{fontSize:13,color:C.navy,fontWeight:600,padding:"0 6px"}}>
                   {(d.categorias||[]).length>0?(d.categorias||[]).join(", "):"Todas"}
                 </div>
-                <div style={{display:"flex",gap:6,justifyContent:"center",padding:"0 4px"}}>
+                <div style={{display:"flex",gap:5,justifyContent:"center",alignItems:"center",padding:"0 4px"}}>
                   <button onClick={()=>{setSelJugador(d);setModal("editDel");}}
-                    style={{flex:1,padding:"9px 8px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
-                      color:C.white,border:"none",borderRadius:8,fontFamily:"'Barlow Condensed',sans-serif",
-                      fontWeight:700,fontSize:13,cursor:"pointer",textTransform:"uppercase"}}>✏ Editar</button>
+                    title="Editar"
+                    style={{width:34,height:34,padding:0,background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                      color:C.white,border:"none",borderRadius:8,fontSize:15,cursor:"pointer",
+                      display:"flex",alignItems:"center",justifyContent:"center"}}>✏️</button>
                   <button onClick={async()=>{
                       await sbFetch(`baby_delegados?id=eq.${d.id}`,"PATCH",{activo:d.activo===false?true:false});
                       load();
                     }}
-                    style={{flex:1,padding:"9px 8px",
-                      background:d.activo===false?`linear-gradient(135deg,${C.green},#15803d)`:"#fef3c7",
-                      color:d.activo===false?C.white:"#d97706",border:"none",borderRadius:8,
-                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,cursor:"pointer",
-                      textTransform:"uppercase"}}>
-                    {d.activo===false?"✅ Activar":"⏸ Suspender"}
+                    title={d.activo===false?"Activar":"Suspender"}
+                    style={{width:34,height:34,padding:0,
+                      background:d.activo===false?"#dcfce7":"#fef3c7",
+                      border:`1px solid ${d.activo===false?"#86efac":"#fde68a"}`,
+                      borderRadius:8,fontSize:15,cursor:"pointer",
+                      display:"flex",alignItems:"center",justifyContent:"center"}}>
+                    {d.activo===false?"▶":"⏸"}
                   </button>
                   <button onClick={()=>deleteDelegado(d.id)}
-                    style={{padding:"9px 10px",background:"#fff5f5",border:"1px solid #fca5a5",
-                      borderRadius:8,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
-                      fontSize:13,cursor:"pointer",color:"#dc2626"}}>🗑</button>
+                    title="Eliminar"
+                    style={{width:34,height:34,padding:0,background:"#fff5f5",
+                      border:"1px solid #fca5a5",borderRadius:8,fontSize:15,cursor:"pointer",
+                      color:"#dc2626",display:"flex",alignItems:"center",justifyContent:"center"}}>🗑</button>
                 </div>
               </div>
             ))}
