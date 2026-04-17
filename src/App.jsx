@@ -1118,7 +1118,7 @@ function AdminScreen({ user, onLogout }) {
 
         {/* ── TAB PLANTELES ── */}
         {!loading&&tab==="planteles"&&(
-          <div style={{maxWidth:"100%"}}>
+          <div style={{maxWidth:"100%",overflowX:"auto"}}>
             {/* Barra acciones — botones cuadrados */}
             <div style={{display:"flex",gap:10,marginBottom:12,alignItems:"flex-start",flexWrap:"wrap"}}>
               <button onClick={()=>{setSelJugador(null);setModal("newJug");}}
@@ -1161,8 +1161,10 @@ function AdminScreen({ user, onLogout }) {
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:C.grayMid,marginBottom:8}}>
               {jugadoresFilt.length} jugador{jugadoresFilt.length!==1?"es":""}
             </div>
+            {/* Tabla — ancho máximo = suma columnas */}
+            <div style={{maxWidth:830}}>
             {/* Encabezado tabla */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 95px 65px 75px 100px 180px",gap:0,
+            <div style={{display:"grid",gridTemplateColumns:"280px 95px 65px 75px 100px 180px",gap:0,
               padding:"9px 14px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
               {["Nombre","Nacimiento","Cat.","Código","Estado","Acciones"].map((h,i)=>(
                 <div key={i} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
@@ -1188,7 +1190,7 @@ function AdminScreen({ user, onLogout }) {
                   : {icon:"🔴",label:`${deudaMeses.length} meses`,color:"#dc2626",bg:"#fee2e2"};
               return(
                 <div key={j.id} style={{display:"grid",
-                  gridTemplateColumns:"1fr 95px 65px 75px 100px 180px",gap:0,
+                  gridTemplateColumns:"280px 95px 65px 75px 100px 180px",gap:0,
                   alignItems:"center",padding:"8px 14px",
                   background:idx%2===0?C.white:"#f5f5f0",
                   borderLeft:`1px solid ${C.gray}`,borderRight:`1px solid ${C.gray}`,
@@ -1279,6 +1281,7 @@ function AdminScreen({ user, onLogout }) {
             {jugadoresFilt.length===0&&(
               <div style={{textAlign:"center",padding:"40px 0",color:C.grayMid}}>Sin jugadores en esta categoría</div>
             )}
+            </div>{/* fin contenedor tabla */}
           </div>
         )}
 
@@ -1300,7 +1303,7 @@ function AdminScreen({ user, onLogout }) {
 
         {/* ── TAB DELEGADOS ── */}
         {!loading&&tab==="delegados"&&(
-          <div style={{maxWidth:"100%"}}>
+          <div style={{maxWidth:"100%",overflowX:"auto"}}>
             <div style={{display:"flex",gap:10,marginBottom:16,alignItems:"flex-start"}}>
               <button onClick={()=>setModal("newDel")}
                 style={{width:110,height:80,background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
@@ -1327,8 +1330,10 @@ function AdminScreen({ user, onLogout }) {
                 <span style={{fontSize:24}}>📋</span>Link registro
               </button>
             </div>
+            {/* Tabla delegados — maxWidth fijo */}
+            <div style={{maxWidth:800}}>
             {/* Encabezado */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 150px 65px 150px 115px",gap:0,
+            <div style={{display:"grid",gridTemplateColumns:"280px 150px 65px 150px 115px",gap:0,
               padding:"11px 16px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
               {["Nombre","Celular / Email","PIN","Categorías","Acciones"].map((h,i)=>(
                 <div key={i} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
@@ -1337,7 +1342,7 @@ function AdminScreen({ user, onLogout }) {
               ))}
             </div>
             {delegados.map((d,idx)=>(
-              <div key={d.id} style={{display:"grid",gridTemplateColumns:"1fr 150px 65px 150px 115px",gap:0,
+              <div key={d.id} style={{display:"grid",gridTemplateColumns:"280px 150px 65px 150px 115px",gap:0,
                 alignItems:"center",padding:"14px 16px",
                 background:d.activo===false?"#fff5f5":idx%2===0?C.white:"#f8f8f5",
                 borderLeft:`1px solid ${d.activo===false?"#fca5a5":C.gray}`,
@@ -1386,12 +1391,13 @@ function AdminScreen({ user, onLogout }) {
               </div>
             ))}
             {delegados.length===0&&<div style={{color:C.grayMid,fontSize:13,padding:"20px 0"}}>Sin delegados registrados</div>}
+            </div>{/* fin tabla delegados */}
           </div>
         )}
 
         {/* ── TAB PENDIENTES ── */}
         {!loading&&tab==="pendientes"&&(
-          <div style={{maxWidth:"100%"}}>
+          <div style={{maxWidth:"100%",overflowX:"auto"}}>
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
               color:C.navy,textTransform:"uppercase",marginBottom:14}}>
               ⏳ Altas pendientes de validación
@@ -1400,8 +1406,10 @@ function AdminScreen({ user, onLogout }) {
             </div>
             {pendientes.length>0&&(
               <>
+                {/* Tabla pendientes — maxWidth fijo */}
+                <div style={{maxWidth:860}}>
                 {/* Encabezado tabla */}
-                <div style={{display:"grid",gridTemplateColumns:"1fr 80px 110px 120px 100px 130px",gap:0,
+                <div style={{display:"grid",gridTemplateColumns:"280px 80px 110px 120px 100px 130px",gap:0,
                   padding:"10px 16px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
                   {["Nombre","Cat.","Celular","Email","Nacimiento","Acciones"].map((h,i)=>(
                     <div key={i} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
@@ -2536,7 +2544,7 @@ function DelegadoScreen({ user, onLogout }) {
               ))}
             </div>
             {/* Header tabla */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 65px 95px 110px",gap:0,
+            <div style={{display:"grid",gridTemplateColumns:"260px 65px 95px 110px",gap:0,
               padding:"9px 14px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
               {["Nombre","Cat.","Nacimiento","Acciones"].map((h,i)=>(
                 <div key={i} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
@@ -2546,7 +2554,7 @@ function DelegadoScreen({ user, onLogout }) {
             </div>
             {jugFiltrados.map((j,idx)=>(
               <div key={j.id} style={{display:"grid",
-                gridTemplateColumns:"1fr 65px 95px 110px",gap:0,
+                gridTemplateColumns:"260px 65px 95px 110px",gap:0,
                 alignItems:"center",padding:"8px 14px",
                 background:idx%2===0?C.white:"#f8f8f5",
                 borderLeft:`1px solid ${C.gray}`,borderRight:`1px solid ${C.gray}`,
@@ -2619,7 +2627,7 @@ function DelegadoScreen({ user, onLogout }) {
               }
             </div>
             {/* Header tabla */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 65px 110px 95px 105px",gap:0,
+            <div style={{display:"grid",gridTemplateColumns:"260px 65px 110px 95px 105px",gap:0,
               padding:"9px 14px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
               {["Nombre","Cat.","Celular","Nacimiento","Acciones"].map((h,i)=>(
                 <div key={i} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
@@ -2634,7 +2642,7 @@ function DelegadoScreen({ user, onLogout }) {
               const datos=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
               return(
                 <div key={p.id} style={{display:"grid",
-                  gridTemplateColumns:"1fr 65px 110px 95px 105px",gap:0,
+                  gridTemplateColumns:"260px 65px 110px 95px 105px",gap:0,
                   alignItems:"center",padding:"10px 14px",
                   background:idx%2===0?"#fffbeb":"#fff8e1",
                   borderLeft:`2px solid ${C.gold}`,borderRight:`2px solid ${C.gold}`,
