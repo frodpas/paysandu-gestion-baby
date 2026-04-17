@@ -1452,6 +1452,7 @@ function AdminScreen({ user, onLogout }) {
                     </div>
                   );
                 })}
+                </div>{/* fin tabla pendientes */}
               </>
             )}
             {pendientes.length===0&&(
