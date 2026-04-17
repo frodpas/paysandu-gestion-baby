@@ -879,8 +879,15 @@ function AdminScreen({ user, onLogout }) {
   };
 
   const deleteJugador = async (id) => {
-    if (!confirm("¿Eliminar jugador?")) return;
-    await sbFetch(`baby_jugadores?id=eq.${id}`, "DELETE");
+    if (!confirm("¿Eliminar jugador? Esta acción no se puede deshacer.")) return;
+    // Primero eliminar pagos del jugador
+    await sbFetch(`baby_pagos?jugador_id=eq.${id}`, "DELETE");
+    const res = await sbFetch(`baby_jugadores?id=eq.${id}`, "DELETE");
+    if (res === null) {
+      const detail = window._lastSbError || "Sin detalle";
+      alert("❌ Error al eliminar jugador:\n" + detail);
+      return;
+    }
     load();
   };
 
@@ -1112,7 +1119,7 @@ function AdminScreen({ user, onLogout }) {
               {jugadoresFilt.length} jugador{jugadoresFilt.length!==1?"es":""}
             </div>
             {/* Tabla — ancho máximo = suma columnas */}
-            <div className="tw-scroll" style={{maxWidth:830}}>
+            <div className="tw-scroll" style={{maxWidth:920}}>
             {/* Encabezado tabla */}
             <div style={{display:"grid",gridTemplateColumns:"280px 95px 65px 75px 100px 180px",gap:0,
               padding:"9px 14px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
@@ -1140,7 +1147,7 @@ function AdminScreen({ user, onLogout }) {
                   : {icon:"🔴",label:`${deudaMeses.length} meses`,color:"#dc2626",bg:"#fee2e2"};
               return(
                 <div key={j.id} style={{display:"grid",
-                  gridTemplateColumns:"280px 95px 65px 75px 100px 180px",gap:0,
+                  gridTemplateColumns:"280px 95px 65px 75px 100px 90px 180px",gap:0,
                   alignItems:"center",padding:"8px 14px",
                   background:idx%2===0?C.white:"#f5f5f0",
                   borderLeft:`1px solid ${C.gray}`,borderRight:`1px solid ${C.gray}`,
@@ -1187,6 +1194,15 @@ function AdminScreen({ user, onLogout }) {
                     <span style={{background:est.bg,color:est.color,borderRadius:20,padding:"3px 8px",
                       fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:12,
                       whiteSpace:"nowrap"}}>{est.icon} {est.label}</span>
+                  </div>
+                  {/* Tipo cuota */}
+                  <div style={{textAlign:"center"}}>
+                    {(()=>{
+                      const tc=tiposCuota.find(t=>t.id===j.tipo_cuota)||tiposCuota[0];
+                      return <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                        fontSize:11,color:tc.porcentaje===0?"#16a34a":tc.porcentaje<100?"#d97706":C.navy,
+                        whiteSpace:"nowrap"}}>{tc.nombre}</span>;
+                    })()}
                   </div>
                   {/* Acciones: todos iguales, cuadrados, en línea */}
                   <div style={{display:"flex",gap:5,justifyContent:"center",alignItems:"center",paddingLeft:8}}>
@@ -1638,9 +1654,9 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
       </div>
 
       {/* Encabezado lista */}
-      <div style={{display:"grid",gridTemplateColumns:"50px 1fr 100px 130px 155px",gap:8,
+      <div style={{display:"grid",gridTemplateColumns:"50px 1fr 100px 90px 130px 155px",gap:8,
         padding:"10px 16px",background:C.navy,borderRadius:"10px 10px 0 0",alignItems:"center"}}>
-        {["","Nombre","Cat.","Estado","Acciones"].map((h,i)=>(
+        {["","Nombre","Cat.","Cuota","Estado","Acciones"].map((h,i)=>(
           <div key={i} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
             fontSize:13,color:C.white,textTransform:"uppercase",textAlign:i>2?"center":"left"}}>{h}</div>
         ))}
@@ -1652,7 +1668,7 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
           return monto>0&&!pagoJugMes(j.id,mes)&&mes<=mesActual;
         });
         return(
-          <div key={j.id} style={{display:"grid",gridTemplateColumns:"50px 1fr 100px 130px 155px",gap:8,
+          <div key={j.id} style={{display:"grid",gridTemplateColumns:"50px 1fr 100px 90px 130px 155px",gap:8,
             alignItems:"center",padding:"12px 16px",
             background:idx%2===0?C.white:"#f8f8f5",border:`1px solid ${C.gray}`,
             borderRadius:idx===jugFiltrados.length-1?"0 0 10px 10px":"0",borderTop:"none"}}>
@@ -1678,6 +1694,15 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
             {/* Categoría */}
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,
               color:C.navy,textAlign:"center"}}>{j.categoria_id}</div>
+            {/* Tipo cuota */}
+            <div style={{textAlign:"center"}}>
+              {(()=>{
+                const tc=(tiposCuota||TIPOS_CUOTA_DEFAULT).find(t=>t.id===j.tipo_cuota)||(tiposCuota||TIPOS_CUOTA_DEFAULT)[0];
+                return <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                  fontSize:11,color:tc.porcentaje===0?"#16a34a":tc.porcentaje<100?"#d97706":C.navy,
+                  whiteSpace:"nowrap"}}>{tc.nombre}</span>;
+              })()}
+            </div>
             {/* Estado */}
             <div style={{background:est.bg,borderRadius:20,padding:"5px 12px",textAlign:"center",
               fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
@@ -2499,7 +2524,7 @@ function DelegadoScreen({ user, onLogout }) {
             {/* Tabla delegado planteles — maxWidth fijo */}
             <div className="tw-scroll" style={{maxWidth:560}}>
             {/* Header tabla */}
-            <div style={{display:"grid",gridTemplateColumns:"260px 65px 95px 110px",gap:0,
+            <div style={{display:"grid",gridTemplateColumns:"260px 65px 95px 140px",gap:0,
               padding:"9px 14px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
               {["Nombre","Cat.","Nacimiento","Acciones"].map((h,i)=>(
                 <div key={i} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
@@ -2509,7 +2534,7 @@ function DelegadoScreen({ user, onLogout }) {
             </div>
             {jugFiltrados.map((j,idx)=>(
               <div key={j.id} style={{display:"grid",
-                gridTemplateColumns:"260px 65px 95px 110px",gap:0,
+                gridTemplateColumns:"260px 65px 95px 140px",gap:0,
                 alignItems:"center",padding:"8px 14px",
                 background:idx%2===0?C.white:"#f8f8f5",
                 borderLeft:`1px solid ${C.gray}`,borderRight:`1px solid ${C.gray}`,
@@ -2564,6 +2589,17 @@ function DelegadoScreen({ user, onLogout }) {
                     style={{width:30,height:30,padding:0,background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
                       color:C.white,border:"none",borderRadius:7,fontSize:13,cursor:"pointer",
                       display:"flex",alignItems:"center",justifyContent:"center"}}>✏️</button>
+                  <button onClick={async()=>{
+                      if(!confirm("¿Eliminar jugador?")) return;
+                      await sbFetch(`baby_pagos?jugador_id=eq.${j.id}`,"DELETE");
+                      await sbFetch(`baby_jugadores?id=eq.${j.id}`,"DELETE");
+                      const jugs=await sbFetch("baby_jugadores?select=*&order=nombre.asc");
+                      setJug((jugs||[]).filter(x=>misCategs.length===0||misCategs.includes(x.categoria_id)));
+                    }}
+                    title="Eliminar"
+                    style={{width:30,height:30,padding:0,background:"#fff5f5",border:"1px solid #fca5a5",
+                      borderRadius:7,fontSize:13,cursor:"pointer",color:"#dc2626",
+                      display:"flex",alignItems:"center",justifyContent:"center"}}>🗑</button>
                 </div>
               </div>
             ))}
