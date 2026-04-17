@@ -1162,7 +1162,7 @@ function AdminScreen({ user, onLogout }) {
               {jugadoresFilt.length} jugador{jugadoresFilt.length!==1?"es":""}
             </div>
             {/* Encabezado tabla */}
-            <div style={{display:"grid",gridTemplateColumns:"minmax(160px,1fr) 95px 65px 75px 100px 200px",gap:0,
+            <div style={{display:"grid",gridTemplateColumns:"minmax(160px,280px) 95px 65px 75px 100px 200px",gap:0,
               padding:"9px 14px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
               {["Nombre","Nacimiento","Cat.","Código","Estado","Acciones"].map((h,i)=>(
                 <div key={i} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
@@ -1188,7 +1188,7 @@ function AdminScreen({ user, onLogout }) {
                   : {icon:"🔴",label:`${deudaMeses.length} meses`,color:"#dc2626",bg:"#fee2e2"};
               return(
                 <div key={j.id} style={{display:"grid",
-                  gridTemplateColumns:"minmax(160px,1fr) 95px 65px 75px 100px 200px",gap:0,
+                  gridTemplateColumns:"minmax(160px,280px) 95px 65px 75px 100px 200px",gap:0,
                   alignItems:"center",padding:"8px 14px",
                   background:idx%2===0?C.white:"#f5f5f0",
                   borderLeft:`1px solid ${C.gray}`,borderRight:`1px solid ${C.gray}`,
@@ -1328,7 +1328,7 @@ function AdminScreen({ user, onLogout }) {
               </button>
             </div>
             {/* Encabezado */}
-            <div style={{display:"grid",gridTemplateColumns:"minmax(160px,1fr) 160px 70px 160px 170px",gap:0,
+            <div style={{display:"grid",gridTemplateColumns:"minmax(160px,280px) 150px 65px 150px 160px",gap:0,
               padding:"11px 16px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
               {["Nombre","Celular / Email","PIN","Categorías","Acciones"].map((h,i)=>(
                 <div key={i} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
@@ -1337,7 +1337,7 @@ function AdminScreen({ user, onLogout }) {
               ))}
             </div>
             {delegados.map((d,idx)=>(
-              <div key={d.id} style={{display:"grid",gridTemplateColumns:"minmax(160px,1fr) 160px 70px 160px 170px",gap:0,
+              <div key={d.id} style={{display:"grid",gridTemplateColumns:"minmax(160px,280px) 150px 65px 150px 160px",gap:0,
                 alignItems:"center",padding:"14px 16px",
                 background:d.activo===false?"#fff5f5":idx%2===0?C.white:"#f8f8f5",
                 borderLeft:`1px solid ${d.activo===false?"#fca5a5":C.gray}`,
@@ -1401,7 +1401,7 @@ function AdminScreen({ user, onLogout }) {
             {pendientes.length>0&&(
               <>
                 {/* Encabezado tabla */}
-                <div style={{display:"grid",gridTemplateColumns:"2fr 100px 130px 130px 130px 160px",gap:0,
+                <div style={{display:"grid",gridTemplateColumns:"minmax(140px,280px) 80px 110px 120px 100px 150px",gap:0,
                   padding:"10px 16px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
                   {["Nombre","Cat.","Celular","Email","Nacimiento","Acciones"].map((h,i)=>(
                     <div key={i} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
@@ -2456,28 +2456,56 @@ function DelegadoScreen({ user, onLogout }) {
         </div>
       </div>
 
-      <div style={{background:C.white,borderBottom:`1px solid ${C.gray}`,padding:"8px 12px",display:"flex",gap:6}}>
-        {[["planteles","⚽ Planteles"],["pendientes","⏳ Pendientes"]].map(([id,lbl])=>(
-          <button key={id} onClick={()=>setTab(id)}
-            style={{background:tab===id?C.navy:C.offWhite,color:tab===id?C.white:C.navy,
-              border:`2px solid ${tab===id?C.navy:C.gray}`,borderRadius:20,padding:"6px 16px",
-              fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,
-              textTransform:"uppercase",flex:"1 1 auto",textAlign:"center"}}>
-            {lbl}
-          </button>
-        ))}
-      </div>
+      {/* Layout sidebar + contenido igual que admin */}
+      <div style={{flex:1,display:"flex",overflow:"hidden"}}>
+        {/* Sidebar */}
+        <div style={{width:200,background:C.white,borderRight:`2px solid ${C.gray}`,
+          padding:"20px 14px",flexShrink:0,overflowY:"auto"}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+            {[["planteles","⚽","Planteles"],["pendientes","⏳","Pendientes"]].map(([id,icon,lbl])=>{
+              const active=tab===id;
+              const hasBadge=id==="pendientes"&&pendientes.length>0;
+              return(
+                <button key={id} onClick={()=>setTab(id)}
+                  style={{
+                    background:active?`linear-gradient(135deg,${C.navy},${C.navyLight})`:C.offWhite,
+                    color:active?C.white:C.navy,
+                    border:`2px solid ${active?C.navy:C.gray}`,
+                    borderRadius:16,padding:"10px 8px",
+                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+                    textTransform:"uppercase",
+                    boxShadow:active?"0 6px 18px rgba(20,28,78,.3)":"none",
+                    transition:"all .12s",display:"flex",flexDirection:"column",
+                    alignItems:"center",justifyContent:"center",gap:8,
+                    cursor:"pointer",aspectRatio:"1",position:"relative"}}>
+                  {hasBadge&&<span style={{position:"absolute",top:7,right:7,
+                    background:C.red,color:C.white,borderRadius:"50%",width:19,height:19,
+                    fontSize:10,fontWeight:900,display:"flex",alignItems:"center",
+                    justifyContent:"center",lineHeight:1}}>{pendientes.length}</span>}
+                  <span style={{fontSize:32,lineHeight:1}}>{icon}</span>
+                  <span style={{fontSize:11,fontWeight:800,textAlign:"center",lineHeight:1.2}}>{lbl}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-      <div style={{flex:1,overflowY:"auto",padding:16}}>
+        {/* Contenido */}
+        <div style={{flex:1,overflowY:"auto",padding:18,minWidth:0}}>
         {loading&&<div style={{textAlign:"center",padding:"40px 0",color:C.grayMid}}>⏳ Cargando...</div>}
 
         {!loading&&tab==="planteles"&&(
-          <div style={{maxWidth:700}}>
-            <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}}>
+          <div>
+            <div style={{display:"flex",gap:10,marginBottom:12,alignItems:"flex-start",flexWrap:"wrap"}}>
               <button onClick={()=>{setSelJug(null);setModal("form");}}
-                style={{background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,color:C.white,
-                  border:"none",borderRadius:8,padding:"8px 16px",fontFamily:"'Barlow Condensed',sans-serif",
-                  fontWeight:700,fontSize:13,textTransform:"uppercase"}}>➕ Nuevo jugador</button>
+                style={{width:110,height:80,background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                  color:C.white,border:"none",borderRadius:12,
+                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:12,
+                  textTransform:"uppercase",cursor:"pointer",display:"flex",flexDirection:"column",
+                  alignItems:"center",justifyContent:"center",gap:6,
+                  boxShadow:"0 4px 12px rgba(20,28,78,.25)"}}>
+                <span style={{fontSize:24}}>➕</span>Nuevo jugador
+              </button>
               <button onClick={()=>{
                   const base=window.location.origin;
                   const link=`${base}?form=jugador&org=paysandu`;
@@ -2486,9 +2514,13 @@ function DelegadoScreen({ user, onLogout }) {
                     alert("✅ Enlace de alta copiado. Incluye el título y el link. Pegalo en WhatsApp o email.");
                   });
                 }}
-                style={{background:C.offWhite,color:C.navy,border:`2px solid ${C.navy}`,borderRadius:8,
-                  padding:"8px 14px",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
-                  fontSize:13,textTransform:"uppercase"}}>📋 Crear acceso alta jugadores</button>
+                style={{width:110,height:80,background:C.offWhite,color:C.navy,
+                  border:`2px solid ${C.navy}`,borderRadius:12,
+                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:12,
+                  textTransform:"uppercase",cursor:"pointer",display:"flex",flexDirection:"column",
+                  alignItems:"center",justifyContent:"center",gap:6,lineHeight:1.2,textAlign:"center"}}>
+                <span style={{fontSize:24}}>📋</span>Crear acceso alta
+              </button>
               <div style={{display:"flex",gap:6,flexWrap:"wrap",marginLeft:"auto"}}>
                 {["todos",...categorias.map(c=>c.id)].map(cid=>(
                   <button key={cid} onClick={()=>setFiltCat(cid)}
@@ -2573,7 +2605,8 @@ function DelegadoScreen({ user, onLogout }) {
             })}
           </div>
         )}
-      </div>
+        </div>{/* fin contenido delegado */}
+      </div>{/* fin layout sidebar+contenido delegado */}
 
       {modal==="form"&&(
         <Modal onClose={()=>{setModal(null);setSelJug(null);}}>
