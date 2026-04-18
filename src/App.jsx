@@ -210,7 +210,7 @@ function LoginScreen({ onLogin }) {
   const abrirDelegado = async () => {
     if (mode === "delegado") { setMode("publico"); return; }
     setMode("delegado"); setErr(""); setPin(""); setSelDelegado(null);
-    const data = await sbFetch("baby_delegados?activo=eq.true&select=id,nombre,categorias&order=nombre.asc");
+    const data = await sbFetch("baby_delegados?activo=eq.true&select=id,nombre,categorias,foto_url&order=nombre.asc");
     setDelegados(data||[]);
   };
 
@@ -335,15 +335,28 @@ function LoginScreen({ onLogin }) {
                 <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:16,maxHeight:240,overflowY:"auto"}}>
                   {delegados.map(d=>(
                     <button key={d.id} onClick={()=>handleDelegado(d)}
-                      style={{padding:"12px 16px",background:"rgba(255,255,255,.12)",
+                      style={{padding:"10px 14px",background:"rgba(255,255,255,.12)",
                         border:"1px solid rgba(134,239,172,.3)",borderRadius:12,
                         color:C.white,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
                         fontSize:16,textTransform:"uppercase",textAlign:"left",cursor:"pointer",
-                        display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                      <span>{d.nombre}</span>
-                      <span style={{fontSize:11,color:"rgba(255,255,255,.5)",textTransform:"none",fontWeight:400}}>
-                        {(d.categorias||[]).length>0?(d.categorias||[]).join(", "):"Todas"}
-                      </span>
+                        display:"flex",alignItems:"center",gap:12}}>
+                      {d.foto_url
+                        ? <img src={d.foto_url} style={{width:38,height:38,borderRadius:"50%",
+                            objectFit:"cover",border:"2px solid rgba(134,239,172,.5)",flexShrink:0}}
+                            onError={e=>e.target.style.display="none"}/>
+                        : <div style={{width:38,height:38,borderRadius:"50%",flexShrink:0,
+                            background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",
+                            justifyContent:"center",overflow:"hidden"}}>
+                            <svg viewBox="0 0 24 24" width="26" height="26"><circle cx="12" cy="8" r="4" fill="rgba(255,255,255,.7)"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" fill="rgba(255,255,255,.7)"/></svg>
+                          </div>
+                      }
+                      <div style={{flex:1,minWidth:0}}>
+                        <div>{d.nombre}</div>
+                        <div style={{fontSize:11,color:"rgba(255,255,255,.5)",textTransform:"none",
+                          fontWeight:400,marginTop:2}}>
+                          {(d.categorias||[]).length>0?(d.categorias||[]).join(", "):"Todas las categorías"}
+                        </div>
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -1061,20 +1074,38 @@ function AdminScreen({ user, onLogout }) {
   };
 
   const saveDelegado = async (data) => {
-    await sbFetch("baby_delegados", "POST", {
-      ...data, id:uid(), org_id:"paysandu", activo:true
-    });
+    const fotoOk = data.foto_url && data.foto_url.length < 500000
+      ? data.foto_url
+      : (data.foto_url?.startsWith("http") ? data.foto_url : "");
+    const payload = {
+      nombre: data.nombre||"",
+      celular: data.celular||"",
+      mail: data.mail||"",
+      pin: data.pin||"0000",
+      categorias: data.categorias||[],
+      foto_url: fotoOk,
+      id: uid(), org_id:"paysandu", activo:true,
+    };
+    let res = await sbFetch("baby_delegados", "POST", payload);
+    if (!res && window._lastSbError?.includes("foto_url")) {
+      const {foto_url:_f, ...sinFoto} = payload;
+      res = await sbFetch("baby_delegados", "POST", sinFoto);
+    }
     setModal(null); load();
   };
 
   const saveEditDelegado = async (data) => {
     if (!selJugador) return;
+    const fotoOk = data.foto_url && data.foto_url.length < 500000
+      ? data.foto_url
+      : (data.foto_url?.startsWith("http") ? data.foto_url : "");
     await sbFetch(`baby_delegados?id=eq.${selJugador.id}`, "PATCH", {
       nombre: data.nombre,
       celular: data.celular,
       mail: data.mail,
       pin: data.pin,
       categorias: data.categorias,
+      foto_url: fotoOk,
     });
     setModal(null); setSelJugador(null); load();
   };
@@ -1419,11 +1450,24 @@ function AdminScreen({ user, onLogout }) {
                 borderRight:`1px solid ${d.activo===false?"#fca5a5":C.gray}`,
                 borderBottom:`1px solid ${d.activo===false?"#fca5a5":C.gray}`,
                 borderRadius:idx===delegados.length-1?"0 0 12px 12px":"0"}}>
-                <div style={{paddingRight:8}}>
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:17,
-                    color:d.activo===false?C.grayMid:C.navy,textTransform:"uppercase"}}>{d.nombre}</div>
-                  {d.activo===false&&<span style={{fontSize:11,background:"#fee2e2",color:"#dc2626",
-                    borderRadius:10,padding:"2px 10px",fontWeight:700}}>SUSPENDIDO</span>}
+                <div style={{paddingRight:8,display:"flex",alignItems:"center",gap:10}}>
+                  {d.foto_url
+                    ? <img src={d.foto_url} style={{width:36,height:36,borderRadius:"50%",
+                        objectFit:"cover",border:`2px solid ${C.navy}`,flexShrink:0}}
+                        onError={e=>e.target.style.display="none"}/>
+                    : <div style={{width:36,height:36,borderRadius:"50%",flexShrink:0,
+                        background:"linear-gradient(135deg,#c9d4f0,#a8b8e8)",
+                        border:"2px solid #c0cce8",display:"flex",alignItems:"center",
+                        justifyContent:"center",overflow:"hidden"}}>
+                        <svg viewBox="0 0 24 24" width="24" height="24"><circle cx="12" cy="8" r="4" fill="#6b7db3"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" fill="#6b7db3"/></svg>
+                      </div>
+                  }
+                  <div>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:17,
+                      color:d.activo===false?C.grayMid:C.navy,textTransform:"uppercase"}}>{d.nombre}</div>
+                    {d.activo===false&&<span style={{fontSize:11,background:"#fee2e2",color:"#dc2626",
+                      borderRadius:10,padding:"2px 10px",fontWeight:700}}>SUSPENDIDO</span>}
+                  </div>
                 </div>
                 <div style={{fontSize:13,color:C.navy,padding:"0 6px"}}>
                   <div style={{fontWeight:600}}>{d.celular}</div>
@@ -2557,7 +2601,8 @@ function FormDelegado({ categorias, onSave, onCancel, initialData=null }) {
     mail: initialData.mail||"",
     pin: initialData.pin||"",
     categorias: initialData.categorias||[],
-  } : {nombre:"",celular:"",mail:"",pin:"",categorias:[]});
+    foto_url: initialData.foto_url||"",
+  } : {nombre:"",celular:"",mail:"",pin:"",categorias:[],foto_url:""});
   const set = (k,v) => setF(p=>({...p,[k]:v}));
   const valid = f.nombre&&f.pin.length===4;
   const esEdicion = !!initialData;
@@ -2567,13 +2612,67 @@ function FormDelegado({ categorias, onSave, onCancel, initialData=null }) {
       ? p.categorias.filter(c=>c!==id) : [...p.categorias, id]}));
   };
 
+  const handleFotoDel = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async ev => {
+      const compressed = await comprimirImagen(ev.target.result, 400, 0.65);
+      set("foto_url", compressed);
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
     <div>
-      <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"18px 22px"}}>
+      <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"18px 22px",
+        display:"flex",alignItems:"center",gap:14}}>
+        {f.foto_url&&(
+          <img src={f.foto_url} style={{width:44,height:44,borderRadius:"50%",
+            objectFit:"cover",border:"2px solid rgba(255,255,255,.4)",flexShrink:0}}
+            onError={e=>e.target.style.display="none"}/>
+        )}
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,
           color:C.white,textTransform:"uppercase"}}>{esEdicion?"✏️ Editar Delegado":"🏃 Nuevo Delegado"}</div>
       </div>
-      <div style={{padding:"20px 22px"}}>
+      <div style={{padding:"20px 22px",maxHeight:"70dvh",overflowY:"auto"}}>
+        {/* Foto */}
+        <div style={{marginBottom:16}}>
+          <label style={{display:"block",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+            fontSize:12,color:C.navy,textTransform:"uppercase",marginBottom:8}}>Foto — opcional</label>
+          {f.foto_url&&(
+            <div style={{textAlign:"center",marginBottom:10}}>
+              <img src={f.foto_url} style={{width:80,height:80,borderRadius:"50%",
+                objectFit:"cover",border:`3px solid ${C.navy}`}}
+                onError={e=>e.target.style.display="none"}/>
+            </div>
+          )}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+            <label style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,
+              padding:"12px 8px",border:`2px dashed ${C.navy}`,borderRadius:10,cursor:"pointer",
+              background:"#f0f4ff",textAlign:"center"}}>
+              <span style={{fontSize:24}}>📸</span>
+              <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                fontSize:12,color:C.navy,textTransform:"uppercase"}}>Sacar foto</span>
+              <input type="file" accept="image/*" capture="environment"
+                style={{display:"none"}} onChange={handleFotoDel}/>
+            </label>
+            <label style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,
+              padding:"12px 8px",border:`2px dashed ${C.gray}`,borderRadius:10,cursor:"pointer",
+              background:C.offWhite,textAlign:"center"}}>
+              <span style={{fontSize:24}}>🖼</span>
+              <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                fontSize:12,color:C.navy,textTransform:"uppercase"}}>Galería</span>
+              <input type="file" accept="image/*"
+                style={{display:"none"}} onChange={handleFotoDel}/>
+            </label>
+          </div>
+          {f.foto_url&&(
+            <button onClick={()=>set("foto_url","")}
+              style={{background:"none",border:"none",color:"#dc2626",
+                fontSize:11,cursor:"pointer",fontWeight:600}}>✕ Eliminar foto</button>
+          )}
+        </div>
         {[["nombre","Nombre *"],["celular","Celular"],["mail","Email"]].map(([k,l])=>(
           <div key={k} style={{marginBottom:12}}>
             <label style={{display:"block",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
