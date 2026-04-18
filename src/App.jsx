@@ -120,10 +120,10 @@ function GlobalStyle() {
         font-size:24px;text-transform:uppercase;letter-spacing:.04em;margin-top:8px;}
       #rotate-overlay .rs{font-size:15px;color:rgba(255,255,255,.65);margin-top:6px;}
 
-      /* Mostrar overlay en portrait en pantallas chicas */
+      /* Mostrar overlay en portrait en pantallas chicas — SOLO para admin/delegado */
       @media (orientation:portrait) and (max-width:1024px){
-        #rotate-overlay{display:flex !important;}
-        #app-root{display:none !important;}
+        body.needs-landscape #rotate-overlay{display:flex !important;}
+        body.needs-landscape #app-root{display:none !important;}
       }
 
       /* ── MOBILE LANDSCAPE: sidebar horizontal en la parte inferior ── */
@@ -166,6 +166,11 @@ function GlobalStyle() {
         .tw-scroll{overflow-x:auto !important;}
         /* Botones toolbar más chicos */
         .toolbar-bq{width:80px !important;height:60px !important;font-size:10px !important;}
+        /* Botones de acción en tabla — más chicos para caber */
+        .acts-row{gap:3px !important;}
+        .acts-row button{width:26px !important;height:26px !important;font-size:12px !important;}
+        /* Ocultar columnas menos importantes en mobile landscape */
+        .col-hide-mobile{display:none !important;}
       }
     `}</style>
   );
@@ -1106,6 +1111,11 @@ function AdminScreen({ user, onLogout }) {
     ["categorias", "🏷 Categorías"],
   ];
 
+  useEffect(()=>{
+    document.body.classList.add("needs-landscape");
+    return ()=>document.body.classList.remove("needs-landscape");
+  },[]);
+
   return (
     <div style={{minHeight:"100dvh",background:C.offWhite,display:"flex",flexDirection:"column"}}>
       {/* Header */}
@@ -1280,7 +1290,7 @@ function AdminScreen({ user, onLogout }) {
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:16,
                     color:C.navy,textAlign:"center"}}>{j.categoria_id}</div>
                   {/* Código */}
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:11,
+                  <div className="col-hide-mobile" style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:11,
                     color:C.lilacDark,letterSpacing:".05em",textAlign:"center"}}>{j.id}</div>
                   {/* Estado pago */}
                   <div style={{textAlign:"center"}}>
@@ -1298,7 +1308,7 @@ function AdminScreen({ user, onLogout }) {
                     })()}
                   </div>
                   {/* Acciones: todos iguales, cuadrados, en línea */}
-                  <div style={{display:"flex",gap:4,justifyContent:"center",alignItems:"center"}}>
+                  <div className="acts-row" style={{display:"flex",gap:4,justifyContent:"center",alignItems:"center"}}>
                     {/* Link pago */}
                     <button onClick={()=>{
                         const msg=j.nombre+" (Cat."+j.categoria_id+") - Link de pago: "+linkAcceso;
@@ -2680,6 +2690,11 @@ function DelegadoScreen({ user, onLogout }) {
     const jugs = await sbFetch("baby_jugadores?select=*&order=nombre.asc");
     setJug((jugs||[]).filter(j=>misCategs.length===0||misCategs.includes(j.categoria_id)));
   };
+
+  useEffect(()=>{
+    document.body.classList.add("needs-landscape");
+    return ()=>document.body.classList.remove("needs-landscape");
+  },[]);
 
   return (
     <div style={{minHeight:"100dvh",background:C.offWhite,display:"flex",flexDirection:"column"}}>
