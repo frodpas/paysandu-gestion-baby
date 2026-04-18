@@ -106,7 +106,68 @@ function GlobalStyle() {
       .fi{animation:fi .2s ease;}
       @keyframes pop{0%{transform:scale(.92)}100%{transform:scale(1)}}
       .pop{animation:pop .18s ease;}
-    `}</style>
+
+      /* ── ROTATE OVERLAY ── */
+      #rotate-overlay{
+        display:none;position:fixed;inset:0;z-index:9999;
+        background:linear-gradient(160deg,#141c4e,#1e2a6e);
+        flex-direction:column;align-items:center;justify-content:center;
+        gap:20px;color:white;text-align:center;padding:30px;
+      }
+      @keyframes tilt{0%{transform:rotate(-10deg);}100%{transform:rotate(10deg);}}
+      #rotate-overlay .ri{font-size:72px;animation:tilt 1.2s ease-in-out infinite alternate;}
+      #rotate-overlay .rm{font-family:'Barlow Condensed',sans-serif;font-weight:900;
+        font-size:24px;text-transform:uppercase;letter-spacing:.04em;margin-top:8px;}
+      #rotate-overlay .rs{font-size:15px;color:rgba(255,255,255,.65);margin-top:6px;}
+
+      /* Mostrar overlay en portrait en pantallas chicas */
+      @media (orientation:portrait) and (max-width:1024px){
+        #rotate-overlay{display:flex !important;}
+        #app-root{display:none !important;}
+      }
+
+      /* ── MOBILE LANDSCAPE: sidebar horizontal en la parte inferior ── */
+      @media (max-width:1024px) and (orientation:landscape){
+        /* Ocultar sidebar lateral */
+        .admin-sidebar{display:none !important;}
+        /* El layout pasa a columna: contenido arriba, nav abajo */
+        .admin-layout{flex-direction:column !important;}
+        /* Nav bar horizontal pegada abajo */
+        .mobile-bottom-nav{
+          display:flex !important;
+          position:fixed;bottom:0;left:0;right:0;z-index:200;
+          background:white;border-top:2px solid #e2e2da;
+          padding:6px 8px env(safe-area-inset-bottom,6px);
+          gap:4px;justify-content:space-around;
+          box-shadow:0 -4px 16px rgba(20,28,78,.1);
+        }
+        .mobile-bottom-nav button{
+          flex:1;display:flex;flex-direction:column;align-items:center;
+          justify-content:center;gap:3px;padding:6px 4px;
+          background:none;border:none;border-radius:10px;
+          font-family:'Barlow Condensed',sans-serif;font-weight:800;
+          font-size:9px;text-transform:uppercase;color:#1e2a6e;
+          cursor:pointer;min-width:0;position:relative;
+        }
+        .mobile-bottom-nav button.active{
+          background:linear-gradient(135deg,#1e2a6e,#2d3d9a);
+          color:white;
+        }
+        .mobile-bottom-nav button .mnav-icon{font-size:18px;line-height:1;}
+        .mobile-bottom-nav button .mnav-badge{
+          position:absolute;top:3px;right:10px;
+          background:#c0272d;color:white;border-radius:50%;
+          width:14px;height:14px;font-size:8px;font-weight:900;
+          display:flex;align-items:center;justify-content:center;
+        }
+        /* Contenido tiene padding bottom para no quedar tapado por la nav */
+        .admin-content{padding-bottom:70px !important;}
+        /* Tablas con scroll horizontal en mobile */
+        .tw-scroll{overflow-x:auto !important;}
+        /* Botones toolbar más chicos */
+        .toolbar-bq{width:80px !important;height:60px !important;font-size:10px !important;}
+      }
+    \`}</style>
   );
 }
 
@@ -829,9 +890,12 @@ function AdminScreen({ user, onLogout }) {
     return ()=>clearInterval(timer);
   },[syncPagos]);
 
-  const jugadoresFilt = filtCat==="todos"
+  const jugadoresFilt = (filtCat==="todos"
     ? jugadores
-    : jugadores.filter(j=>j.categoria_id===filtCat);
+    : jugadores.filter(j=>j.categoria_id===filtCat)
+  ).filter(j=>j.estado!=="baja");
+
+  const jugadoresDeudores = jugadores.filter(j=>j.estado==="baja");
 
   const cuotaJugMes = (jug, mes) => {
     const planMes = planPagos.find(p=>p.mes===mes);
@@ -879,8 +943,36 @@ function AdminScreen({ user, onLogout }) {
   };
 
   const deleteJugador = async (id) => {
+    // Verificar si tiene deuda
+    const jug = jugadores.find(j=>j.id===id);
+    const mesActual = new Date().getMonth()+1;
+    const deudaMeses = MESES.map((_,i)=>i+1).filter(mes=>{
+      const plan=planPagos.find(p=>p.mes===mes);
+      if(!plan||plan.monto===0||mes>=mesActual) return false;
+      const tipo=tiposCuota.find(t=>t.id===jug?.tipo_cuota)||tiposCuota[0];
+      const monto=Math.round(plan.monto*tipo.porcentaje/100);
+      return monto>0&&!pagos.find(p=>p.jugador_id===id&&p.mes===mes);
+    });
+    const montoDeuda = deudaMeses.reduce((acc,mes)=>{
+      const plan=planPagos.find(p=>p.mes===mes);
+      const tipo=tiposCuota.find(t=>t.id===jug?.tipo_cuota)||tiposCuota[0];
+      return acc+Math.round(plan.monto*tipo.porcentaje/100);
+    },0);
+
+    if (deudaMeses.length>0) {
+      const ok = confirm(
+        "⚠️ " + (jug?.nombre||"Este jugador") + " tiene deuda pendiente de " +
+        deudaMeses.length + " mes" + (deudaMeses.length>1?"es":"") +
+        " ($" + montoDeuda.toLocaleString("es-UY") + ").\n\n" +
+        "Se moverá a la sección DEUDORES. ¿Confirmar baja?"
+      );
+      if (!ok) return;
+      await sbFetch(`baby_jugadores?id=eq.${id}`, "PATCH", {estado:"baja"});
+      load();
+      return;
+    }
+
     if (!confirm("¿Eliminar jugador? Esta acción no se puede deshacer.")) return;
-    // Primero eliminar pagos del jugador
     await sbFetch(`baby_pagos?jugador_id=eq.${id}`, "DELETE");
     const res = await sbFetch(`baby_jugadores?id=eq.${id}`, "DELETE");
     if (res === null) {
@@ -1010,6 +1102,7 @@ function AdminScreen({ user, onLogout }) {
     ["plan",       "📋 Plan de Pagos"],
     ["delegados",  "🏃 Delegados"],
     ["pendientes", "⏳ Pendientes"],
+    ["deudores",   "📛 Deudores"],
     ["categorias", "🏷 Categorías"],
   ];
 
@@ -1031,7 +1124,7 @@ function AdminScreen({ user, onLogout }) {
       </div>
 
       {/* Layout: sidebar izquierdo + contenido derecho */}
-      <div style={{flex:1,display:"flex",overflow:"hidden"}}>
+      <div className="admin-layout" style={{flex:1,display:"flex",overflow:"hidden"}}>
         {/* Sidebar navegación */}
         <div className="admin-sidebar" style={{width:260,background:C.white,borderRight:`2px solid ${C.gray}`,
           padding:"20px 18px",flexShrink:0,overflowY:"auto"}}>
@@ -1435,11 +1528,175 @@ function AdminScreen({ user, onLogout }) {
         )}
 
         {/* ── TAB CATEGORÍAS ── */}
+        {!loading&&tab==="deudores"&&(
+          <div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
+              color:C.navy,textTransform:"uppercase",marginBottom:14}}>
+              📛 Jugadores dados de baja con deuda
+              {jugadoresDeudores.length>0&&(
+                <span style={{background:"#fee2e2",color:"#dc2626",borderRadius:20,
+                  padding:"2px 12px",fontSize:14,fontWeight:900,marginLeft:10}}>
+                  {jugadoresDeudores.length}
+                </span>
+              )}
+            </div>
+            {jugadoresDeudores.length===0?(
+              <div style={{textAlign:"center",padding:"40px 0",color:C.grayMid,fontSize:14}}>
+                ✅ Sin jugadores con deuda pendiente
+              </div>
+            ):(
+              <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                {jugadoresDeudores.map(j=>{
+                  const mesActual=new Date().getMonth()+1;
+                  const tipo=tiposCuota.find(t=>t.id===j.tipo_cuota)||tiposCuota[0];
+                  const mesesDeuda=MESES.map((_,i)=>i+1).filter(mes=>{
+                    const plan=planPagos.find(p=>p.mes===mes);
+                    if(!plan||plan.monto===0||mes>=mesActual) return false;
+                    const monto=Math.round(plan.monto*tipo.porcentaje/100);
+                    return monto>0&&!pagos.find(p=>p.jugador_id===j.id&&p.mes===mes);
+                  });
+                  const total=mesesDeuda.reduce((acc,mes)=>{
+                    const plan=planPagos.find(p=>p.mes===mes);
+                    return acc+Math.round(plan.monto*tipo.porcentaje/100);
+                  },0);
+                  return(
+                    <div key={j.id} style={{background:C.white,borderRadius:14,overflow:"hidden",
+                      border:"2px solid #fca5a5",boxShadow:"0 2px 8px rgba(220,38,38,.08)"}}>
+                      {/* Header jugador */}
+                      <div style={{background:"linear-gradient(135deg,#7f1d1d,#dc2626)",
+                        padding:"12px 16px",display:"flex",alignItems:"center",gap:12}}>
+                        {j.foto_url
+                          ? <img src={j.foto_url} style={{width:44,height:44,borderRadius:"50%",
+                              objectFit:"cover",border:"2px solid rgba(255,255,255,.4)",flexShrink:0}}
+                              onError={e=>e.target.style.display="none"}/>
+                          : <div style={{width:44,height:44,borderRadius:"50%",flexShrink:0,
+                              background:"rgba(255,255,255,.2)",display:"flex",alignItems:"center",
+                              justifyContent:"center",overflow:"hidden"}}>
+                              <svg viewBox="0 0 24 24" width="30" height="30"><circle cx="12" cy="8" r="4" fill="rgba(255,255,255,.7)"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" fill="rgba(255,255,255,.7)"/></svg>
+                            </div>
+                        }
+                        <div style={{flex:1}}>
+                          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+                            fontSize:18,color:"white",textTransform:"uppercase"}}>{j.nombre}</div>
+                          <div style={{color:"rgba(255,255,255,.7)",fontSize:12}}>
+                            Cat. {j.categoria_id} · {j.celular} · {tipo.nombre}
+                          </div>
+                        </div>
+                        <div style={{textAlign:"right"}}>
+                          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+                            fontSize:22,color:"white"}}>${total.toLocaleString("es-UY")}</div>
+                          <div style={{color:"rgba(255,255,255,.7)",fontSize:11}}>
+                            {mesesDeuda.length} mes{mesesDeuda.length!==1?"es":""} adeudado{mesesDeuda.length!==1?"s":""}
+                          </div>
+                        </div>
+                      </div>
+                      {/* Detalle meses */}
+                      <div style={{padding:"12px 16px"}}>
+                        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
+                          {MESES.map((m,i)=>{
+                            const mes=i+1;
+                            const plan=planPagos.find(p=>p.mes===mes);
+                            if(!plan||plan.monto===0) return null;
+                            const monto=Math.round(plan.monto*tipo.porcentaje/100);
+                            if(monto===0) return null;
+                            const pago=pagos.find(p=>p.jugador_id===j.id&&p.mes===mes);
+                            const deuda=!pago&&mes<mesActual;
+                            return(
+                              <div key={mes} style={{
+                                padding:"4px 10px",borderRadius:8,fontSize:11,fontWeight:700,
+                                fontFamily:"'Barlow Condensed',sans-serif",
+                                background:pago?"#dcfce7":deuda?"#fee2e2":"#f3f4f6",
+                                color:pago?"#16a34a":deuda?"#dc2626":"#9a9a90"}}>
+                                {m.slice(0,3)} ${monto.toLocaleString("es-UY")}
+                                {pago?" ✓":deuda?" ✗":""}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {/* Acciones */}
+                        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                          <button onClick={()=>{
+                              const link=window.location.origin+"?id="+j.id;
+                              const msg=j.nombre+" (Cat."+j.categoria_id+") - Deuda pendiente $"+total.toLocaleString("es-UY")+" - Link de pago: "+link;
+                              navigator.clipboard?.writeText(msg).then(()=>{
+                                alert("✅ Link de cobro copiado para "+j.nombre);
+                              });
+                            }}
+                            style={{flex:1,padding:"9px",background:`linear-gradient(135deg,${C.green},#15803d)`,
+                              color:C.white,border:"none",borderRadius:9,fontFamily:"'Barlow Condensed',sans-serif",
+                              fontWeight:800,fontSize:13,cursor:"pointer",textTransform:"uppercase"}}>
+                            🔗 Enviar link de pago
+                          </button>
+                          <button onClick={()=>{
+                              setSelJugador(j);
+                              setTab("pagos");
+                            }}
+                            style={{flex:1,padding:"9px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                              color:C.white,border:"none",borderRadius:9,fontFamily:"'Barlow Condensed',sans-serif",
+                              fontWeight:800,fontSize:13,cursor:"pointer",textTransform:"uppercase"}}>
+                            💳 Registrar pago
+                          </button>
+                          <button onClick={async()=>{
+                              if(total===0){
+                                if(!confirm("¿Eliminar definitivamente a "+j.nombre+"? Esta acción no se puede deshacer.")) return;
+                                await sbFetch(`baby_pagos?jugador_id=eq.${j.id}`,"DELETE");
+                                await sbFetch(`baby_jugadores?id=eq.${j.id}`,"DELETE");
+                                load();
+                              } else {
+                                if(!confirm("⚠️ "+j.nombre+" todavía tiene deuda de $"+total.toLocaleString("es-UY")+"\n\n¿Eliminar definitivamente igual?")) return;
+                                await sbFetch(`baby_pagos?jugador_id=eq.${j.id}`,"DELETE");
+                                await sbFetch(`baby_jugadores?id=eq.${j.id}`,"DELETE");
+                                load();
+                              }
+                            }}
+                            style={{padding:"9px 14px",background:"#fff5f5",color:"#dc2626",
+                              border:"1px solid #fca5a5",borderRadius:9,fontFamily:"'Barlow Condensed',sans-serif",
+                              fontWeight:800,fontSize:13,cursor:"pointer",textTransform:"uppercase"}}>
+                            🗑 Eliminar
+                          </button>
+                          <button onClick={async()=>{
+                              if(!confirm("¿Reactivar a "+j.nombre+" en planteles?")) return;
+                              await sbFetch(`baby_jugadores?id=eq.${j.id}`,"PATCH",{estado:"activo"});
+                              load();
+                            }}
+                            style={{padding:"9px 14px",background:"#fef3c7",color:"#d97706",
+                              border:"1px solid #fde68a",borderRadius:9,fontFamily:"'Barlow Condensed',sans-serif",
+                              fontWeight:800,fontSize:13,cursor:"pointer",textTransform:"uppercase"}}>
+                            ↩ Reactivar
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {!loading&&tab==="categorias"&&(
           <CategoriasTab categorias={categorias} onRefresh={load}/>
         )}
       </div>{/* fin contenido principal */}
       </div>{/* fin layout sidebar+contenido */}
+
+      {/* ── MOBILE BOTTOM NAV ── */}
+      <div className="mobile-bottom-nav" style={{display:"none"}}>
+        {TABS.map(([id,label])=>{
+          const active=tab===id;
+          const parts=label.split(" ");
+          const icon=parts[0];
+          const text=parts.slice(1).join(" ");
+          const hasBadge=id==="pendientes"&&pendientes.length>0;
+          return(
+            <button key={id} onClick={()=>setTab(id)} className={active?"active":""}>
+              {hasBadge&&<span className="mnav-badge">{pendientes.length}</span>}
+              <span className="mnav-icon">{icon}</span>
+              <span>{text}</span>
+            </button>
+          );
+        })}
+      </div>
 
       {/* Modales */}
       {(modal==="newJug"||modal==="editJug")&&(
@@ -2443,7 +2700,7 @@ function DelegadoScreen({ user, onLogout }) {
       </div>
 
       {/* Layout sidebar + contenido igual que admin */}
-      <div style={{flex:1,display:"flex",overflow:"hidden"}}>
+      <div className="admin-layout" style={{flex:1,display:"flex",overflow:"hidden"}}>
         {/* Sidebar */}
         <div className="admin-sidebar" style={{width:200,background:C.white,borderRight:`2px solid ${C.gray}`,
           padding:"20px 14px",flexShrink:0,overflowY:"auto"}}>
@@ -2668,6 +2925,21 @@ function DelegadoScreen({ user, onLogout }) {
         )}
         </div>{/* fin contenido delegado */}
       </div>{/* fin layout sidebar+contenido delegado */}
+
+      {/* MOBILE BOTTOM NAV DELEGADO */}
+      <div className="mobile-bottom-nav" style={{display:"none"}}>
+        {[["planteles","⚽","Planteles"],["pendientes","⏳","Pendientes"]].map(([id,icon,lbl])=>{
+          const active=tab===id;
+          const hasBadge=id==="pendientes"&&pendientes.length>0;
+          return(
+            <button key={id} onClick={()=>setTab(id)} className={active?"active":""}>
+              {hasBadge&&<span className="mnav-badge">{pendientes.length}</span>}
+              <span className="mnav-icon">{icon}</span>
+              <span>{lbl}</span>
+            </button>
+          );
+        })}
+      </div>
 
       {modal==="form"&&(
         <Modal onClose={()=>{setModal(null);setSelJug(null);}}>
