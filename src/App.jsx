@@ -3168,7 +3168,7 @@ export default function App() {
 
 /* ══ FORMULARIO DELEGADO (via link externo) ══════════════════════════ */
 function FormularioDelegado({ org }) {
-  const [f, setF] = useState({nombre:"",celular:"",mail:"",pin:"",categorias:[]});
+  const [f, setF] = useState({nombre:"",celular:"",mail:"",pin:"",categorias:[],foto_url:""});
   const [cats, setCats] = useState([]);
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -3182,6 +3182,17 @@ function FormularioDelegado({ org }) {
     categorias: p.categorias.includes(id) ? p.categorias.filter(c=>c!==id) : [...p.categorias,id]
   }));
   const valid = f.nombre && f.pin.length===4;
+
+  const handleFotoFormDel = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async ev => {
+      const compressed = await comprimirImagen(ev.target.result, 400, 0.65);
+      set("foto_url", compressed);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const enviar = async () => {
     if (!valid) return;
@@ -3228,6 +3239,48 @@ function FormularioDelegado({ org }) {
         </div>
         <div style={{background:C.white,borderRadius:20,padding:"24px 22px",
           boxShadow:"0 24px 64px rgba(20,28,78,.4)"}}>
+
+          {/* FOTO */}
+          <div style={{marginBottom:18}}>
+            <label style={{display:"block",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+              fontSize:12,color:C.navy,textTransform:"uppercase",marginBottom:8}}>
+              Foto — opcional
+            </label>
+            {f.foto_url&&(
+              <div style={{textAlign:"center",marginBottom:10}}>
+                <img src={f.foto_url} style={{width:86,height:86,borderRadius:"50%",
+                  objectFit:"cover",border:`3px solid ${C.navy}`}}/>
+              </div>
+            )}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:6}}>
+              <label style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,
+                padding:"14px 8px",border:`2px dashed ${C.navy}`,borderRadius:12,
+                cursor:"pointer",background:"#f0f4ff",textAlign:"center"}}>
+                <span style={{fontSize:28}}>📸</span>
+                <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                  fontSize:13,color:C.navy,textTransform:"uppercase"}}>Sacar foto</span>
+                <span style={{fontSize:10,color:C.grayMid}}>Abre la cámara</span>
+                <input type="file" accept="image/*" capture="environment"
+                  style={{display:"none"}} onChange={handleFotoFormDel}/>
+              </label>
+              <label style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,
+                padding:"14px 8px",border:`2px dashed ${C.gray}`,borderRadius:12,
+                cursor:"pointer",background:C.offWhite,textAlign:"center"}}>
+                <span style={{fontSize:28}}>🖼</span>
+                <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                  fontSize:13,color:C.navy,textTransform:"uppercase"}}>Galería</span>
+                <span style={{fontSize:10,color:C.grayMid}}>Elegir imagen</span>
+                <input type="file" accept="image/*"
+                  style={{display:"none"}} onChange={handleFotoFormDel}/>
+              </label>
+            </div>
+            {f.foto_url&&(
+              <button onClick={()=>set("foto_url","")}
+                style={{background:"none",border:"none",color:"#dc2626",
+                  fontSize:12,cursor:"pointer",fontWeight:600}}>✕ Eliminar foto</button>
+            )}
+          </div>
+
           {[["nombre","Nombre completo *","text"],["celular","Celular *","tel"],["mail","Email","email"]].map(([k,l,t])=>(
             <div key={k} style={{marginBottom:14}}>
               <label style={{display:"block",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
