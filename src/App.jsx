@@ -167,7 +167,7 @@ function GlobalStyle() {
         /* Botones toolbar más chicos */
         .toolbar-bq{width:80px !important;height:60px !important;font-size:10px !important;}
       }
-    \`}</style>
+    `}</style>
   );
 }
 
