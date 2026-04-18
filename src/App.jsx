@@ -395,7 +395,7 @@ function PublicoView({ user, onLogout }) {
     const mesActual = new Date().getMonth()+1;
     return MESES.map((m,i)=>i+1).filter(mes=>{
       const monto = cuotaMes(mes);
-      return monto>0 && !pagoMes(mes) && mes<=mesLimiteDeuda()+1;
+      return monto>0 && !pagoMes(mes) && mes<=(new Date().getDate()>10 ? new Date().getMonth()+1 : new Date().getMonth())+1;
     });
   };
 
@@ -948,7 +948,7 @@ function AdminScreen({ user, onLogout }) {
     const mesActual = new Date().getMonth()+1;
     const deudaMeses = MESES.map((_,i)=>i+1).filter(mes=>{
       const plan=planPagos.find(p=>p.mes===mes);
-      if(!plan||plan.monto===0||mes>mesLimiteDeuda()) return false;
+      if(!plan||plan.monto===0||mes>(new Date().getDate()>10 ? new Date().getMonth()+1 : new Date().getMonth())) return false;
       const tipo=tiposCuota.find(t=>t.id===jug?.tipo_cuota)||tiposCuota[0];
       const monto=Math.round(plan.monto*tipo.porcentaje/100);
       return monto>0&&!pagos.find(p=>p.jugador_id===id&&p.mes===mes);
@@ -1231,7 +1231,7 @@ function AdminScreen({ user, onLogout }) {
                 if(!plan||plan.monto===0) return false;
                 const tipo=tiposCuota.find(t=>t.id===j.tipo_cuota)||tiposCuota[0];
                 const monto=Math.round(plan.monto*tipo.porcentaje/100);
-                return monto>0 && !pagos.find(p=>p.jugador_id===j.id&&p.mes===mes) && mes<=mesLimiteDeuda();
+                return monto>0 && !pagos.find(p=>p.jugador_id===j.id&&p.mes===mes) && mes<=(new Date().getDate()>10 ? new Date().getMonth()+1 : new Date().getMonth());
               });
               const est = deudaMeses.length===0
                 ? {icon:"🟢",label:"Al día",color:"#16a34a",bg:"#dcfce7"}
@@ -1551,7 +1551,7 @@ function AdminScreen({ user, onLogout }) {
                   const tipo=tiposCuota.find(t=>t.id===j.tipo_cuota)||tiposCuota[0];
                   const mesesDeuda=MESES.map((_,i)=>i+1).filter(mes=>{
                     const plan=planPagos.find(p=>p.mes===mes);
-                    if(!plan||plan.monto===0||mes>mesLimiteDeuda()) return false;
+                    if(!plan||plan.monto===0||mes>(new Date().getDate()>10 ? new Date().getMonth()+1 : new Date().getMonth())) return false;
                     const monto=Math.round(plan.monto*tipo.porcentaje/100);
                     return monto>0&&!pagos.find(p=>p.jugador_id===j.id&&p.mes===mes);
                   });
@@ -1600,7 +1600,7 @@ function AdminScreen({ user, onLogout }) {
                             const monto=Math.round(plan.monto*tipo.porcentaje/100);
                             if(monto===0) return null;
                             const pago=pagos.find(p=>p.jugador_id===j.id&&p.mes===mes);
-                            const deuda=!pago&&mes<=mesLimiteDeuda();
+                            const deuda=!pago&&mes<=(new Date().getDate()>10 ? new Date().getMonth()+1 : new Date().getMonth());
                             return(
                               <div key={mes} style={{
                                 padding:"4px 10px",borderRadius:8,fontSize:11,fontWeight:700,
@@ -1857,7 +1857,7 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
   const estadoPago = (jug) => {
     const deuda = MESES.map((_,i)=>i+1).filter(mes=>{
       const monto=cuotaMes(jug,mes);
-      return monto>0&&!pagoJugMes(jug.id,mes)&&mes<=mesLimiteDeuda();
+      return monto>0&&!pagoJugMes(jug.id,mes)&&mes<=(new Date().getDate()>10 ? new Date().getMonth()+1 : new Date().getMonth());
     });
     if (deuda.length===0) return {color:"#16a34a",bg:"#dcfce7",label:"Al día",icon:"🟢",meses:0};
     if (deuda.length===1) return {color:"#d97706",bg:"#fef3c7",label:"1 mes",icon:"🟡",meses:1};
@@ -1922,7 +1922,7 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
         const est=estadoPago(j);
         const deudaMeses=MESES.map((_,i)=>i+1).filter(mes=>{
           const monto=cuotaMes(j,mes);
-          return monto>0&&!pagoJugMes(j.id,mes)&&mes<=mesLimiteDeuda();
+          return monto>0&&!pagoJugMes(j.id,mes)&&mes<=(new Date().getDate()>10 ? new Date().getMonth()+1 : new Date().getMonth());
         });
         return(
           <div key={j.id} style={{display:"grid",gridTemplateColumns:"50px 1fr 100px 90px 130px 155px",gap:8,
@@ -2028,7 +2028,7 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
               {(()=>{
                 const deudaMeses=MESES.map((_,i)=>i+1).filter(mes=>{
                   const monto=cuotaMes(verHistorial,mes);
-                  return monto>0&&!pagoJugMes(verHistorial.id,mes)&&mes<=mesLimiteDeuda();
+                  return monto>0&&!pagoJugMes(verHistorial.id,mes)&&mes<=(new Date().getDate()>10 ? new Date().getMonth()+1 : new Date().getMonth());
                 });
                 return deudaMeses.length>0 ? (
                   <button onClick={()=>{setSelJug(verHistorial);setVerHistorial(null);setSelMeses([]);setMetodo(null);}}
@@ -2226,7 +2226,7 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
                       const mesActual=new Date().getMonth()+1;
                       // Saldo pendiente = meses pasados sin pagar
                       const saldo=mesesActivos.filter(mes=>{
-                        if(mes>mesLimiteDeuda()) return false;
+                        if(mes>(new Date().getDate()>10 ? new Date().getMonth()+1 : new Date().getMonth())) return false;
                         const plan=planPagos.find(p=>p.mes===mes);
                         if(!plan||plan.monto===0) return false;
                         const monto=Math.round(plan.monto*tipo.porcentaje/100);
@@ -2267,7 +2267,7 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
                             const plan=planPagos.find(p=>p.mes===mes);
                             const monto=plan?Math.round(plan.monto*tipo.porcentaje/100):0;
                             const pago=pagos.find(p=>p.jugador_id===j.id&&p.mes===mes);
-                            const futuro=mes>mesLimiteDeuda();
+                            const futuro=mes>(new Date().getDate()>10 ? new Date().getMonth()+1 : new Date().getMonth());
                             if(monto===0) return(
                               <td key={mes} style={{background:"#f3f4f6",borderRight:`1px solid ${C.gray}`,
                                 borderBottom:`1px solid ${C.gray}`}}></td>
