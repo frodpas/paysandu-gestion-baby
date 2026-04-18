@@ -1489,6 +1489,11 @@ function AdminScreen({ user, onLogout }) {
                   {(d.categorias||[]).length>0?(d.categorias||[]).join(", "):"Todas"}
                 </div>
                 <div style={{display:"flex",gap:5,justifyContent:"center",alignItems:"center",paddingLeft:12}}>
+                  <button onClick={()=>{setSelJugador(d);setModal("fichaDel");}}
+                    title="Ver ficha"
+                    style={{width:34,height:34,padding:0,background:C.offWhite,
+                      border:`1px solid ${C.gray}`,borderRadius:8,fontSize:15,cursor:"pointer",
+                      color:C.navy,display:"flex",alignItems:"center",justifyContent:"center"}}>👤</button>
                   <button onClick={()=>{setSelJugador(d);setModal("editDel");}}
                     title="Editar"
                     style={{width:34,height:34,padding:0,background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
@@ -1798,6 +1803,65 @@ function AdminScreen({ user, onLogout }) {
         </Modal>
       )}
       {modal==="newDel"&&<Modal onClose={()=>setModal(null)}><FormDelegado categorias={categorias} onSave={saveDelegado} onCancel={()=>setModal(null)}/></Modal>}
+      {modal==="fichaDel"&&selJugador&&(
+        <Modal onClose={()=>{setModal(null);setSelJugador(null);}} maxWidth={420}>
+          <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"24px",
+            display:"flex",flexDirection:"column",alignItems:"center",gap:12}}>
+            {selJugador.foto_url
+              ? <img src={selJugador.foto_url} style={{width:90,height:90,borderRadius:"50%",
+                  objectFit:"cover",border:"3px solid rgba(255,255,255,.5)"}}
+                  onError={e=>e.target.style.display="none"}/>
+              : <div style={{width:90,height:90,borderRadius:"50%",
+                  background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",
+                  justifyContent:"center",overflow:"hidden",border:"2px solid rgba(255,255,255,.3)"}}>
+                  <svg viewBox="0 0 24 24" width="60" height="60"><circle cx="12" cy="8" r="4" fill="rgba(255,255,255,.7)"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" fill="rgba(255,255,255,.7)"/></svg>
+                </div>
+            }
+            <div style={{textAlign:"center"}}>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,
+                color:C.white,textTransform:"uppercase"}}>{selJugador.nombre}</div>
+              <div style={{color:C.lilac,fontSize:13,marginTop:3}}>
+                {selJugador.activo===false
+                  ? <span style={{background:"#dc2626",color:"white",borderRadius:10,padding:"2px 10px",fontSize:11,fontWeight:700}}>SUSPENDIDO</span>
+                  : <span style={{background:"rgba(134,239,172,.3)",color:"#86efac",borderRadius:10,padding:"2px 10px",fontSize:11,fontWeight:700}}>ACTIVO</span>
+                }
+              </div>
+            </div>
+          </div>
+          <div style={{padding:"20px 24px"}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+              {[
+                ["📱","Celular",selJugador.celular],
+                ["📧","Email",selJugador.mail||"—"],
+                ["🔐","PIN","••••"],
+                ["🏷","Categorías",(selJugador.categorias||[]).length>0?(selJugador.categorias||[]).join(", "):"Todas"],
+              ].map(([ico,lbl,val])=>(
+                <div key={lbl} style={{background:C.offWhite,borderRadius:10,padding:"10px 14px"}}>
+                  <div style={{fontSize:10,color:C.grayMid,textTransform:"uppercase",fontWeight:600,marginBottom:3}}>
+                    {ico} {lbl}
+                  </div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,
+                    color:C.navy}}>{val||"—"}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>{setModal("editDel");}}
+                style={{flex:1,padding:"10px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                  color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+                  fontWeight:800,fontSize:14,cursor:"pointer",textTransform:"uppercase"}}>
+                ✏️ Editar
+              </button>
+              <button onClick={()=>{setModal(null);setSelJugador(null);}}
+                style={{flex:1,padding:"10px",background:C.offWhite,color:C.navy,
+                  border:`1px solid ${C.gray}`,borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+                  fontWeight:700,fontSize:14,cursor:"pointer"}}>
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
       {modal==="editDel"&&selJugador&&(
         <Modal onClose={()=>{setModal(null);setSelJugador(null);}}>
           <FormDelegado
