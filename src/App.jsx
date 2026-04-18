@@ -1007,10 +1007,13 @@ function AdminScreen({ user, onLogout }) {
     // Si es formulario de delegado
     if (datos._tipo === "delegado") {
       const { _tipo, foto_url: fotoDelRaw, ...ddata } = datos;
+      // Debug: ver qué tiene foto_url
+      console.log("🔍 foto_url en datos:", fotoDelRaw ? `${fotoDelRaw.length} chars, empieza: ${fotoDelRaw.slice(0,30)}` : "VACÍO/UNDEFINED");
       // Validar tamaño de foto (max 500KB en base64)
       const fotoDel = fotoDelRaw && fotoDelRaw.length < 500000
         ? fotoDelRaw
         : (fotoDelRaw?.startsWith("http") ? fotoDelRaw : "");
+      console.log("🔍 fotoDel final:", fotoDel ? `${fotoDel.length} chars` : "VACÍO");
       const payload = {
         id: uid(), org_id: "paysandu", activo: true,
         nombre: ddata.nombre||"", celular: ddata.celular||"",
