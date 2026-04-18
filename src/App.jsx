@@ -395,7 +395,7 @@ function PublicoView({ user, onLogout }) {
     const mesActual = new Date().getMonth()+1;
     return MESES.map((m,i)=>i+1).filter(mes=>{
       const monto = cuotaMes(mes);
-      return monto>0 && !pagoMes(mes) && mes<=mesActual+1;
+      return monto>0 && !pagoMes(mes) && mes<=mesLimiteDeuda()+1;
     });
   };
 
@@ -948,7 +948,7 @@ function AdminScreen({ user, onLogout }) {
     const mesActual = new Date().getMonth()+1;
     const deudaMeses = MESES.map((_,i)=>i+1).filter(mes=>{
       const plan=planPagos.find(p=>p.mes===mes);
-      if(!plan||plan.monto===0||mes>=mesActual) return false;
+      if(!plan||plan.monto===0||mes>mesLimiteDeuda()) return false;
       const tipo=tiposCuota.find(t=>t.id===jug?.tipo_cuota)||tiposCuota[0];
       const monto=Math.round(plan.monto*tipo.porcentaje/100);
       return monto>0&&!pagos.find(p=>p.jugador_id===id&&p.mes===mes);
@@ -1212,7 +1212,7 @@ function AdminScreen({ user, onLogout }) {
               {jugadoresFilt.length} jugador{jugadoresFilt.length!==1?"es":""}
             </div>
             {/* Tabla — ancho máximo = suma columnas */}
-            <div className="tw-scroll" style={{maxWidth:920}}>
+            <div className="tw-scroll" style={{maxWidth:920,overflowX:"auto"}}>
             {/* Encabezado tabla */}
             <div style={{display:"grid",gridTemplateColumns:"280px 95px 65px 75px 100px 180px",gap:0,
               padding:"9px 14px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
@@ -1231,7 +1231,7 @@ function AdminScreen({ user, onLogout }) {
                 if(!plan||plan.monto===0) return false;
                 const tipo=tiposCuota.find(t=>t.id===j.tipo_cuota)||tiposCuota[0];
                 const monto=Math.round(plan.monto*tipo.porcentaje/100);
-                return monto>0 && !pagos.find(p=>p.jugador_id===j.id&&p.mes===mes) && mes<mesActual;
+                return monto>0 && !pagos.find(p=>p.jugador_id===j.id&&p.mes===mes) && mes<=mesLimiteDeuda();
               });
               const est = deudaMeses.length===0
                 ? {icon:"🟢",label:"Al día",color:"#16a34a",bg:"#dcfce7"}
@@ -1240,7 +1240,7 @@ function AdminScreen({ user, onLogout }) {
                   : {icon:"🔴",label:`${deudaMeses.length} meses`,color:"#dc2626",bg:"#fee2e2"};
               return(
                 <div key={j.id} style={{display:"grid",
-                  gridTemplateColumns:"280px 95px 65px 75px 100px 90px 180px",gap:0,
+                  gridTemplateColumns:"280px 95px 65px 75px 100px 90px 190px",gap:0,
                   alignItems:"center",padding:"8px 14px",
                   background:idx%2===0?C.white:"#f5f5f0",
                   borderLeft:`1px solid ${C.gray}`,borderRight:`1px solid ${C.gray}`,
@@ -1298,7 +1298,7 @@ function AdminScreen({ user, onLogout }) {
                     })()}
                   </div>
                   {/* Acciones: todos iguales, cuadrados, en línea */}
-                  <div style={{display:"flex",gap:5,justifyContent:"center",alignItems:"center",paddingLeft:8}}>
+                  <div style={{display:"flex",gap:4,justifyContent:"center",alignItems:"center"}}>
                     {/* Link pago */}
                     <button onClick={()=>{
                         const msg=j.nombre+" (Cat."+j.categoria_id+") - Link de pago: "+linkAcceso;
@@ -1551,7 +1551,7 @@ function AdminScreen({ user, onLogout }) {
                   const tipo=tiposCuota.find(t=>t.id===j.tipo_cuota)||tiposCuota[0];
                   const mesesDeuda=MESES.map((_,i)=>i+1).filter(mes=>{
                     const plan=planPagos.find(p=>p.mes===mes);
-                    if(!plan||plan.monto===0||mes>=mesActual) return false;
+                    if(!plan||plan.monto===0||mes>mesLimiteDeuda()) return false;
                     const monto=Math.round(plan.monto*tipo.porcentaje/100);
                     return monto>0&&!pagos.find(p=>p.jugador_id===j.id&&p.mes===mes);
                   });
@@ -1600,7 +1600,7 @@ function AdminScreen({ user, onLogout }) {
                             const monto=Math.round(plan.monto*tipo.porcentaje/100);
                             if(monto===0) return null;
                             const pago=pagos.find(p=>p.jugador_id===j.id&&p.mes===mes);
-                            const deuda=!pago&&mes<mesActual;
+                            const deuda=!pago&&mes<=mesLimiteDeuda();
                             return(
                               <div key={mes} style={{
                                 padding:"4px 10px",borderRadius:8,fontSize:11,fontWeight:700,
@@ -1857,7 +1857,7 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
   const estadoPago = (jug) => {
     const deuda = MESES.map((_,i)=>i+1).filter(mes=>{
       const monto=cuotaMes(jug,mes);
-      return monto>0&&!pagoJugMes(jug.id,mes)&&mes<mesActual;
+      return monto>0&&!pagoJugMes(jug.id,mes)&&mes<=mesLimiteDeuda();
     });
     if (deuda.length===0) return {color:"#16a34a",bg:"#dcfce7",label:"Al día",icon:"🟢",meses:0};
     if (deuda.length===1) return {color:"#d97706",bg:"#fef3c7",label:"1 mes",icon:"🟡",meses:1};
@@ -1922,7 +1922,7 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
         const est=estadoPago(j);
         const deudaMeses=MESES.map((_,i)=>i+1).filter(mes=>{
           const monto=cuotaMes(j,mes);
-          return monto>0&&!pagoJugMes(j.id,mes)&&mes<=mesActual;
+          return monto>0&&!pagoJugMes(j.id,mes)&&mes<=mesLimiteDeuda();
         });
         return(
           <div key={j.id} style={{display:"grid",gridTemplateColumns:"50px 1fr 100px 90px 130px 155px",gap:8,
@@ -2028,7 +2028,7 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
               {(()=>{
                 const deudaMeses=MESES.map((_,i)=>i+1).filter(mes=>{
                   const monto=cuotaMes(verHistorial,mes);
-                  return monto>0&&!pagoJugMes(verHistorial.id,mes)&&mes<=mesActual;
+                  return monto>0&&!pagoJugMes(verHistorial.id,mes)&&mes<=mesLimiteDeuda();
                 });
                 return deudaMeses.length>0 ? (
                   <button onClick={()=>{setSelJug(verHistorial);setVerHistorial(null);setSelMeses([]);setMetodo(null);}}
@@ -2226,7 +2226,7 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
                       const mesActual=new Date().getMonth()+1;
                       // Saldo pendiente = meses pasados sin pagar
                       const saldo=mesesActivos.filter(mes=>{
-                        if(mes>mesActual) return false;
+                        if(mes>mesLimiteDeuda()) return false;
                         const plan=planPagos.find(p=>p.mes===mes);
                         if(!plan||plan.monto===0) return false;
                         const monto=Math.round(plan.monto*tipo.porcentaje/100);
@@ -2267,7 +2267,7 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
                             const plan=planPagos.find(p=>p.mes===mes);
                             const monto=plan?Math.round(plan.monto*tipo.porcentaje/100):0;
                             const pago=pagos.find(p=>p.jugador_id===j.id&&p.mes===mes);
-                            const futuro=mes>mesActual;
+                            const futuro=mes>mesLimiteDeuda();
                             if(monto===0) return(
                               <td key={mes} style={{background:"#f3f4f6",borderRight:`1px solid ${C.gray}`,
                                 borderBottom:`1px solid ${C.gray}`}}></td>
@@ -2781,7 +2781,7 @@ function DelegadoScreen({ user, onLogout }) {
             {/* Tabla delegado planteles — maxWidth fijo */}
             <div className="tw-scroll" style={{maxWidth:560}}>
             {/* Header tabla */}
-            <div style={{display:"grid",gridTemplateColumns:"260px 65px 95px 140px",gap:0,
+            <div style={{display:"grid",gridTemplateColumns:"260px 65px 95px 145px",gap:0,
               padding:"9px 14px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
               {["Nombre","Cat.","Nacimiento","Acciones"].map((h,i)=>(
                 <div key={i} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
@@ -2791,7 +2791,7 @@ function DelegadoScreen({ user, onLogout }) {
             </div>
             {jugFiltrados.map((j,idx)=>(
               <div key={j.id} style={{display:"grid",
-                gridTemplateColumns:"260px 65px 95px 140px",gap:0,
+                gridTemplateColumns:"260px 65px 95px 145px",gap:0,
                 alignItems:"center",padding:"8px 14px",
                 background:idx%2===0?C.white:"#f8f8f5",
                 borderLeft:`1px solid ${C.gray}`,borderRight:`1px solid ${C.gray}`,
