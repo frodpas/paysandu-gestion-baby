@@ -1006,14 +1006,25 @@ function AdminScreen({ user, onLogout }) {
 
     // Si es formulario de delegado
     if (datos._tipo === "delegado") {
-      const { _tipo, ...ddata } = datos;
-      const res = await sbFetch("baby_delegados", "POST", {
+      const { _tipo, foto_url: fotoDelRaw, ...ddata } = datos;
+      // Validar tamaño de foto (max 500KB en base64)
+      const fotoDel = fotoDelRaw && fotoDelRaw.length < 500000
+        ? fotoDelRaw
+        : (fotoDelRaw?.startsWith("http") ? fotoDelRaw : "");
+      const payload = {
         id: uid(), org_id: "paysandu", activo: true,
         nombre: ddata.nombre||"", celular: ddata.celular||"",
         mail: ddata.mail||"", pin: ddata.pin||"0000",
         categorias: ddata.categorias||[],
-      });
-      if (!res) { alert("Error al crear delegado. Revisá la consola."); return; }
+        foto_url: fotoDel,
+      };
+      let res = await sbFetch("baby_delegados", "POST", payload);
+      // Retry sin foto si falla por columna inexistente
+      if (!res && window._lastSbError?.includes("foto_url")) {
+        const {foto_url:_f, ...sinFoto} = payload;
+        res = await sbFetch("baby_delegados", "POST", sinFoto);
+      }
+      if (!res) { alert("Error al crear delegado: " + (window._lastSbError||"Sin detalle")); return; }
       await sbFetch(`baby_formularios_pendientes?id=eq.${pend.id}`, "DELETE");
       load();
       return;
@@ -1541,11 +1552,22 @@ function AdminScreen({ user, onLogout }) {
                       borderLeft:`2px solid ${C.gold}`,borderRight:`2px solid ${C.gold}`,
                       borderBottom:`1px solid #fde68a`,
                       borderRadius:idx===pendientes.length-1?"0 0 12px 12px":"0"}}>
-                      <div style={{paddingRight:8}}>
-                        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:16,
-                          color:C.navy,textTransform:"uppercase"}}>{datos.nombre}</div>
-                        {datos.ci&&<div style={{fontSize:11,color:C.grayMid}}>CI: {datos.ci}</div>}
-                        {datos.numero_camiseta&&<div style={{fontSize:11,color:C.grayMid}}>Camiseta #{datos.numero_camiseta}</div>}
+                      <div style={{paddingRight:8,display:"flex",alignItems:"center",gap:8}}>
+                        {datos.foto_url&&(
+                          <img src={datos.foto_url} style={{width:32,height:32,borderRadius:"50%",
+                            objectFit:"cover",border:`2px solid ${C.navy}`,flexShrink:0}}
+                            onError={e=>e.target.style.display="none"}/>
+                        )}
+                        <div>
+                          <div style={{display:"flex",alignItems:"center",gap:6}}>
+                            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:16,
+                              color:C.navy,textTransform:"uppercase"}}>{datos.nombre}</div>
+                            {datos._tipo==="delegado"&&<span style={{background:C.lilacDark,color:C.white,
+                              borderRadius:10,padding:"1px 8px",fontSize:10,fontWeight:700,flexShrink:0}}>DELEGADO</span>}
+                          </div>
+                          {datos.ci&&<div style={{fontSize:11,color:C.grayMid}}>CI: {datos.ci}</div>}
+                          {datos.numero_camiseta&&<div style={{fontSize:11,color:C.grayMid}}>Camiseta #{datos.numero_camiseta}</div>}
+                        </div>
                       </div>
                       <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:16,
                         color:C.navy}}>{datos.categoria_id||"-"}</div>
