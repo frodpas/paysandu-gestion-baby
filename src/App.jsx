@@ -1006,14 +1006,9 @@ function AdminScreen({ user, onLogout }) {
 
     // Si es formulario de delegado
     if (datos._tipo === "delegado") {
-      const { _tipo, foto_url: fotoDelRaw, ...ddata } = datos;
-      // Debug: ver qué tiene foto_url
-      console.log("🔍 foto_url en datos:", fotoDelRaw ? `${fotoDelRaw.length} chars, empieza: ${fotoDelRaw.slice(0,30)}` : "VACÍO/UNDEFINED");
-      // Validar tamaño de foto (max 500KB en base64)
-      const fotoDel = fotoDelRaw && fotoDelRaw.length < 500000
-        ? fotoDelRaw
-        : (fotoDelRaw?.startsWith("http") ? fotoDelRaw : "");
-      console.log("🔍 fotoDel final:", fotoDel ? `${fotoDel.length} chars` : "VACÍO");
+      const { _tipo, foto_url: _fotoEnJson, ...ddata } = datos;
+      // Foto viene en columna separada pend.foto_url (no dentro del JSON)
+      const fotoDel = pend.foto_url || _fotoEnJson || "";
       const payload = {
         id: uid(), org_id: "paysandu", activo: true,
         nombre: ddata.nombre||"", celular: ddata.celular||"",
@@ -1034,8 +1029,9 @@ function AdminScreen({ user, onLogout }) {
     }
 
     // Jugador normal
-    const { foto_url, tipo_cuota, _tipo:_t, ...resto } = datos;
-    const fotoOk = foto_url && foto_url.length < 500000 ? foto_url : (foto_url?.startsWith("http") ? foto_url : "");
+    const { foto_url: _fotoEnJsonJug, tipo_cuota, _tipo:_t, ...resto } = datos;
+    // Foto viene en columna separada pend.foto_url
+    const fotoOk = pend.foto_url || _fotoEnJsonJug || "";
     const jugador = {
       nombre: resto.nombre||"",
       celular: resto.celular||"",
@@ -3223,9 +3219,12 @@ function FormularioDelegado({ org }) {
     if (!valid) return;
     setLoading(true);
     // Guardar directamente en baby_delegados_pendientes o en baby_delegados inactivo
+    // Separar foto del JSON para evitar límite de tamaño
+    const { foto_url: fotoDelForm, ...fSinFoto } = f;
     await sbFetch("baby_formularios_pendientes","POST",{
       id:uid(), org_id:org,
-      datos_json: JSON.stringify({...f, _tipo:"delegado"}),
+      datos_json: JSON.stringify({...fSinFoto, _tipo:"delegado"}),
+      foto_url: fotoDelForm||"",
       created_at: new Date().toISOString(),
     });
     setSent(true);
@@ -3383,9 +3382,12 @@ function FormularioPublico({ tipo, org }) {
   const enviar = async () => {
     if (!valid) return;
     setLoading(true);
+    // Separar foto del JSON para evitar límite de tamaño
+    const { foto_url: fotoJugForm, ...fJugSinFoto } = f;
     await sbFetch("baby_formularios_pendientes","POST",{
       id:uid(), org_id:org,
-      datos_json: JSON.stringify(f),
+      datos_json: JSON.stringify(fJugSinFoto),
+      foto_url: fotoJugForm||"",
       created_at: new Date().toISOString(),
     });
     setSent(true);
