@@ -192,7 +192,7 @@ function Modal({ children, onClose, maxWidth=480 }) {
 
 /* ══ LOGIN SCREEN ═════════════════════════════════════════════════════ */
 function LoginScreen({ onLogin }) {
-  const [mode,        setMode]       = useState("publico"); // publico | admin | delegado
+  const [mode,        setMode]       = useState("home"); // home | admin | delegado | cats | jugadores | pin
   const [user,        setUser]       = useState("");
   const [pass,        setPass]       = useState("");
   const [pin,         setPin]        = useState("");
@@ -200,7 +200,13 @@ function LoginScreen({ onLogin }) {
   const [err,         setErr]        = useState("");
   const [loading,     setLoading]    = useState(false);
   const [delegados,   setDelegados]  = useState([]);
-  const [selDelegado, setSelDelegado]= useState(null); // delegado elegido antes del PIN
+  const [selDelegado, setSelDelegado]= useState(null);
+  // Acceso jugadores
+  const [categorias,  setCategorias] = useState([]);
+  const [filtCatPub,  setFiltCatPub] = useState(null);
+  const [jugadoresCat,setJugadoresCat]=useState([]);
+  const [selJugPub,   setSelJugPub]  = useState(null); // jugador seleccionado para pagar
+  const [pinJug,      setPinJug]     = useState("");
 
   const handleAdmin = async () => {
     onLogin({role:"admin", name:"Administrador"});
@@ -215,7 +221,6 @@ function LoginScreen({ onLogin }) {
   };
 
   const handleDelegado = async (delegado) => {
-    // Período de prueba: sin PIN
     onLogin({role:"delegado", ...delegado});
   };
 
@@ -229,6 +234,55 @@ function LoginScreen({ onLogin }) {
       setErr("ID de jugador no encontrado");
     }
   };
+
+  const abrirAccesoJugadores = async () => {
+    setLoading(true);
+    const cats = await sbFetch("baby_categorias?select=*&order=nombre.asc");
+    setLoading(false);
+    setCategorias(cats||[]);
+    setMode("cats");
+    setFiltCatPub(null);
+    setJugadoresCat([]);
+    setErr("");
+  };
+
+  const elegirCategoria = async (catId) => {
+    setFiltCatPub(catId);
+    setLoading(true);
+    const data = await sbFetch(
+      `baby_jugadores?categoria_id=eq.${catId}&estado=eq.activo&select=id,nombre,ci,foto_url,pin_familia&order=nombre.asc`
+    );
+    setLoading(false);
+    setJugadoresCat(data||[]);
+    setMode("jugadores");
+  };
+
+  const abrirPagoJugador = (jug) => {
+    setSelJugPub(jug);
+    setPinJug("");
+    setErr("");
+    // Si no tiene pin_familia configurado, entrar directo
+    if (!jug.pin_familia) {
+      onLogin({role:"publico", jugador:jug});
+    } else {
+      setMode("pin");
+    }
+  };
+
+  const confirmarPinJugador = async () => {
+    if (pinJug === selJugPub.pin_familia) {
+      onLogin({role:"publico", jugador:selJugPub});
+    } else {
+      setErr("PIN incorrecto");
+    }
+  };
+
+  const BtnBack = ({onClick})=>(
+    <button onClick={onClick} style={{background:"rgba(255,255,255,.1)",border:"none",
+      borderRadius:10,padding:"8px 14px",color:C.white,fontFamily:"'Barlow Condensed',sans-serif",
+      fontWeight:700,fontSize:13,cursor:"pointer",marginBottom:16,display:"flex",
+      alignItems:"center",gap:6}}>← Volver</button>
+  );
 
   return (
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${C.navyDark} 0%,${C.navy} 50%,${C.navyLight} 100%)`,
@@ -246,49 +300,159 @@ function LoginScreen({ onLogin }) {
             textTransform:"uppercase",letterSpacing:".1em",marginTop:6}}>Baby Fútbol</div>
         </div>
 
-        {/* Botones de acceso — los 3 del mismo tamaño */}
-        {mode==="publico"&&(
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
-            <button onClick={()=>{setMode("admin");setErr("");setUser("");setPass("");}}
-              style={{padding:"14px 10px",background:"rgba(232,184,75,.15)",
-                border:`2px solid ${C.gold}`,borderRadius:14,color:C.white,
-                fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,
-                cursor:"pointer",textTransform:"uppercase",backdropFilter:"blur(8px)",
-                display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
-              <span style={{fontSize:28}}>👤</span>Admin
+        {/* ── HOME: 3 botones ── */}
+        {mode==="home"&&(
+          <>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+              <button onClick={()=>{setMode("admin");setErr("");}}
+                style={{padding:"14px 10px",background:"rgba(232,184,75,.15)",
+                  border:`2px solid ${C.gold}`,borderRadius:14,color:C.white,
+                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,
+                  cursor:"pointer",textTransform:"uppercase",backdropFilter:"blur(8px)",
+                  display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
+                <span style={{fontSize:28}}>👤</span>Admin
+              </button>
+              <button onClick={abrirDelegado}
+                style={{padding:"14px 10px",background:"rgba(134,239,172,.15)",
+                  border:"2px solid #86efac",borderRadius:14,color:C.white,
+                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,
+                  cursor:"pointer",textTransform:"uppercase",backdropFilter:"blur(8px)",
+                  display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
+                <span style={{fontSize:28}}>🏃</span>Delegado
+              </button>
+            </div>
+            <button onClick={abrirAccesoJugadores} disabled={loading}
+              style={{width:"100%",padding:"16px 10px",
+                background:`linear-gradient(135deg,${C.lilacDark},#7c3aed)`,
+                border:"none",borderRadius:14,color:C.white,
+                fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:17,
+                cursor:"pointer",textTransform:"uppercase",
+                display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
+              <span style={{fontSize:28}}>⚽</span>
+              {loading?"Cargando...":"Acceso Jugadores"}
             </button>
-            <button onClick={abrirDelegado}
-              style={{padding:"14px 10px",background:"rgba(134,239,172,.15)",
-                border:"2px solid #86efac",borderRadius:14,color:C.white,
-                fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,
-                cursor:"pointer",textTransform:"uppercase",backdropFilter:"blur(8px)",
-                display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
-              <span style={{fontSize:28}}>🏃</span>Delegado
-            </button>
+          </>
+        )}
+
+        {/* ── ELEGIR CATEGORÍA ── */}
+        {mode==="cats"&&(
+          <div className="fi" style={{background:"rgba(255,255,255,.08)",borderRadius:20,padding:24,
+            backdropFilter:"blur(8px)",border:"1px solid rgba(255,255,255,.15)"}}>
+            <BtnBack onClick={()=>setMode("home")}/>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,
+              color:C.white,textTransform:"uppercase",marginBottom:16,textAlign:"center"}}>
+              ⚽ Seleccioná una categoría
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+              {categorias.map(c=>(
+                <button key={c.id} onClick={()=>elegirCategoria(c.id)}
+                  style={{padding:"16px 8px",background:"rgba(255,255,255,.12)",
+                    border:"1px solid rgba(255,255,255,.25)",borderRadius:12,
+                    color:C.white,fontFamily:"'Barlow Condensed',sans-serif",
+                    fontWeight:900,fontSize:20,cursor:"pointer",textTransform:"uppercase"}}>
+                  {c.nombre}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
-        {/* ── PANTALLA PÚBLICA (por defecto) ── */}
-        {mode==="publico" && (
-          <div className="fi" style={{background:"rgba(255,255,255,.08)",borderRadius:20,padding:28,
-            backdropFilter:"blur(8px)",border:"1px solid rgba(255,255,255,.15)"}}>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,
-              color:C.white,textTransform:"uppercase",marginBottom:6,textAlign:"center"}}>Código del jugador</div>
-            <div style={{color:"rgba(255,255,255,.6)",fontSize:13,marginBottom:20,textAlign:"center"}}>
-              Ingresá el código para ver la ficha y los pagos
+        {/* ── LISTA DE JUGADORES ── */}
+        {mode==="jugadores"&&(
+          <div className="fi" style={{background:"rgba(255,255,255,.08)",borderRadius:20,padding:20,
+            backdropFilter:"blur(8px)",border:"1px solid rgba(255,255,255,.15)",
+            maxHeight:"70dvh",overflowY:"auto"}}>
+            <BtnBack onClick={()=>setMode("cats")}/>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
+              color:C.white,textTransform:"uppercase",marginBottom:12,textAlign:"center"}}>
+              Categoría {filtCatPub}
             </div>
-            <input value={jugId} onChange={e=>setJugId(e.target.value.toUpperCase())}
-              onKeyDown={e=>e.key==="Enter"&&handlePublico()}
-              placeholder="Ej: AB1234" maxLength={8} autoFocus
-              style={{width:"100%",padding:"18px 16px",borderRadius:14,border:"2px solid rgba(255,255,255,.4)",
-                background:"rgba(255,255,255,.15)",color:C.white,fontSize:26,fontWeight:900,
-                textAlign:"center",letterSpacing:".2em",marginBottom:16,outline:"none"}}/>
-            {err&&<div style={{color:"#fca5a5",fontSize:13,marginBottom:12,textAlign:"center"}}>{err}</div>}
-            <button onClick={handlePublico} disabled={loading||!jugId}
-              style={{width:"100%",padding:"15px",background:jugId?`linear-gradient(135deg,${C.lilacDark},#7c3aed)`:"rgba(255,255,255,.1)",
-                color:C.white,border:"none",borderRadius:12,fontFamily:"'Barlow Condensed',sans-serif",
-                fontWeight:900,fontSize:18,textTransform:"uppercase",cursor:jugId?"pointer":"default"}}>
-              {loading?"Buscando...":"👨‍👧 Ver ficha"}
+            {loading&&<div style={{textAlign:"center",color:"rgba(255,255,255,.6)",padding:"20px 0"}}>⏳</div>}
+            {jugadoresCat.map(j=>(
+              <div key={j.id} style={{display:"flex",alignItems:"center",gap:12,
+                padding:"10px 14px",marginBottom:8,borderRadius:12,
+                background:"rgba(255,255,255,.12)",border:"1px solid rgba(255,255,255,.2)"}}>
+                {j.foto_url
+                  ? <img src={j.foto_url} style={{width:42,height:42,borderRadius:"50%",
+                      objectFit:"cover",border:"2px solid rgba(255,255,255,.4)",flexShrink:0}}
+                      onError={e=>e.target.style.display="none"}/>
+                  : <div style={{width:42,height:42,borderRadius:"50%",flexShrink:0,
+                      background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",
+                      justifyContent:"center",overflow:"hidden"}}>
+                      <svg viewBox="0 0 24 24" width="28" height="28"><circle cx="12" cy="8" r="4" fill="rgba(255,255,255,.7)"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" fill="rgba(255,255,255,.7)"/></svg>
+                    </div>
+                }
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
+                    fontSize:15,color:C.white,textTransform:"uppercase",
+                    overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{j.nombre}</div>
+                  {j.ci&&<div style={{fontSize:11,color:"rgba(255,255,255,.5)"}}>CI: {j.ci}</div>}
+                </div>
+                <button onClick={()=>abrirPagoJugador(j)}
+                  style={{padding:"8px 14px",background:`linear-gradient(135deg,${C.green},#15803d)`,
+                    color:C.white,border:"none",borderRadius:10,
+                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
+                    fontSize:13,cursor:"pointer",textTransform:"uppercase",
+                    flexShrink:0,whiteSpace:"nowrap"}}>
+                  💳 Pagar
+                </button>
+              </div>
+            ))}
+            {jugadoresCat.length===0&&!loading&&(
+              <div style={{textAlign:"center",color:"rgba(255,255,255,.5)",padding:"20px 0",fontSize:13}}>
+                Sin jugadores en esta categoría
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── PIN DEL JUGADOR ── */}
+        {mode==="pin"&&selJugPub&&(
+          <div className="fi" style={{background:"rgba(255,255,255,.08)",borderRadius:20,padding:24,
+            backdropFilter:"blur(8px)",border:"1px solid rgba(255,255,255,.15)"}}>
+            <BtnBack onClick={()=>{setMode("jugadores");setErr("");}}/>
+            <div style={{textAlign:"center",marginBottom:20}}>
+              {selJugPub.foto_url
+                ? <img src={selJugPub.foto_url} style={{width:70,height:70,borderRadius:"50%",
+                    objectFit:"cover",border:"3px solid rgba(255,255,255,.5)",marginBottom:8}}/>
+                : <div style={{width:70,height:70,borderRadius:"50%",background:"rgba(255,255,255,.15)",
+                    display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 8px"}}>
+                    <svg viewBox="0 0 24 24" width="44" height="44"><circle cx="12" cy="8" r="4" fill="rgba(255,255,255,.7)"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" fill="rgba(255,255,255,.7)"/></svg>
+                  </div>
+              }
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
+                color:C.white,textTransform:"uppercase"}}>{selJugPub.nombre}</div>
+              <div style={{color:"rgba(255,255,255,.6)",fontSize:13,marginTop:4}}>
+                Ingresá el PIN de 3 dígitos
+              </div>
+            </div>
+            <div style={{display:"flex",gap:10,justifyContent:"center",marginBottom:16}}>
+              {[0,1,2].map(i=>(
+                <input key={i} type="password" maxLength={1} value={pinJug[i]||""}
+                  onChange={e=>{
+                    const v=e.target.value.replace(/\D/g,"");
+                    const arr=pinJug.split("");
+                    arr[i]=v;
+                    const np=arr.join("").slice(0,3);
+                    setPinJug(np);
+                    if(v&&i<2) document.getElementById(`pinjug-${i+1}`)?.focus();
+                    if(np.length===3) setTimeout(()=>document.getElementById("btn-confirmar-pin")?.click(),100);
+                  }}
+                  id={`pinjug-${i}`}
+                  style={{width:64,height:64,borderRadius:14,
+                    border:"2px solid rgba(201,168,212,.5)",
+                    background:"rgba(255,255,255,.1)",color:C.white,fontSize:32,
+                    fontWeight:900,textAlign:"center",outline:"none"}}/>
+              ))}
+            </div>
+            {err&&<div style={{color:"#fca5a5",fontSize:13,marginBottom:10,textAlign:"center"}}>{err}</div>}
+            <button id="btn-confirmar-pin" onClick={confirmarPinJugador} disabled={pinJug.length<3}
+              style={{width:"100%",padding:"13px",
+                background:pinJug.length===3?`linear-gradient(135deg,${C.green},#15803d)`:"rgba(255,255,255,.1)",
+                color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+                fontWeight:900,fontSize:16,textTransform:"uppercase",
+                cursor:pinJug.length<3?"default":"pointer"}}>
+              Ingresar
             </button>
           </div>
         )}
@@ -619,7 +783,7 @@ function FormAltaJugador({ categorias, onSave, onCancel, initialData=null, reado
   const [f, setF] = useState(initialData || {
     nombre:"", celular:"", mail:"", categoria_id:"",
     fecha_nacimiento:"", ci:"", numero_camiseta:"", direccion:"",
-    foto_url:"", tipo_cuota:"base",
+    foto_url:"", tipo_cuota:"base", pin_familia:"",
   });
 
   const set = (k,v) => setF(p=>({...p,[k]:v}));
@@ -713,6 +877,7 @@ function FormAltaJugador({ categorias, onSave, onCancel, initialData=null, reado
         {[
           ["nombre","Nombre completo *","text",true],
           ["ci","Cédula de identidad","text",false],
+          ["pin_familia","PIN familia (3 dígitos, opcional)","number",false],
           ["celular","Celular *","tel",true],
           ["mail","Email","email",false],
           ["fecha_nacimiento","Fecha de nacimiento *","date",true],
@@ -938,6 +1103,7 @@ function AdminScreen({ user, onLogout }) {
       direccion: data.direccion||"",
       foto_url: fotoOk,
       tipo_cuota: data.tipo_cuota||"base",
+      pin_familia: data.pin_familia ? String(data.pin_familia).slice(0,3) : "",
       org_id: "paysandu",
       estado: "activo",
       pendiente_validacion: false,
@@ -2980,7 +3146,7 @@ function DelegadoScreen({ user, onLogout }) {
             {/* Tabla delegado planteles — maxWidth fijo */}
             <div className="tw-scroll" style={{maxWidth:560}}>
             {/* Header tabla */}
-            <div style={{display:"grid",gridTemplateColumns:"260px 65px 95px 145px",gap:0,
+            <div style={{display:"grid",gridTemplateColumns:"260px 65px 95px 160px",gap:0,
               padding:"9px 14px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
               {["Nombre","Cat.","Nacimiento","Acciones"].map((h,i)=>(
                 <div key={i} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
@@ -2990,7 +3156,7 @@ function DelegadoScreen({ user, onLogout }) {
             </div>
             {jugFiltrados.map((j,idx)=>(
               <div key={j.id} style={{display:"grid",
-                gridTemplateColumns:"260px 65px 95px 145px",gap:0,
+                gridTemplateColumns:"260px 65px 95px 160px",gap:0,
                 alignItems:"center",padding:"8px 14px",
                 background:idx%2===0?C.white:"#f8f8f5",
                 borderLeft:`1px solid ${C.gray}`,borderRight:`1px solid ${C.gray}`,
