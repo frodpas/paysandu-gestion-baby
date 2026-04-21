@@ -601,10 +601,10 @@ function PublicoView({ user, onLogout }) {
   const pagoMes = (mes) => pagos.find(p=>p.mes===mes);
 
   const mesesConDeuda = () => {
-    const mesActual = new Date().getMonth()+1;
+    // Mostrar todos los meses que tienen cuota y no están pagados
     return MESES.map((m,i)=>i+1).filter(mes=>{
       const monto = cuotaMes(mes);
-      return monto>0 && !pagoMes(mes) && mes<=(new Date().getDate()>10 ? new Date().getMonth()+1 : new Date().getMonth())+1;
+      return monto>0 && !pagoMes(mes);
     });
   };
 
