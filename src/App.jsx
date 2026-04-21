@@ -1152,10 +1152,16 @@ function AdminScreen({ user, onLogout }) {
     ["categorias", "🏷 Categorías"],
   ];
 
+  // Overlay solo para tabs con tablas anchas
+  const TABS_LANDSCAPE = ["planteles","delegados","pendientes"];
   useEffect(()=>{
-    document.body.classList.add("needs-landscape");
+    if (TABS_LANDSCAPE.includes(tab)) {
+      document.body.classList.add("needs-landscape");
+    } else {
+      document.body.classList.remove("needs-landscape");
+    }
     return ()=>document.body.classList.remove("needs-landscape");
-  },[]);
+  },[tab]);
 
   return (
     <div style={{minHeight:"100dvh",background:C.offWhite,display:"flex",flexDirection:"column"}}>
@@ -1214,7 +1220,7 @@ function AdminScreen({ user, onLogout }) {
         </div>
 
         {/* Contenido principal */}
-        <div className="admin-content" style={{flex:1,overflowY:"auto",padding:20,minWidth:0}}>
+        <div className="admin-content" style={{flex:1,overflowY:"auto",padding:20,paddingBottom:90,minWidth:0}}>
         {loading&&<div style={{textAlign:"center",padding:"40px 0",color:C.grayMid}}>⏳ Cargando...</div>}
 
         {/* ── TAB PLANTELES ── */}
@@ -2875,11 +2881,6 @@ function DelegadoScreen({ user, onLogout }) {
     setJug((jugs||[]).filter(j=>misCategs.length===0||misCategs.includes(j.categoria_id)));
   };
 
-  useEffect(()=>{
-    document.body.classList.add("needs-landscape");
-    return ()=>document.body.classList.remove("needs-landscape");
-  },[]);
-
   return (
     <div style={{minHeight:"100dvh",background:C.offWhite,display:"flex",flexDirection:"column"}}>
       <div className="app-header" style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"12px 18px"}}>
@@ -2933,7 +2934,7 @@ function DelegadoScreen({ user, onLogout }) {
         </div>
 
         {/* Contenido */}
-        <div style={{flex:1,overflowY:"auto",padding:18,minWidth:0}}>
+        <div style={{flex:1,overflowY:"auto",padding:18,paddingBottom:80,minWidth:0}}>
         {loading&&<div style={{textAlign:"center",padding:"40px 0",color:C.grayMid}}>⏳ Cargando...</div>}
 
         {!loading&&tab==="planteles"&&(
