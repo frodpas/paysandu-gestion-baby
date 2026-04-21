@@ -1152,16 +1152,10 @@ function AdminScreen({ user, onLogout }) {
     ["categorias", "🏷 Categorías"],
   ];
 
-  // Overlay solo para tabs con tablas anchas
-  const TABS_LANDSCAPE = ["planteles","delegados","pendientes"];
   useEffect(()=>{
-    if (TABS_LANDSCAPE.includes(tab)) {
-      document.body.classList.add("needs-landscape");
-    } else {
-      document.body.classList.remove("needs-landscape");
-    }
+    document.body.classList.add("needs-landscape");
     return ()=>document.body.classList.remove("needs-landscape");
-  },[tab]);
+  },[]);
 
   return (
     <div style={{minHeight:"100dvh",background:C.offWhite,display:"flex",flexDirection:"column"}}>
@@ -2880,6 +2874,11 @@ function DelegadoScreen({ user, onLogout }) {
     const jugs = await sbFetch("baby_jugadores?select=*&order=nombre.asc");
     setJug((jugs||[]).filter(j=>misCategs.length===0||misCategs.includes(j.categoria_id)));
   };
+
+  useEffect(()=>{
+    document.body.classList.add("needs-landscape");
+    return ()=>document.body.classList.remove("needs-landscape");
+  },[]);
 
   return (
     <div style={{minHeight:"100dvh",background:C.offWhite,display:"flex",flexDirection:"column"}}>
