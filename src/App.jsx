@@ -300,38 +300,57 @@ function LoginScreen({ onLogin }) {
             textTransform:"uppercase",letterSpacing:".1em",marginTop:6}}>Baby Fútbol</div>
         </div>
 
-        {/* ── HOME: 3 botones ── */}
+        {/* ── HOME: 3 círculos ── */}
         {mode==="home"&&(
-          <>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
-              <button onClick={()=>{setMode("admin");setErr("");}}
-                style={{padding:"14px 10px",background:"rgba(232,184,75,.15)",
-                  border:`2px solid ${C.gold}`,borderRadius:14,color:C.white,
-                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,
-                  cursor:"pointer",textTransform:"uppercase",backdropFilter:"blur(8px)",
-                  display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
-                <span style={{fontSize:28}}>👤</span>Admin
-              </button>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:14}}>
+            {/* JUGADORES — grande, blanco */}
+            <button onClick={abrirAccesoJugadores} disabled={loading}
+              style={{width:190,height:190,borderRadius:"50%",cursor:"pointer",
+                background:"linear-gradient(145deg,#ffffff 60%,#fdf3d4)",
+                border:`4px solid ${C.gold}`,
+                display:"flex",flexDirection:"column",alignItems:"center",
+                justifyContent:"center",gap:8,
+                boxShadow:`0 0 0 8px rgba(232,184,75,.25), 0 12px 40px rgba(232,184,75,.4), 0 6px 20px rgba(0,0,0,.5)`,
+                fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:17,
+                textTransform:"uppercase",color:C.navy,letterSpacing:".03em"}}>
+              <img src="data:image/png;base64,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" alt="camiseta"
+                style={{width:62,height:62,objectFit:"contain",filter:"drop-shadow(0 2px 6px rgba(30,42,110,.3))"}}/>
+              <span>{loading?"Cargando...":"Acceso"}<br/>Jugadores</span>
+            </button>
+            <div style={{color:"rgba(255,255,255,.45)",fontSize:12}}>Ver cuotas y pagar</div>
+
+            {/* DELEGADO + ADMIN en fila */}
+            <div style={{display:"flex",gap:20,alignItems:"center",justifyContent:"center",marginTop:4}}>
+              {/* DELEGADO — mediano, rojo */}
               <button onClick={abrirDelegado}
-                style={{padding:"14px 10px",background:"rgba(134,239,172,.15)",
-                  border:"2px solid #86efac",borderRadius:14,color:C.white,
-                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,
-                  cursor:"pointer",textTransform:"uppercase",backdropFilter:"blur(8px)",
-                  display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
-                <span style={{fontSize:28}}>🏃</span>Delegado
+                style={{width:140,height:140,borderRadius:"50%",cursor:"pointer",
+                  background:"linear-gradient(135deg,#c0272d,#9b1c21)",
+                  border:"3px solid rgba(255,255,255,.25)",
+                  display:"flex",flexDirection:"column",alignItems:"center",
+                  justifyContent:"center",gap:6,
+                  boxShadow:"0 6px 24px rgba(192,39,45,.45), 0 0 0 5px rgba(192,39,45,.12)",
+                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:15,
+                  textTransform:"uppercase",color:C.white}}>
+                <span style={{display:"flex",alignItems:"center",justifyContent:"center"}}
+                  dangerouslySetInnerHTML={{__html:`<svg viewBox="0 0 64 64" width="40" height="40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="12" y="14" width="40" height="46" rx="4" fill="white" opacity="0.9"/><rect x="24" y="8" width="16" height="12" rx="3" fill="white" opacity="0.9"/><rect x="28" y="6" width="8" height="8" rx="2" fill="#9b1c21"/><line x1="20" y1="28" x2="44" y2="28" stroke="#1e2a6e" stroke-width="2.5" stroke-linecap="round"/><line x1="20" y1="36" x2="44" y2="36" stroke="#1e2a6e" stroke-width="2.5" stroke-linecap="round"/><line x1="20" y1="44" x2="36" y2="44" stroke="#1e2a6e" stroke-width="2.5" stroke-linecap="round"/></svg>`}}/>
+                Delegado
+              </button>
+              {/* ADMIN — pequeño, navy */}
+              <button onClick={()=>{setMode("admin");setErr("");}}
+                style={{width:100,height:100,borderRadius:"50%",cursor:"pointer",
+                  background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,
+                  border:`2px solid rgba(232,184,75,.5)`,
+                  display:"flex",flexDirection:"column",alignItems:"center",
+                  justifyContent:"center",gap:5,
+                  boxShadow:"0 4px 16px rgba(0,0,0,.4)",
+                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:12,
+                  textTransform:"uppercase",color:"rgba(255,255,255,.85)"}}>
+                <span style={{display:"flex",alignItems:"center",justifyContent:"center"}}
+                  dangerouslySetInnerHTML={{__html:`<svg viewBox="0 0 64 64" width="26" height="26" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="16" y="28" width="32" height="24" rx="4" fill="#e8b84b"/><path d="M22 28 V22 A10 10 0 0 1 42 22 V28" stroke="#e8b84b" stroke-width="4" stroke-linecap="round" fill="none"/><circle cx="32" cy="40" r="4" fill="#1e2a6e"/></svg>`}}/>
+                Admin
               </button>
             </div>
-            <button onClick={abrirAccesoJugadores} disabled={loading}
-              style={{width:"100%",padding:"16px 10px",
-                background:`linear-gradient(135deg,${C.lilacDark},#7c3aed)`,
-                border:"none",borderRadius:14,color:C.white,
-                fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:17,
-                cursor:"pointer",textTransform:"uppercase",
-                display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
-              <span style={{fontSize:28}}>⚽</span>
-              {loading?"Cargando...":"Acceso Jugadores"}
-            </button>
-          </>
+          </div>
         )}
 
         {/* ── ELEGIR CATEGORÍA ── */}
@@ -428,9 +447,9 @@ function LoginScreen({ onLogin }) {
             </div>
             <div style={{display:"flex",gap:10,justifyContent:"center",marginBottom:16}}>
               {[0,1,2].map(i=>(
-                <input key={i} type="password" maxLength={1} value={pinJug[i]||""}
+                <input key={i} type="password" inputMode="numeric" maxLength={1} value={pinJug[i]||""}
                   onChange={e=>{
-                    const v=e.target.value.replace(/\D/g,"");
+                    const v=e.target.value.replace(/[^0-9]/g,"");
                     const arr=pinJug.split("");
                     arr[i]=v;
                     const np=arr.join("").slice(0,3);
