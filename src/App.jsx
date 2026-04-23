@@ -1804,7 +1804,7 @@ function AdminScreen({ user, onLogout }) {
                           <div style={{width:120,flexShrink:0,background:"#f9fafb",
                             display:"flex",alignItems:"center",justifyContent:"center",
                             cursor:"pointer",borderRight:"1px solid #fca5a5"}}
-                            onClick={()=>window.open(p.comprobante_url,"_blank")}>
+                            onClick={()=>setVerComprobante(p.comprobante_url)}>
                             <img src={p.comprobante_url}
                               style={{width:120,height:100,objectFit:"cover"}}
                               title="Click para ver completo"/>
