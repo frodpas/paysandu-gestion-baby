@@ -1253,6 +1253,12 @@ function AdminScreen({ user, onLogout }) {
   const [tiposCuota,   setTiposCuota]  = useState(TIPOS_CUOTA_DEFAULT);
   const [filtCat,      setFiltCat]     = useState("todos");
   const [modal,        setModal]       = useState(null); // null | "newJug" | "editJug" | "fichaJug" | "newDel" | "editDel"
+  const [verComprobante, setVerComprobante] = useState(null); // base64 imagen comprobante
+  const [modalReporte,   setModalReporte]   = useState(false);
+  const [camposReporte,  setCamposReporte]  = useState({nombre:true,ci:true,categoria:true,fecha_nacimiento:false,camiseta:false,celular:false,tipo_cuota:false,estado:true,codigo:false});
+  const [modalTransfRep, setModalTransfRep] = useState(false);
+  const [transfMesDesde, setTransfMesDesde] = useState(1);
+  const [transfMesHasta, setTransfMesHasta] = useState(new Date().getMonth()+1);
   const [selJugador,   setSelJugador]  = useState(null);
   const [loading,      setLoading]     = useState(true);
   const [qrLink,       setQrLink]      = useState(null);
@@ -1900,6 +1906,16 @@ function AdminScreen({ user, onLogout }) {
                 </div>
               );
             })()}
+            {/* Botón reporte transferencias */}
+            <div style={{marginBottom:12}}>
+              <button onClick={()=>setModalTransfRep(true)}
+                style={{padding:"9px 16px",background:"linear-gradient(135deg,#0ea5e9,#0369a1)",
+                  color:"white",border:"none",borderRadius:10,
+                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
+                  cursor:"pointer",textTransform:"uppercase",display:"flex",alignItems:"center",gap:8}}>
+                🏦 Reporte de transferencias
+              </button>
+            </div>
             <PagosTab jugadores={jugadoresFilt} pagos={pagos} planPagos={planPagos}
               categorias={categorias} tiposCuota={tiposCuota}
               filtCat={filtCat} setFiltCat={setFiltCat}
@@ -2527,8 +2543,8 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
 
   return (
     <div style={{maxWidth:900}}>
-      {/* Barra superior: botón reporte cuadrado */}
-      <div style={{display:"flex",gap:10,marginBottom:12,alignItems:"flex-start"}}>
+      {/* Barra superior: botones reporte */}
+      <div style={{display:"flex",gap:10,marginBottom:12,alignItems:"flex-start",flexWrap:"wrap"}}>
         <button onClick={()=>setVerReporte(true)}
           style={{width:110,height:80,background:`linear-gradient(135deg,#b45309,#d97706)`,
             color:C.white,border:"none",borderRadius:12,
