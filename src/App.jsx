@@ -577,8 +577,7 @@ function descargarCSV(filas, cols, filename) {
   const sep = ";";
   const header = cols.join(sep);
   const rows = filas.map(r => r.map(v => `"${String(v||"").replace(/"/g,'""')}"`).join(sep));
-  const csv = BOM + [header, ...rows].join("
-");
+  const csv = BOM + [header, ...rows].join("\r\n");
   const b = new Blob([csv], {type:"text/csv;charset=utf-8"});
   const u = URL.createObjectURL(b);
   const a = document.createElement("a");
