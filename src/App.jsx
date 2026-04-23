@@ -561,6 +561,68 @@ function LoginScreen({ onLogin }) {
 }
 
 /* ══ VISTA PÚBLICA — ficha del jugador ════════════════════════════════ */
+/* ══ HELPERS REPORTE ════════════════════════════════════════════════ */
+function descargarHTML(html, filename) {
+  const b = new Blob([html], {type:"text/html;charset=utf-8"});
+  const u = URL.createObjectURL(b);
+  const a = document.createElement("a");
+  a.href = u; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(u);
+}
+
+function descargarCSV(filas, cols, filename) {
+  // CSV compatible con Excel (sep=; para Europa/Latinoamérica)
+  const BOM = "﻿"; // UTF-8 BOM para que Excel muestre acentos
+  const sep = ";";
+  const header = cols.join(sep);
+  const rows = filas.map(r => r.map(v => `"${String(v||"").replace(/"/g,'""')}"`).join(sep));
+  const csv = BOM + [header, ...rows].join("
+");
+  const b = new Blob([csv], {type:"text/csv;charset=utf-8"});
+  const u = URL.createObjectURL(b);
+  const a = document.createElement("a");
+  a.href = u; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(u);
+}
+
+function htmlReporteBase(titulo, subtitulo, colsHTML, rowsHTML, totalHTML="") {
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <title>${titulo}</title>
+    <style>
+      body{font-family:Arial,sans-serif;padding:20px;color:#1e2a6e;margin:0;}
+      .header{display:flex;align-items:center;gap:14px;margin-bottom:6px;}
+      h2{font-size:18px;margin:0;color:#1e2a6e;}
+      .sub{font-size:11px;color:#666;margin-bottom:14px;}
+      table{border-collapse:collapse;width:100%;font-size:12px;}
+      th{background:#1e2a6e;color:white;padding:7px 10px;text-align:left;
+         font-size:11px;text-transform:uppercase;white-space:nowrap;}
+      td{padding:6px 10px;border-bottom:1px solid #e2e2da;vertical-align:middle;}
+      tr:nth-child(even)td{background:#f5f5f0;}
+      tfoot td{font-weight:900;font-size:13px;color:#1e2a6e;background:#e8f0fe;padding:8px 10px;}
+      .btns{margin-top:16px;display:flex;gap:10px;}
+      .btn{padding:8px 18px;border:none;border-radius:6px;cursor:pointer;
+           font-size:13px;font-weight:700;}
+      .btn-print{background:#1e2a6e;color:white;}
+      @media print{.btns{display:none;}body{padding:10px;}}
+    </style></head><body>
+    <div class="header">
+      <img src="https://paysandu-tienda.vercel.app/escudo.png" width="42" onerror="this.style.display='none'"/>
+      <div><h2>${titulo}</h2></div>
+    </div>
+    <div class="sub">${subtitulo}</div>
+    <table>
+      <thead><tr>${colsHTML}</tr></thead>
+      <tbody>${rowsHTML}</tbody>
+      ${totalHTML ? `<tfoot><tr>${totalHTML}</tr></tfoot>` : ""}
+    </table>
+    <div class="btns">
+      <button class="btn btn-print" onclick="window.print()">🖨 Imprimir</button>
+    </div>
+    </body></html>`;
+}
+
 function PublicoView({ user, onLogout }) {
   const jug = user.jugador;
   const [pagos, setPagos] = useState([]);
@@ -1801,18 +1863,6 @@ function AdminScreen({ user, onLogout }) {
         {/* ── TAB PAGOS ── */}
         {!loading&&tab==="pagos"&&(
           <div>
-            {/* Botones toolbar pagos */}
-            <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap"}}>
-              <button onClick={()=>setModalTransfRep(true)}
-                style={{width:110,height:80,background:"linear-gradient(135deg,#0ea5e9,#0369a1)",
-                  color:"white",border:"none",borderRadius:12,
-                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:11,
-                  textTransform:"uppercase",cursor:"pointer",display:"flex",flexDirection:"column",
-                  alignItems:"center",justifyContent:"center",gap:6,lineHeight:1.2,textAlign:"center",
-                  boxShadow:"0 4px 12px rgba(3,105,161,.3)"}}>
-                <span style={{fontSize:24}}>🏦</span>Reporte<br/>Transferencias
-              </button>
-            </div>
             {/* COMPROBANTES PENDIENTES */}
             {(()=>{
               // Comprobantes de transferencia: vienen de formularios_pendientes con _tipo="comprobante"
@@ -2328,8 +2378,19 @@ function AdminScreen({ user, onLogout }) {
                 </label>
               ))}
             </div>
-            <div style={{fontSize:12,color:C.grayMid,marginBottom:16}}>
-              Cat: <strong style={{color:C.navy}}>{filtCat==="todos"?"Todas":filtCat}</strong> · {jugadoresFilt.length} jugadores
+            <div style={{marginBottom:14}}>
+              <label style={{display:"block",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                fontSize:12,color:C.navy,textTransform:"uppercase",marginBottom:6}}>Categoría</label>
+              <select value={filtCat} onChange={e=>setFiltCat(e.target.value)}
+                style={{width:"100%",padding:"9px 12px",borderRadius:8,
+                  border:`1px solid ${C.gray}`,fontSize:14,
+                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,color:C.navy}}>
+                <option value="todos">Todas las categorías</option>
+                {categorias.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}
+              </select>
+              <div style={{fontSize:11,color:C.grayMid,marginTop:5}}>
+                {jugadoresFilt.length} jugadores en esta selección
+              </div>
             </div>
             <div style={{display:"flex",gap:8}}>
               <button onClick={()=>setModalReporte(false)}
@@ -2378,18 +2439,46 @@ function AdminScreen({ user, onLogout }) {
                     <tbody>${rows.map(r=>`<tr>${r.map(v=>`<td>${v}</td>`).join("")}</tr>`).join("")}</tbody></table>
                     <button class="btn" onclick="window.print()">Imprimir</button>
                     </body></html>`;
-                  const b=new Blob([html],{type:"text/html"});
-                  const u=URL.createObjectURL(b);
-                  const a=document.createElement("a");
-                  a.href=u; a.download=`jugadores-${filtCat==="todos"?"todos":filtCat}.html`;
-                  document.body.appendChild(a); a.click();
-                  document.body.removeChild(a); URL.revokeObjectURL(u);
-                  setModalReporte(false);
+                  descargarHTML(html, `jugadores-${filtCat==="todos"?"todos":filtCat}.html`);
                 }}
-                style={{flex:2,padding:"10px",background:"linear-gradient(135deg,#d97706,#b45309)",
+                style={{flex:1,padding:"10px",background:"linear-gradient(135deg,#d97706,#b45309)",
                   color:"white",border:"none",borderRadius:10,
                   fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,cursor:"pointer"}}>
-                📥 Descargar reporte
+                📄 HTML
+              </button>
+              <button onClick={()=>{
+                  const cols2=[
+                    camposReporte.nombre&&["nombre","Nombre"],
+                    camposReporte.ci&&["ci","CI"],
+                    camposReporte.categoria&&["categoria_id","Categoría"],
+                    camposReporte.fecha_nacimiento&&["fecha_nacimiento","Nacimiento"],
+                    camposReporte.camiseta&&["numero_camiseta","Camiseta"],
+                    camposReporte.celular&&["celular","Celular"],
+                    camposReporte.tipo_cuota&&["_tc","Cuota"],
+                    camposReporte.estado&&["_est","Estado"],
+                    camposReporte.codigo&&["id","Código"],
+                  ].filter(Boolean);
+                  const ml2=(new Date().getDate()>10?new Date().getMonth()+1:new Date().getMonth());
+                  const est2=j=>{
+                    const d=planPagos.filter(pl=>{
+                      if(!pl.monto||pl.mes>ml2)return false;
+                      const tc=tiposCuota.find(t=>t.id===j.tipo_cuota)||tiposCuota[0];
+                      return Math.round(pl.monto*tc.porcentaje/100)>0&&!pagos.find(p=>p.jugador_id===j.id&&p.mes===pl.mes);
+                    });
+                    return d.length===0?"Al día":d.length+" mes"+(d.length>1?"es":"")+" adeudado"+(d.length>1?"s":"");
+                  };
+                  const filas=jugadoresFilt.map(j=>cols2.map(([k])=>{
+                    if(k==="_tc")return(tiposCuota.find(t=>t.id===j.tipo_cuota)||tiposCuota[0]).nombre;
+                    if(k==="_est")return est2(j);
+                    return j[k]||"";
+                  }));
+                  descargarCSV(filas, cols2.map(([,h])=>h), `jugadores-${filtCat==="todos"?"todos":filtCat}.csv`);
+                  setModalReporte(false);
+                }}
+                style={{flex:1,padding:"10px",background:"linear-gradient(135deg,#16a34a,#15803d)",
+                  color:"white",border:"none",borderRadius:10,
+                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,cursor:"pointer"}}>
+                📊 Excel
               </button>
             </div>
           </div>
@@ -2465,18 +2554,28 @@ function AdminScreen({ user, onLogout }) {
                           <tfoot><tr><td colspan="4">TOTAL</td><td>$${tot2.toLocaleString("es-UY")}</td></tr></tfoot>
                           </table><button class="btn" onclick="window.print()">Imprimir</button>
                           </body></html>`;
-                        const b=new Blob([html],{type:"text/html"});
-                        const u=URL.createObjectURL(b);
-                        const a=document.createElement("a");
-                        a.href=u; a.download=`transferencias-${MESES[transfMesDesde-1]}-${MESES[transfMesHasta-1]}.html`;
-                        document.body.appendChild(a); a.click();
-                        document.body.removeChild(a); URL.revokeObjectURL(u);
-                        setModalTransfRep(false);
+                        descargarHTML(html, `transferencias-${MESES[transfMesDesde-1]}-${MESES[transfMesHasta-1]}.html`);
                       }}
-                      style={{flex:2,padding:"10px",background:"linear-gradient(135deg,#0ea5e9,#0369a1)",
+                      style={{flex:1,padding:"10px",background:"linear-gradient(135deg,#0ea5e9,#0369a1)",
                         color:"white",border:"none",borderRadius:10,
                         fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,cursor:"pointer"}}>
-                      📥 Descargar
+                      📄 HTML
+                    </button>
+                    <button onClick={()=>{
+                        const tr3=pagos.filter(p=>p.metodo_pago==="transferencia"&&p.mes>=transfMesDesde&&p.mes<=transfMesHasta)
+                          .sort((a,b)=>(a.fecha_pago||"").localeCompare(b.fecha_pago||""));
+                        const filas3=tr3.map(p=>{
+                          const j=jugadores.find(x=>x.id===p.jugador_id);
+                          return [p.fecha_pago||"",j?.nombre||"",j?.categoria_id||"",MESES[(p.mes||1)-1],(p.monto||0).toString()];
+                        });
+                        filas3.push(["","","","TOTAL",tr3.reduce((a,p)=>a+(p.monto||0),0).toString()]);
+                        descargarCSV(filas3,["Fecha","Jugador","Categoría","Mes","Monto"],`transferencias-${MESES[transfMesDesde-1]}-${MESES[transfMesHasta-1]}.csv`);
+                        setModalTransfRep(false);
+                      }}
+                      style={{flex:1,padding:"10px",background:"linear-gradient(135deg,#16a34a,#15803d)",
+                        color:"white",border:"none",borderRadius:10,
+                        fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,cursor:"pointer"}}>
+                      📊 Excel
                     </button>
                   </div>
                 </div>
@@ -2759,7 +2858,16 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
             textTransform:"uppercase",cursor:"pointer",display:"flex",flexDirection:"column",
             alignItems:"center",justifyContent:"center",gap:6,
             boxShadow:"0 4px 12px rgba(180,83,9,.3)"}}>
-          <span style={{fontSize:24}}>📊</span>Generar reporte
+          <span style={{fontSize:24}}>📊</span>Reporte Pagos
+        </button>
+        <button onClick={()=>setModalTransfRep(true)}
+          style={{width:110,height:80,background:"linear-gradient(135deg,#0ea5e9,#0369a1)",
+            color:"white",border:"none",borderRadius:12,
+            fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:11,
+            textTransform:"uppercase",cursor:"pointer",display:"flex",flexDirection:"column",
+            alignItems:"center",justifyContent:"center",gap:6,lineHeight:1.2,textAlign:"center",
+            boxShadow:"0 4px 12px rgba(3,105,161,.3)"}}>
+          <span style={{fontSize:24}}>🏦</span>Reporte<br/>Transferencias
         </button>
       </div>
       {/* Filtros categoría */}
@@ -3033,8 +3141,8 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
                   const el = document.getElementById("reporte-tabla");
                   if(!el) return;
                   const w = window.open("","_blank");
-                  w.document.write("<!DOCTYPE html><html><head><meta charset='utf-8'><title>Reporte Pagos</title><style>body{font-family:Arial,sans-serif;font-size:11px;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ccc;padding:4px 6px;text-align:center;}th{background:#1e2a6e;color:white;}.verde{background:#dcfce7;color:#16a34a;font-weight:700;}.rojo{background:#fee2e2;color:#dc2626;font-weight:700;}.gris{background:#f3f4f6;color:#9ca3af;}.nombre{text-align:left;font-weight:700;text-transform:uppercase;}</style></head><body>"+el.outerHTML+"<script>window.onload=function(){window.print();}<\/script></body></html>");
-                  w.document.close();
+                  if(w){w.document.write("<!DOCTYPE html><html><head><meta charset=\'utf-8\'><title>Reporte Pagos</title><style>body{font-family:Arial,sans-serif;font-size:11px;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ccc;padding:4px 6px;text-align:center;}th{background:#1e2a6e;color:white;}.verde{background:#dcfce7;color:#16a34a;font-weight:700;}.rojo{background:#fee2e2;color:#dc2626;font-weight:700;}.gris{background:#f3f4f6;color:#9ca3af;}.nombre{text-align:left;font-weight:700;text-transform:uppercase;}</style></head><body>"+el.outerHTML+"<script>window.onload=function(){window.print();}<\/script></body></html>");w.document.close();}
+                  else{descargarHTML("<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>Reporte Pagos</title><style>body{font-family:Arial,sans-serif;font-size:11px;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ccc;padding:4px 6px;text-align:center;}th{background:#1e2a6e;color:white;}</style></head><body>"+el.outerHTML+"</body></html>","reporte-pagos.html");}
                 }}
                 style={{padding:"8px 14px",background:C.gold,color:C.navyDark,border:"none",borderRadius:8,
                   fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,cursor:"pointer",
