@@ -1801,6 +1801,18 @@ function AdminScreen({ user, onLogout }) {
         {/* ── TAB PAGOS ── */}
         {!loading&&tab==="pagos"&&(
           <div>
+            {/* Botones toolbar pagos */}
+            <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap"}}>
+              <button onClick={()=>setModalTransfRep(true)}
+                style={{width:110,height:80,background:"linear-gradient(135deg,#0ea5e9,#0369a1)",
+                  color:"white",border:"none",borderRadius:12,
+                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:11,
+                  textTransform:"uppercase",cursor:"pointer",display:"flex",flexDirection:"column",
+                  alignItems:"center",justifyContent:"center",gap:6,lineHeight:1.2,textAlign:"center",
+                  boxShadow:"0 4px 12px rgba(3,105,161,.3)"}}>
+                <span style={{fontSize:24}}>🏦</span>Reporte<br/>Transferencias
+              </button>
+            </div>
             {/* COMPROBANTES PENDIENTES */}
             {(()=>{
               // Comprobantes de transferencia: vienen de formularios_pendientes con _tipo="comprobante"
@@ -1906,16 +1918,7 @@ function AdminScreen({ user, onLogout }) {
                 </div>
               );
             })()}
-            {/* Botón reporte transferencias */}
-            <div style={{marginBottom:12}}>
-              <button onClick={()=>setModalTransfRep(true)}
-                style={{padding:"9px 16px",background:"linear-gradient(135deg,#0ea5e9,#0369a1)",
-                  color:"white",border:"none",borderRadius:10,
-                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
-                  cursor:"pointer",textTransform:"uppercase",display:"flex",alignItems:"center",gap:8}}>
-                🏦 Reporte de transferencias
-              </button>
-            </div>
+
             <PagosTab jugadores={jugadoresFilt} pagos={pagos} planPagos={planPagos}
               categorias={categorias} tiposCuota={tiposCuota}
               filtCat={filtCat} setFiltCat={setFiltCat}
@@ -2296,6 +2299,210 @@ function AdminScreen({ user, onLogout }) {
           );
         })}
       </div>
+
+      {/* ── Modal reporte jugadores ── */}
+      {modalReporte&&(
+        <Modal onClose={()=>setModalReporte(false)} maxWidth={480}>
+          <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"16px 20px"}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,
+              color:C.white,textTransform:"uppercase"}}>📊 Reporte de jugadores</div>
+          </div>
+          <div style={{padding:"20px 22px"}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,
+              color:C.navy,textTransform:"uppercase",marginBottom:12}}>Campos a incluir</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:18}}>
+              {[["nombre","Nombre"],["ci","CI"],["categoria","Categoría"],
+                ["fecha_nacimiento","Fecha nacimiento"],["camiseta","N° camiseta"],
+                ["celular","Celular"],["tipo_cuota","Tipo cuota"],
+                ["estado","Estado pago"],["codigo","Código"]
+              ].map(([k,lbl])=>(
+                <label key={k} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",
+                  borderRadius:8,cursor:"pointer",
+                  background:camposReporte[k]?"#eff6ff":"#f9fafb",
+                  border:`1px solid ${camposReporte[k]?"#93c5fd":C.gray}`}}>
+                  <input type="checkbox" checked={!!camposReporte[k]}
+                    onChange={e=>setCamposReporte(p=>({...p,[k]:e.target.checked}))}
+                    style={{accentColor:C.navy,width:16,height:16,cursor:"pointer"}}/>
+                  <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                    fontSize:13,color:C.navy}}>{lbl}</span>
+                </label>
+              ))}
+            </div>
+            <div style={{fontSize:12,color:C.grayMid,marginBottom:16}}>
+              Cat: <strong style={{color:C.navy}}>{filtCat==="todos"?"Todas":filtCat}</strong> · {jugadoresFilt.length} jugadores
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>setModalReporte(false)}
+                style={{flex:1,padding:"10px",background:"transparent",color:C.navy,
+                  border:`2px solid ${C.navy}`,borderRadius:10,
+                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13}}>Cancelar</button>
+              <button onClick={()=>{
+                  const cols=[
+                    camposReporte.nombre&&["nombre","Nombre"],
+                    camposReporte.ci&&["ci","CI"],
+                    camposReporte.categoria&&["categoria_id","Categoría"],
+                    camposReporte.fecha_nacimiento&&["fecha_nacimiento","Nacimiento"],
+                    camposReporte.camiseta&&["numero_camiseta","Camiseta"],
+                    camposReporte.celular&&["celular","Celular"],
+                    camposReporte.tipo_cuota&&["_tc","Cuota"],
+                    camposReporte.estado&&["_est","Estado"],
+                    camposReporte.codigo&&["id","Código"],
+                  ].filter(Boolean);
+                  const ml=(new Date().getDate()>10?new Date().getMonth()+1:new Date().getMonth());
+                  const est=j=>{
+                    const d=planPagos.filter(pl=>{
+                      if(!pl.monto||pl.mes>ml)return false;
+                      const tc=tiposCuota.find(t=>t.id===j.tipo_cuota)||tiposCuota[0];
+                      return Math.round(pl.monto*tc.porcentaje/100)>0&&!pagos.find(p=>p.jugador_id===j.id&&p.mes===pl.mes);
+                    });
+                    return d.length===0?"Al día":d.length+" mes"+(d.length>1?"es":"")+" adeudado"+(d.length>1?"s":"");
+                  };
+                  const rows=jugadoresFilt.map(j=>cols.map(([k])=>{
+                    if(k==="_tc")return(tiposCuota.find(t=>t.id===j.tipo_cuota)||tiposCuota[0]).nombre;
+                    if(k==="_est")return est(j);
+                    return j[k]||"—";
+                  }));
+                  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Jugadores</title>
+                    <style>body{font-family:Arial,sans-serif;padding:20px;}
+                    h2{font-size:18px;margin-bottom:4px;color:#1e2a6e;}
+                    .sub{font-size:11px;color:#666;margin-bottom:12px;}
+                    table{border-collapse:collapse;width:100%;font-size:12px;}
+                    th{background:#1e2a6e;color:white;padding:6px 10px;text-align:left;font-size:11px;text-transform:uppercase;}
+                    td{padding:5px 10px;border-bottom:1px solid #e2e2da;}
+                    tr:nth-child(even)td{background:#f5f5f0;}
+                    .btn{margin-top:14px;padding:8px 16px;background:#1e2a6e;color:white;border:none;border-radius:6px;cursor:pointer;}
+                    @media print{.btn{display:none;}}</style></head><body>
+                    <h2>Paysandú FC — Baby Fútbol</h2>
+                    <div class="sub">Categoría: ${filtCat==="todos"?"Todas":filtCat} · ${jugadoresFilt.length} jugadores · ${new Date().toLocaleDateString("es-UY")}</div>
+                    <table><thead><tr>${cols.map(([,h])=>`<th>${h}</th>`).join("")}</tr></thead>
+                    <tbody>${rows.map(r=>`<tr>${r.map(v=>`<td>${v}</td>`).join("")}</tr>`).join("")}</tbody></table>
+                    <button class="btn" onclick="window.print()">Imprimir</button>
+                    </body></html>`;
+                  const b=new Blob([html],{type:"text/html"});
+                  const u=URL.createObjectURL(b);
+                  const a=document.createElement("a");
+                  a.href=u; a.download=`jugadores-${filtCat==="todos"?"todos":filtCat}.html`;
+                  document.body.appendChild(a); a.click();
+                  document.body.removeChild(a); URL.revokeObjectURL(u);
+                  setModalReporte(false);
+                }}
+                style={{flex:2,padding:"10px",background:"linear-gradient(135deg,#d97706,#b45309)",
+                  color:"white",border:"none",borderRadius:10,
+                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,cursor:"pointer"}}>
+                📥 Descargar reporte
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* ── Modal reporte transferencias ── */}
+      {modalTransfRep&&(
+        <Modal onClose={()=>setModalTransfRep(false)} maxWidth={500}>
+          <div style={{background:"linear-gradient(135deg,#0369a1,#0ea5e9)",padding:"16px 20px"}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,
+              color:"white",textTransform:"uppercase"}}>🏦 Reporte de transferencias</div>
+          </div>
+          <div style={{padding:"20px 22px"}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,
+              color:C.navy,textTransform:"uppercase",marginBottom:12}}>Período</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:18}}>
+              {[["Desde",transfMesDesde,setTransfMesDesde],["Hasta",transfMesHasta,setTransfMesHasta]].map(([lbl,val,set])=>(
+                <div key={lbl}>
+                  <label style={{display:"block",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                    fontSize:11,color:C.navy,textTransform:"uppercase",marginBottom:5}}>{lbl}</label>
+                  <select value={val} onChange={e=>set(+e.target.value)}
+                    style={{width:"100%",padding:"8px 10px",borderRadius:8,
+                      border:`1px solid ${C.gray}`,fontSize:13,fontFamily:"'Barlow Condensed',sans-serif"}}>
+                    {MESES.map((m,i)=><option key={i+1} value={i+1}>{m}</option>)}
+                  </select>
+                </div>
+              ))}
+            </div>
+            {(()=>{
+              const tr=pagos.filter(p=>p.metodo_pago==="transferencia"&&p.mes>=transfMesDesde&&p.mes<=transfMesHasta);
+              const tot=tr.reduce((a,p)=>a+(p.monto||0),0);
+              return(
+                <div>
+                  <div style={{background:"#f0f9ff",borderRadius:10,padding:"10px 14px",marginBottom:16,
+                    display:"flex",justifyContent:"space-between",alignItems:"center",
+                    border:"1px solid #bae6fd"}}>
+                    <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,color:"#0369a1"}}>
+                      {tr.length} transferencia{tr.length!==1?"s":""} · {MESES[transfMesDesde-1]} a {MESES[transfMesHasta-1]}
+                    </span>
+                    <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,color:"#0369a1"}}>
+                      ${tot.toLocaleString("es-UY")}
+                    </span>
+                  </div>
+                  <div style={{display:"flex",gap:8}}>
+                    <button onClick={()=>setModalTransfRep(false)}
+                      style={{flex:1,padding:"10px",background:"transparent",color:C.navy,
+                        border:`2px solid ${C.navy}`,borderRadius:10,
+                        fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13}}>Cancelar</button>
+                    <button onClick={()=>{
+                        const tr2=pagos.filter(p=>p.metodo_pago==="transferencia"&&p.mes>=transfMesDesde&&p.mes<=transfMesHasta)
+                          .sort((a,b)=>(a.fecha_pago||"").localeCompare(b.fecha_pago||""));
+                        const tot2=tr2.reduce((a,p)=>a+(p.monto||0),0);
+                        const rows=tr2.map(p=>{
+                          const j=jugadores.find(x=>x.id===p.jugador_id);
+                          return `<tr><td>${p.fecha_pago||"—"}</td><td>${j?.nombre||"—"}</td><td>${j?.categoria_id||"—"}</td><td>${MESES[(p.mes||1)-1]}</td><td style="text-align:right;font-weight:700">$${(p.monto||0).toLocaleString("es-UY")}</td></tr>`;
+                        }).join("");
+                        const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Transferencias</title>
+                          <style>body{font-family:Arial,sans-serif;padding:20px;}
+                          h2{font-size:18px;margin-bottom:4px;color:#0369a1;}
+                          .sub{font-size:11px;color:#666;margin-bottom:12px;}
+                          table{border-collapse:collapse;width:100%;font-size:12px;}
+                          th{background:#0369a1;color:white;padding:6px 10px;text-align:left;font-size:11px;text-transform:uppercase;}
+                          td{padding:5px 10px;border-bottom:1px solid #e2e2da;}
+                          tr:nth-child(even)td{background:#f0f9ff;}
+                          tfoot td{font-weight:900;font-size:13px;color:#0369a1;text-align:right;padding:8px 10px;}
+                          .btn{margin-top:14px;padding:8px 16px;background:#0369a1;color:white;border:none;border-radius:6px;cursor:pointer;}
+                          @media print{.btn{display:none;}}</style></head><body>
+                          <h2>Paysandú FC — Baby Fútbol</h2>
+                          <div class="sub">Transferencias · ${MESES[transfMesDesde-1]} a ${MESES[transfMesHasta-1]} · ${new Date().toLocaleDateString("es-UY")}</div>
+                          <table><thead><tr><th>Fecha</th><th>Jugador</th><th>Cat.</th><th>Mes</th><th>Monto</th></tr></thead>
+                          <tbody>${rows}</tbody>
+                          <tfoot><tr><td colspan="4">TOTAL</td><td>$${tot2.toLocaleString("es-UY")}</td></tr></tfoot>
+                          </table><button class="btn" onclick="window.print()">Imprimir</button>
+                          </body></html>`;
+                        const b=new Blob([html],{type:"text/html"});
+                        const u=URL.createObjectURL(b);
+                        const a=document.createElement("a");
+                        a.href=u; a.download=`transferencias-${MESES[transfMesDesde-1]}-${MESES[transfMesHasta-1]}.html`;
+                        document.body.appendChild(a); a.click();
+                        document.body.removeChild(a); URL.revokeObjectURL(u);
+                        setModalTransfRep(false);
+                      }}
+                      style={{flex:2,padding:"10px",background:"linear-gradient(135deg,#0ea5e9,#0369a1)",
+                        color:"white",border:"none",borderRadius:10,
+                        fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,cursor:"pointer"}}>
+                      📥 Descargar
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </Modal>
+      )}
+
+      {/* ── Modal comprobante pantalla completa ── */}
+      {verComprobante&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.93)",zIndex:9999,
+          display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:20}}>
+          <button onClick={()=>setVerComprobante(null)}
+            style={{position:"fixed",top:16,right:16,width:44,height:44,borderRadius:"50%",
+              background:"#dc2626",border:"2px solid white",color:"white",fontSize:22,
+              cursor:"pointer",fontWeight:900,display:"flex",alignItems:"center",
+              justifyContent:"center",zIndex:10000}}>✕</button>
+          <img src={verComprobante}
+            style={{maxWidth:"90vw",maxHeight:"82dvh",borderRadius:10,objectFit:"contain",
+              boxShadow:"0 8px 40px rgba(0,0,0,.7)"}}/>
+          <div style={{color:"rgba(255,255,255,.5)",fontSize:12,marginTop:12}}>
+            Presioná ✕ para cerrar
+          </div>
+        </div>
+      )}
 
       {/* Modales */}
       {(modal==="newJug"||modal==="editJug")&&(
