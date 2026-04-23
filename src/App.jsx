@@ -634,19 +634,25 @@ function PublicoView({ user, onLogout }) {
     setPaying(true);
     const grupoId = uid();
     const detalle = notaTransf || `Meses: ${selectedMeses.map(m=>MESES[m-1]).join(", ")}`;
-    for (const mes of selectedMeses) {
-      await sbFetch("baby_pagos","POST",{
-        id: uid(), jugador_id: jug.id, org_id: jug.org_id||"paysandu",
-        año: añoActual, mes, monto: cuotaMes(mes),
-        metodo_pago: "transferencia", fecha_pago: fdate(),
-        pendiente_verificacion: true,
-        comprobante_url: comprobante,
-        nota: detalle,
-        grupo_comprobante: grupoId,
-      });
-    }
-    const p = await sbFetch(`baby_pagos?jugador_id=eq.${jug.id}&año=eq.${añoActual}&select=*`);
-    setPagos(p||[]);
+    const totalMonto = selectedMeses.reduce((a,m)=>a+cuotaMes(m),0);
+    // Guardar en baby_formularios_pendientes con _tipo="comprobante"
+    // La foto va en foto_url (columna que ya existe)
+    await sbFetch("baby_formularios_pendientes","POST",{
+      id: grupoId,
+      org_id: jug.org_id||"paysandu",
+      foto_url: comprobante,
+      datos_json: JSON.stringify({
+        _tipo: "comprobante",
+        jugador_id: jug.id,
+        jugador_nombre: jug.nombre,
+        categoria_id: jug.categoria_id,
+        meses: selectedMeses,
+        monto_total: totalMonto,
+        detalle,
+        año: añoActual,
+      }),
+      created_at: new Date().toISOString(),
+    });
     setPaying(false);
     setModal("success_transf");
     setSelectedMeses([]);
@@ -1564,10 +1570,10 @@ function AdminScreen({ user, onLogout }) {
               const parts = label.split(" ");
               const icon = parts[0];
               const text = parts.slice(1).join(" ");
-              const hasBadge = id==="pendientes" && pendientes.length>0
-                || (id==="pagos" && pagos.filter(p=>p.pendiente_verificacion).length>0);
-              const badgeCount = id==="pendientes" ? pendientes.length
-                : id==="pagos" ? pagos.filter(p=>p.pendiente_verificacion).length : 0;
+              const compsPend = pendientes.filter(p=>{try{const d=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;return d._tipo==="comprobante";}catch(e){return false;}}).length;
+              const altasPend = pendientes.filter(p=>{try{const d=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;return d._tipo!=="comprobante";}catch(e){return true;}}).length;
+              const hasBadge = (id==="pendientes" && altasPend>0) || (id==="pagos" && compsPend>0);
+              const badgeCount = id==="pendientes" ? altasPend : id==="pagos" ? compsPend : 0;
               return(
                 <button key={id} onClick={()=>setTab(id)}
                   className="sidebar-navbtn"
@@ -1791,8 +1797,14 @@ function AdminScreen({ user, onLogout }) {
           <div>
             {/* COMPROBANTES PENDIENTES */}
             {(()=>{
-              const pendTransf = pagos.filter(p=>p.pendiente_verificacion&&p.comprobante_url);
-              if (pendTransf.length===0) return null;
+              // Comprobantes de transferencia: vienen de formularios_pendientes con _tipo="comprobante"
+              const comprobantes = pendientes.filter(p=>{
+                try {
+                  const d = typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
+                  return d._tipo==="comprobante";
+                } catch(e){ return false; }
+              });
+              if (comprobantes.length===0) return null;
               return(
                 <div style={{marginBottom:20}}>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,
@@ -1800,61 +1812,84 @@ function AdminScreen({ user, onLogout }) {
                     display:"flex",alignItems:"center",gap:8}}>
                     ⏳ Transferencias pendientes de verificación
                     <span style={{background:"#dc2626",color:"white",borderRadius:20,padding:"1px 10px",
-                      fontSize:13,fontWeight:900}}>{pendTransf.length}</span>
+                      fontSize:13,fontWeight:900}}>{comprobantes.length}</span>
                   </div>
                   <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                    {pendTransf.map(p=>{
-                      const jug = jugadores.find(j=>j.id===p.jugador_id);
+                    {comprobantes.map(p=>{
+                      const d = typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
                       return(
-                        <div key={p.id} style={{background:"white",borderRadius:14,overflow:"hidden",
-                          border:"2px solid #fca5a5",display:"flex",flexDirection:"row",gap:0}}>
-                          {/* Datos */}
-                          <div style={{flex:1,padding:"10px 14px"}}>
+                        <div key={p.id} style={{background:"white",borderRadius:14,
+                          border:"2px solid #fca5a5",overflow:"hidden"}}>
+                          {/* Miniatura comprobante si hay foto */}
+                          {p.foto_url&&(
+                            <div style={{background:"#f0f9ff",padding:"8px 14px 0",
+                              display:"flex",justifyContent:"center"}}>
+                              <img src={p.foto_url}
+                                style={{maxHeight:120,maxWidth:"100%",borderRadius:8,
+                                  objectFit:"contain",cursor:"pointer",
+                                  border:"1px solid #bae6fd"}}
+                                onClick={()=>setVerComprobante(p.foto_url)}
+                                title="Click para ampliar"/>
+                            </div>
+                          )}
+                          <div style={{padding:"10px 14px"}}>
                             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
-                              fontSize:14,color:C.navy,textTransform:"uppercase",marginBottom:2}}>
-                              {jug?.nombre||"Jugador"}
+                              fontSize:15,color:C.navy,textTransform:"uppercase",marginBottom:2}}>
+                              {d.jugador_nombre||"Jugador"} — Cat. {d.categoria_id||"—"}
                             </div>
-                            <div style={{fontSize:11,color:C.grayMid,marginBottom:4}}>
-                              {MESES[p.mes-1]} · ${p.monto?.toLocaleString("es-UY")||"—"}
+                            <div style={{fontSize:12,color:C.grayMid,marginBottom:4}}>
+                              {(d.meses||[]).map(m=>MESES[m-1]).join(", ")}
+                              {" · "}
+                              <strong>${(d.monto_total||0).toLocaleString("es-UY")}</strong>
                             </div>
-                            {p.nota&&(
+                            {d.detalle&&(
                               <div style={{fontSize:11,color:C.navy,background:"#f0f9ff",
-                                borderRadius:6,padding:"4px 8px",marginBottom:6,
-                                fontStyle:"italic"}}>"{p.nota}"</div>
+                                borderRadius:6,padding:"4px 8px",marginBottom:8,
+                                fontStyle:"italic"}}>"{d.detalle}"</div>
                             )}
-                            <button
-                              onClick={(e)=>{e.stopPropagation();setVerComprobante(p.comprobante_url);}}
-                              style={{display:"flex",alignItems:"center",gap:6,
-                                marginBottom:8,padding:"5px 10px",
-                                background:"#f0f9ff",border:"1px solid #0ea5e9",
-                                borderRadius:8,cursor:"pointer",
-                                fontFamily:"'Barlow Condensed',sans-serif",
-                                fontWeight:700,fontSize:12,color:"#0284c7"}}>
-                              🔍 Ver comprobante
-                            </button>
                             <div style={{display:"flex",gap:6}}>
+                              {p.foto_url&&(
+                                <button onClick={()=>setVerComprobante(p.foto_url)}
+                                  style={{padding:"6px 10px",background:"#f0f9ff",
+                                    color:"#0284c7",border:"1px solid #0ea5e9",borderRadius:8,
+                                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                                    fontSize:12,cursor:"pointer"}}>
+                                  🔍 Ver completo
+                                </button>
+                              )}
                               <button onClick={async()=>{
-                                  if(!confirm("¿Aprobar este pago por transferencia?")) return;
-                                  await sbFetch(`baby_pagos?id=eq.${p.id}`,"PATCH",
-                                    {pendiente_verificacion:false});
-                                  syncPagos();
+                                  if(!confirm("¿Aprobar esta transferencia? Se registrarán los pagos de los meses indicados.")) return;
+                                  // Registrar pagos en baby_pagos
+                                  for (const mes of (d.meses||[])) {
+                                    await sbFetch("baby_pagos","POST",{
+                                      id:uid(), jugador_id:d.jugador_id,
+                                      org_id:"paysandu", año:d.año||new Date().getFullYear(),
+                                      mes, monto:Math.round((d.monto_total||0)/(d.meses||[1]).length),
+                                      metodo_pago:"transferencia", fecha_pago:fdate(),
+                                      pendiente_verificacion:false,
+                                    });
+                                  }
+                                  // Eliminar de pendientes
+                                  await sbFetch(`baby_formularios_pendientes?id=eq.${p.id}`,"DELETE");
+                                  load();
                                 }}
-                                style={{flex:1,padding:"6px 8px",background:`linear-gradient(135deg,${C.green},#15803d)`,
+                                style={{flex:1,padding:"6px 8px",
+                                  background:`linear-gradient(135deg,${C.green},#15803d)`,
                                   color:"white",border:"none",borderRadius:8,
                                   fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
                                   fontSize:12,cursor:"pointer",textTransform:"uppercase"}}>
                                 ✅ Aprobar
                               </button>
                               <button onClick={async()=>{
-                                  if(!confirm("¿Rechazar y eliminar este pago?")) return;
-                                  await sbFetch(`baby_pagos?id=eq.${p.id}`,"DELETE");
-                                  syncPagos();
+                                  if(!confirm("¿Rechazar este comprobante?")) return;
+                                  await sbFetch(`baby_formularios_pendientes?id=eq.${p.id}`,"DELETE");
+                                  load();
                                 }}
                                 style={{padding:"6px 10px",background:"#fff5f5",
                                   color:"#dc2626",border:"1px solid #fca5a5",borderRadius:8,
                                   fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
                                   fontSize:12,cursor:"pointer",textTransform:"uppercase"}}>
-                                ✕
+                                ✕ Rechazar
                               </button>
                             </div>
                           </div>
