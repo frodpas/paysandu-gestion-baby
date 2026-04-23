@@ -1320,6 +1320,12 @@ function AdminScreen({ user, onLogout }) {
   const [modalTransfRep, setModalTransfRep] = useState(false);
   const [transfMesDesde, setTransfMesDesde] = useState(1);
   const [transfMesHasta, setTransfMesHasta] = useState(new Date().getMonth()+1);
+  const [modalLimpieza,  setModalLimpieza]  = useState(false);
+  const [claveInput,     setClaveInput]     = useState("");
+  const [limpiezaStep,   setLimpiezaStep]   = useState(1); // 1=advertencia, 2=clave, 3=confirmar
+  const [limpiezaErr,    setLimpiezaErr]    = useState("");
+  const [limpiezaOk,     setLimpiezaOk]     = useState(false);
+  const CLAVE_LIMPIEZA = "PAYSANDU2025"; // clave para operaciones destructivas
   const [selJugador,   setSelJugador]  = useState(null);
   const [loading,      setLoading]     = useState(true);
   const [qrLink,       setQrLink]      = useState(null);
@@ -1708,6 +1714,14 @@ function AdminScreen({ user, onLogout }) {
                   textTransform:"uppercase",cursor:"pointer",display:"flex",flexDirection:"column",
                   alignItems:"center",justifyContent:"center",gap:6,lineHeight:1.2,textAlign:"center"}}>
                 <span style={{fontSize:24}}>📊</span>Reporte jugadores
+              </button>
+              <button onClick={()=>{setModalLimpieza(true);setLimpiezaStep(1);setClaveInput("");setLimpiezaErr("");setLimpiezaOk(false);}}
+                style={{width:110,height:80,background:"#fff5f5",color:"#dc2626",
+                  border:"2px solid #fca5a5",borderRadius:12,
+                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:11,
+                  textTransform:"uppercase",cursor:"pointer",display:"flex",flexDirection:"column",
+                  alignItems:"center",justifyContent:"center",gap:6,lineHeight:1.2,textAlign:"center"}}>
+                <span style={{fontSize:24}}>🗑</span>Limpieza anual
               </button>
             </div>
             {/* Filtros categoría — alineados con la tabla */}
@@ -2349,6 +2363,200 @@ function AdminScreen({ user, onLogout }) {
           );
         })}
       </div>
+
+      {/* ── Modal limpieza anual ── */}
+      {modalLimpieza&&(
+        <Modal onClose={()=>{setModalLimpieza(false);setLimpiezaStep(1);setClaveInput("");setLimpiezaErr("");}} maxWidth={460}>
+          {/* Header */}
+          <div style={{background:"linear-gradient(135deg,#7f1d1d,#dc2626)",padding:"18px 22px",
+            display:"flex",alignItems:"center",gap:12}}>
+            <span style={{fontSize:32}}>⚠️</span>
+            <div>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,
+                color:"white",textTransform:"uppercase"}}>Limpieza anual</div>
+              <div style={{color:"rgba(255,255,255,.7)",fontSize:12}}>Operación irreversible</div>
+            </div>
+          </div>
+
+          <div style={{padding:"22px 24px"}}>
+
+            {/* PASO 1: ADVERTENCIA */}
+            {limpiezaStep===1&&!limpiezaOk&&(
+              <>
+                <div style={{background:"#fff5f5",borderRadius:12,padding:"16px",
+                  border:"1px solid #fca5a5",marginBottom:18}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
+                    fontSize:15,color:"#dc2626",marginBottom:10}}>
+                    ⚠️ Esta operación eliminará permanentemente:
+                  </div>
+                  <ul style={{fontSize:13,color:"#7f1d1d",lineHeight:1.8,paddingLeft:18}}>
+                    <li>Todos los <strong>comprobantes de transferencia</strong> pendientes</li>
+                    <li>Las <strong>imágenes</strong> de todos los comprobantes aprobados</li>
+                    <li>Los <strong>registros de pagos</strong> quedan intactos</li>
+                    <li>Las <strong>fotos de jugadores y delegados</strong> no se tocan</li>
+                  </ul>
+                </div>
+                <div style={{background:"#fef3c7",borderRadius:10,padding:"12px 14px",
+                  marginBottom:18,border:"1px solid #fde68a",fontSize:13,color:"#92400e"}}>
+                  💡 <strong>Recomendación:</strong> realizar esta operación al inicio de cada año,
+                  una vez verificados y archivados todos los comprobantes del año anterior.
+                </div>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={()=>setModalLimpieza(false)}
+                    style={{flex:1,padding:"11px",background:"transparent",color:"#dc2626",
+                      border:"2px solid #fca5a5",borderRadius:10,
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14}}>
+                    Cancelar
+                  </button>
+                  <button onClick={()=>setLimpiezaStep(2)}
+                    style={{flex:2,padding:"11px",background:"linear-gradient(135deg,#dc2626,#b91c1c)",
+                      color:"white",border:"none",borderRadius:10,
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,
+                      cursor:"pointer",textTransform:"uppercase"}}>
+                    Entendido — Continuar →
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* PASO 2: CLAVE */}
+            {limpiezaStep===2&&!limpiezaOk&&(
+              <>
+                <div style={{textAlign:"center",marginBottom:20}}>
+                  <div style={{fontSize:48,marginBottom:10}}>🔐</div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
+                    fontSize:16,color:C.navy,textTransform:"uppercase",marginBottom:6}}>
+                    Ingresá la clave de administrador
+                  </div>
+                  <div style={{fontSize:12,color:C.grayMid}}>
+                    Esta clave es requerida para operaciones destructivas
+                  </div>
+                </div>
+                <input
+                  type="password"
+                  value={claveInput}
+                  onChange={e=>setClaveInput(e.target.value)}
+                  onKeyDown={e=>{
+                    if(e.key==="Enter"){
+                      if(claveInput===CLAVE_LIMPIEZA){setLimpiezaStep(3);setLimpiezaErr("");}
+                      else{setLimpiezaErr("Clave incorrecta");}
+                    }
+                  }}
+                  placeholder="Clave de administrador"
+                  autoFocus
+                  style={{width:"100%",padding:"13px 16px",borderRadius:10,
+                    border:`2px solid ${limpiezaErr?"#dc2626":C.gray}`,
+                    fontSize:16,textAlign:"center",letterSpacing:".1em",
+                    marginBottom:8,outline:"none",fontFamily:"'Barlow Condensed',sans-serif"}}/>
+                {limpiezaErr&&(
+                  <div style={{color:"#dc2626",fontSize:13,marginBottom:8,textAlign:"center"}}>
+                    ❌ {limpiezaErr}
+                  </div>
+                )}
+                <div style={{display:"flex",gap:8,marginTop:8}}>
+                  <button onClick={()=>setLimpiezaStep(1)}
+                    style={{flex:1,padding:"11px",background:"transparent",color:C.navy,
+                      border:`2px solid ${C.navy}`,borderRadius:10,
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14}}>
+                    ← Volver
+                  </button>
+                  <button onClick={()=>{
+                      if(claveInput===CLAVE_LIMPIEZA){setLimpiezaStep(3);setLimpiezaErr("");}
+                      else{setLimpiezaErr("Clave incorrecta");}
+                    }}
+                    style={{flex:2,padding:"11px",
+                      background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                      color:"white",border:"none",borderRadius:10,
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,
+                      cursor:"pointer",textTransform:"uppercase"}}>
+                    Verificar clave
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* PASO 3: CONFIRMACIÓN FINAL */}
+            {limpiezaStep===3&&!limpiezaOk&&(
+              <>
+                <div style={{textAlign:"center",marginBottom:20}}>
+                  <div style={{fontSize:48,marginBottom:10}}>🚨</div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+                    fontSize:18,color:"#dc2626",textTransform:"uppercase",marginBottom:8}}>
+                    Última confirmación
+                  </div>
+                  <div style={{fontSize:13,color:C.grayMid,lineHeight:1.6}}>
+                    Esta acción borrará todos los comprobantes de transferencia.<br/>
+                    <strong style={{color:"#dc2626"}}>No se puede deshacer.</strong>
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={()=>setModalLimpieza(false)}
+                    style={{flex:1,padding:"11px",background:"transparent",color:C.navy,
+                      border:`2px solid ${C.navy}`,borderRadius:10,
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14}}>
+                    Cancelar
+                  </button>
+                  <button onClick={async()=>{
+                      // 1. Borrar comprobantes de formularios_pendientes
+                      const pends = await sbFetch("baby_formularios_pendientes?select=id,datos_json");
+                      let borrados = 0;
+                      for (const p of (pends||[])) {
+                        try {
+                          const d = typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
+                          if (d._tipo==="comprobante") {
+                            await sbFetch(`baby_formularios_pendientes?id=eq.${p.id}`,"DELETE");
+                            borrados++;
+                          }
+                        } catch(e){}
+                      }
+                      // 2. Limpiar comprobante_url de pagos aprobados
+                      // (si la columna existe)
+                      await sbFetch("baby_pagos?pendiente_verificacion=eq.false","PATCH",
+                        {comprobante_url:"",nota:"",grupo_comprobante:""}
+                      ).catch(()=>{});
+                      setLimpiezaOk(true);
+                      setLimpiezaOk(`${borrados} comprobantes eliminados`);
+                      load();
+                    }}
+                    style={{flex:2,padding:"11px",
+                      background:"linear-gradient(135deg,#dc2626,#b91c1c)",
+                      color:"white",border:"none",borderRadius:10,
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,
+                      cursor:"pointer",textTransform:"uppercase"}}>
+                    🗑 Ejecutar limpieza
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* RESULTADO */}
+            {limpiezaOk&&(
+              <div style={{textAlign:"center",padding:"10px 0"}}>
+                <div style={{fontSize:56,marginBottom:12}}>✅</div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+                  fontSize:22,color:C.navy,textTransform:"uppercase",marginBottom:8}}>
+                  Limpieza completada
+                </div>
+                <div style={{background:"#f0fdf4",borderRadius:10,padding:"12px 16px",
+                  marginBottom:16,border:"1px solid #86efac",fontSize:13,color:"#166534"}}>
+                  ✓ {typeof limpiezaOk==="string"?limpiezaOk:"Comprobantes eliminados"}<br/>
+                  ✓ Registros de pago intactos<br/>
+                  ✓ Fotos de jugadores intactas
+                </div>
+                <button onClick={()=>{setModalLimpieza(false);setLimpiezaOk(false);}}
+                  style={{width:"100%",padding:"12px",
+                    background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                    color:"white",border:"none",borderRadius:10,
+                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:15,
+                    cursor:"pointer",textTransform:"uppercase"}}>
+                  Cerrar
+                </button>
+              </div>
+            )}
+
+          </div>
+        </Modal>
+      )}
 
       {/* ── Modal reporte jugadores ── */}
       {modalReporte&&(
