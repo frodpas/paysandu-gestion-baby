@@ -1971,7 +1971,8 @@ function AdminScreen({ user, onLogout }) {
             <PagosTab jugadores={jugadoresFilt} pagos={pagos} planPagos={planPagos}
               categorias={categorias} tiposCuota={tiposCuota}
               filtCat={filtCat} setFiltCat={setFiltCat}
-              onRegistrarPago={registrarPago} añoActual={añoActual}/>
+              onRegistrarPago={registrarPago} añoActual={añoActual}
+              onTransfRep={()=>setModalTransfRep(true)}/>
           </div>
         )}
 
@@ -2789,7 +2790,7 @@ function AdminScreen({ user, onLogout }) {
 
 /* ══ PAGOS TAB ════════════════════════════════════════════════════════ */
 function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
-  filtCat, setFiltCat, onRegistrarPago, añoActual }) {
+  filtCat, setFiltCat, onRegistrarPago, añoActual, onTransfRep }) {
   const [selJug,    setSelJug]   = useState(null);
   const [verHistorial, setVerHistorial] = useState(null);
   const [selMeses,  setSelMeses] = useState([]); // múltiples meses
@@ -2859,7 +2860,7 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
             boxShadow:"0 4px 12px rgba(180,83,9,.3)"}}>
           <span style={{fontSize:24}}>📊</span>Reporte Pagos
         </button>
-        <button onClick={()=>setModalTransfRep(true)}
+        <button onClick={()=>onTransfRep&&onTransfRep()}
           style={{width:110,height:80,background:"linear-gradient(135deg,#0ea5e9,#0369a1)",
             color:"white",border:"none",borderRadius:12,
             fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:11,
