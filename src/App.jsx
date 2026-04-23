@@ -1325,7 +1325,10 @@ function AdminScreen({ user, onLogout }) {
   const [limpiezaStep,   setLimpiezaStep]   = useState(1); // 1=advertencia, 2=clave, 3=confirmar
   const [limpiezaErr,    setLimpiezaErr]    = useState("");
   const [limpiezaOk,     setLimpiezaOk]     = useState(false);
-  const CLAVE_LIMPIEZA = "PAYSANDU2025"; // clave para operaciones destructivas
+  const CLAVE_LIMPIEZA  = "PAYSANDU2025"; // clave para operaciones destructivas
+  const [modalRespaldo,  setModalRespaldo]  = useState(false);
+  const [respaldoStep,   setRespaldoStep]   = useState("idle"); // idle | generando | listo
+  const [respaldoInfo,   setRespaldoInfo]   = useState(null);
   const [selJugador,   setSelJugador]  = useState(null);
   const [loading,      setLoading]     = useState(true);
   const [qrLink,       setQrLink]      = useState(null);
@@ -1722,6 +1725,14 @@ function AdminScreen({ user, onLogout }) {
                   textTransform:"uppercase",cursor:"pointer",display:"flex",flexDirection:"column",
                   alignItems:"center",justifyContent:"center",gap:6,lineHeight:1.2,textAlign:"center"}}>
                 <span style={{fontSize:24}}>🗑</span>Limpieza anual
+              </button>
+              <button onClick={()=>{setModalRespaldo(true);setRespaldoStep("idle");setRespaldoInfo(null);}}
+                style={{width:110,height:80,background:"#f0fdf4",color:"#16a34a",
+                  border:"2px solid #86efac",borderRadius:12,
+                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:11,
+                  textTransform:"uppercase",cursor:"pointer",display:"flex",flexDirection:"column",
+                  alignItems:"center",justifyContent:"center",gap:6,lineHeight:1.2,textAlign:"center"}}>
+                <span style={{fontSize:24}}>💾</span>Exportar respaldo
               </button>
             </div>
             {/* Filtros categoría — alineados con la tabla */}
@@ -2363,6 +2374,338 @@ function AdminScreen({ user, onLogout }) {
           );
         })}
       </div>
+
+      {/* ── Modal exportar respaldo ── */}
+      {modalRespaldo&&(
+        <Modal onClose={()=>setModalRespaldo(false)} maxWidth={460}>
+          <div style={{background:`linear-gradient(135deg,#166534,#16a34a)`,padding:"18px 22px",
+            display:"flex",alignItems:"center",gap:12}}>
+            <span style={{fontSize:32}}>💾</span>
+            <div>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,
+                color:"white",textTransform:"uppercase"}}>Exportar respaldo</div>
+              <div style={{color:"rgba(255,255,255,.75)",fontSize:12}}>
+                Backup completo de la base de datos
+              </div>
+            </div>
+          </div>
+          <div style={{padding:"22px 24px"}}>
+
+            {respaldoStep==="idle"&&(
+              <>
+                <div style={{background:"#f0fdf4",borderRadius:12,padding:"16px",
+                  border:"1px solid #86efac",marginBottom:18}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
+                    fontSize:14,color:"#166534",marginBottom:10}}>
+                    📦 El respaldo incluye:
+                  </div>
+                  <ul style={{fontSize:13,color:"#166534",lineHeight:1.9,paddingLeft:18}}>
+                    <li><strong>Jugadores</strong> — datos completos + fotos</li>
+                    <li><strong>Pagos</strong> — todos los registros del año</li>
+                    <li><strong>Comprobantes</strong> — fotos de transferencias pendientes</li>
+                    <li><strong>Delegados</strong> — datos + fotos</li>
+                    <li><strong>Categorías y plan de pagos</strong></li>
+                  </ul>
+                </div>
+                <div style={{background:"#fef3c7",borderRadius:10,padding:"12px 14px",
+                  marginBottom:18,border:"1px solid #fde68a",fontSize:13,color:"#92400e"}}>
+                  💡 <strong>Recomendación:</strong> guardar el archivo en Google Drive o email
+                  al menos una vez por mes, y siempre antes de la limpieza anual.
+                </div>
+                <div style={{fontSize:12,color:C.grayMid,marginBottom:18,textAlign:"center"}}>
+                  El archivo JSON descargado puede reimportarse en caso de pérdida de datos.
+                </div>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={()=>setModalRespaldo(false)}
+                    style={{flex:1,padding:"11px",background:"transparent",color:C.navy,
+                      border:`2px solid ${C.navy}`,borderRadius:10,
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14}}>
+                    Cancelar
+                  </button>
+                  <button onClick={async()=>{
+                      setRespaldoStep("generando");
+                      try {
+                        // Fetch todas las tablas en paralelo
+                        const [jugs, pags, pends, dels, cats, plan, tipos] = await Promise.all([
+                          sbFetch("baby_jugadores?select=*&order=nombre.asc"),
+                          sbFetch("baby_pagos?select=*&order=mes.asc"),
+                          sbFetch("baby_formularios_pendientes?select=*&order=created_at.desc"),
+                          sbFetch("baby_delegados?select=*&order=nombre.asc"),
+                          sbFetch("baby_categorias?select=*&order=nombre.asc"),
+                          sbFetch("baby_plan_pagos?select=*&order=mes.asc"),
+                          sbFetch("baby_tipos_cuota?select=*").catch(()=>[]),
+                        ]);
+                        const backup = {
+                          version: "1.0",
+                          fecha: new Date().toISOString(),
+                          club: "Paysandú FC — Baby Fútbol",
+                          tablas: {
+                            jugadores:             jugs  || [],
+                            pagos:                 pags  || [],
+                            formularios_pendientes: pends || [],
+                            delegados:             dels  || [],
+                            categorias:            cats  || [],
+                            plan_pagos:            plan  || [],
+                            tipos_cuota:           tipos || [],
+                          },
+                          resumen: {
+                            total_jugadores:  (jugs||[]).length,
+                            total_pagos:      (pags||[]).length,
+                            total_pendientes: (pends||[]).length,
+                            total_delegados:  (dels||[]).length,
+                          }
+                        };
+                        const json = JSON.stringify(backup, null, 2);
+                        const blob = new Blob([json], {type:"application/json"});
+                        const url  = URL.createObjectURL(blob);
+                        const a    = document.createElement("a");
+                        const fecha = new Date().toLocaleDateString("es-UY").replace(/\//g,"-");
+                        a.href = url;
+                        a.download = `respaldo-paysandu-baby-${fecha}.json`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        setRespaldoInfo(backup.resumen);
+                        setRespaldoStep("listo");
+                      } catch(err) {
+                        alert("Error al generar respaldo: " + err.message);
+                        setRespaldoStep("idle");
+                      }
+                    }}
+                    style={{flex:2,padding:"11px",
+                      background:"linear-gradient(135deg,#16a34a,#166534)",
+                      color:"white",border:"none",borderRadius:10,
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,
+                      cursor:"pointer",textTransform:"uppercase"}}>
+                    💾 Generar respaldo
+                  </button>
+                </div>
+              </>
+            )}
+
+            {respaldoStep==="generando"&&(
+              <div style={{textAlign:"center",padding:"30px 0"}}>
+                <div style={{fontSize:48,marginBottom:16}}>⏳</div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+                  fontSize:18,color:C.navy,textTransform:"uppercase",marginBottom:8}}>
+                  Generando respaldo...
+                </div>
+                <div style={{fontSize:13,color:C.grayMid}}>
+                  Descargando datos de Supabase. Puede tardar unos segundos.
+                </div>
+              </div>
+            )}
+
+            {respaldoStep==="listo"&&respaldoInfo&&(
+              <div style={{textAlign:"center",padding:"10px 0"}}>
+                <div style={{fontSize:56,marginBottom:12}}>✅</div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+                  fontSize:22,color:C.navy,textTransform:"uppercase",marginBottom:16}}>
+                  ¡Respaldo generado!
+                </div>
+                <div style={{background:"#f0fdf4",borderRadius:12,padding:"14px 18px",
+                  marginBottom:16,border:"1px solid #86efac",textAlign:"left"}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
+                    fontSize:13,color:"#166534",textTransform:"uppercase",marginBottom:10}}>
+                    Contenido del respaldo:
+                  </div>
+                  {[
+                    ["👥 Jugadores",        respaldoInfo.total_jugadores],
+                    ["💳 Registros de pago", respaldoInfo.total_pagos],
+                    ["⏳ Comprobantes",      respaldoInfo.total_pendientes],
+                    ["🏃 Delegados",         respaldoInfo.total_delegados],
+                  ].map(([lbl,val])=>(
+                    <div key={lbl} style={{display:"flex",justifyContent:"space-between",
+                      padding:"5px 0",borderBottom:"1px solid #dcfce7",fontSize:13,color:"#166534"}}>
+                      <span>{lbl}</span>
+                      <strong>{val} registros</strong>
+                    </div>
+                  ))}
+                </div>
+                <div style={{fontSize:12,color:C.grayMid,marginBottom:18,lineHeight:1.6}}>
+                  El archivo fue descargado a tu carpeta de descargas.<br/>
+                  Guardalo en un lugar seguro (Google Drive, email, pendrive).
+                </div>
+                <button onClick={()=>setModalRespaldo(false)}
+                  style={{width:"100%",padding:"12px",
+                    background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                    color:"white",border:"none",borderRadius:10,
+                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:15,
+                    cursor:"pointer",textTransform:"uppercase"}}>
+                  Cerrar
+                </button>
+              </div>
+            )}
+
+          </div>
+        </Modal>
+      )}
+
+      {/* ── Modal exportar respaldo ── */}
+      {modalBackup&&(
+        <Modal onClose={()=>{setModalBackup(false);setBackupStatus("idle");}} maxWidth={460}>
+          <div style={{background:`linear-gradient(135deg,#166534,#16a34a)`,padding:"18px 22px",
+            display:"flex",alignItems:"center",gap:12}}>
+            <span style={{fontSize:32}}>💾</span>
+            <div>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,
+                color:"white",textTransform:"uppercase"}}>Exportar respaldo completo</div>
+              <div style={{color:"rgba(255,255,255,.7)",fontSize:12}}>Descarga todos los datos del sistema</div>
+            </div>
+          </div>
+          <div style={{padding:"22px 24px"}}>
+            {backupStatus==="idle"&&(
+              <>
+                <div style={{background:"#f0fdf4",borderRadius:12,padding:"16px",
+                  border:"1px solid #86efac",marginBottom:16}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
+                    fontSize:14,color:"#166534",marginBottom:10}}>El respaldo incluye:</div>
+                  <div style={{fontSize:13,color:"#166534",lineHeight:1.9}}>
+                    ✓ <strong>Planteles</strong> — todos los jugadores con fotos<br/>
+                    ✓ <strong>Pagos</strong> — todos los registros del año<br/>
+                    ✓ <strong>Comprobantes</strong> — fotos de transferencias pendientes<br/>
+                    ✓ <strong>Delegados</strong> — datos y fotos<br/>
+                    ✓ <strong>Categorías</strong> y plan de pagos<br/>
+                  </div>
+                </div>
+                <div style={{background:"#fef3c7",borderRadius:10,padding:"12px 14px",
+                  marginBottom:18,border:"1px solid #fde68a",fontSize:12,color:"#92400e"}}>
+                  💡 <strong>Recomendación:</strong> guardar el archivo en Google Drive, email o
+                  pendrive. Realizarlo mensualmente y siempre antes de la Limpieza anual.
+                </div>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={()=>setModalBackup(false)}
+                    style={{flex:1,padding:"11px",background:"transparent",color:C.navy,
+                      border:`2px solid ${C.navy}`,borderRadius:10,
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14}}>
+                    Cancelar
+                  </button>
+                  <button onClick={async()=>{
+                      setBackupStatus("loading");
+                      try {
+                        // Cargar todas las tablas
+                        const [jugs, pags, pends, dels, cats, plan] = await Promise.all([
+                          sbFetch("baby_jugadores?select=*&order=nombre.asc"),
+                          sbFetch("baby_pagos?select=*"),
+                          sbFetch("baby_formularios_pendientes?select=*"),
+                          sbFetch("baby_delegados?select=*"),
+                          sbFetch("baby_categorias?select=*"),
+                          sbFetch("baby_plan_pagos?select=*"),
+                        ]);
+                        const backup = {
+                          version: "1.0",
+                          fecha: new Date().toISOString(),
+                          club: "Paysandú FC Baby Fútbol",
+                          resumen: {
+                            jugadores: (jugs||[]).length,
+                            pagos: (pags||[]).length,
+                            pendientes: (pends||[]).length,
+                            delegados: (dels||[]).length,
+                          },
+                          datos: {
+                            jugadores: jugs||[],
+                            pagos: pags||[],
+                            formularios_pendientes: pends||[],
+                            delegados: dels||[],
+                            categorias: cats||[],
+                            plan_pagos: plan||[],
+                          }
+                        };
+                        const json = JSON.stringify(backup, null, 2);
+                        const blob = new Blob([json], {type:"application/json"});
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        const fecha = new Date().toLocaleDateString("es-UY").replace(/\//g,"-");
+                        a.href = url;
+                        a.download = `paysandu-baby-backup-${fecha}.json`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        setBackupStatus("done");
+                      } catch(err) {
+                        console.error(err);
+                        setBackupStatus("error");
+                      }
+                    }}
+                    style={{flex:2,padding:"11px",
+                      background:"linear-gradient(135deg,#16a34a,#166534)",
+                      color:"white",border:"none",borderRadius:10,
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,
+                      cursor:"pointer",textTransform:"uppercase"}}>
+                    💾 Generar y descargar
+                  </button>
+                </div>
+              </>
+            )}
+
+            {backupStatus==="loading"&&(
+              <div style={{textAlign:"center",padding:"30px 0"}}>
+                <div style={{fontSize:48,marginBottom:12}}>⏳</div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
+                  fontSize:16,color:C.navy,textTransform:"uppercase",marginBottom:6}}>
+                  Preparando respaldo...
+                </div>
+                <div style={{fontSize:13,color:C.grayMid}}>
+                  Descargando todos los datos del sistema
+                </div>
+              </div>
+            )}
+
+            {backupStatus==="done"&&(
+              <div style={{textAlign:"center",padding:"10px 0"}}>
+                <div style={{fontSize:56,marginBottom:12}}>✅</div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+                  fontSize:22,color:C.navy,textTransform:"uppercase",marginBottom:8}}>
+                  Respaldo descargado
+                </div>
+                <div style={{background:"#f0fdf4",borderRadius:10,padding:"12px 16px",
+                  marginBottom:16,border:"1px solid #86efac",fontSize:13,color:"#166534",
+                  lineHeight:1.7}}>
+                  ✓ Archivo JSON descargado correctamente<br/>
+                  ✓ Contiene jugadores, pagos, comprobantes y delegados<br/>
+                  ✓ Guardarlo en un lugar seguro (Drive, email, pendrive)
+                </div>
+                <button onClick={()=>{setModalBackup(false);setBackupStatus("idle");}}
+                  style={{width:"100%",padding:"12px",
+                    background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                    color:"white",border:"none",borderRadius:10,
+                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:15,
+                    cursor:"pointer",textTransform:"uppercase"}}>
+                  Cerrar
+                </button>
+              </div>
+            )}
+
+            {backupStatus==="error"&&(
+              <div style={{textAlign:"center",padding:"10px 0"}}>
+                <div style={{fontSize:56,marginBottom:12}}>❌</div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+                  fontSize:20,color:"#dc2626",textTransform:"uppercase",marginBottom:8}}>
+                  Error al generar respaldo
+                </div>
+                <div style={{fontSize:13,color:C.grayMid,marginBottom:16}}>
+                  Verificá la conexión a internet e intentá nuevamente.
+                </div>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={()=>setBackupStatus("idle")}
+                    style={{flex:1,padding:"10px",background:C.offWhite,color:C.navy,
+                      border:`1px solid ${C.gray}`,borderRadius:10,
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,
+                      cursor:"pointer"}}>Reintentar</button>
+                  <button onClick={()=>{setModalBackup(false);setBackupStatus("idle");}}
+                    style={{flex:1,padding:"10px",background:"transparent",color:C.navy,
+                      border:`2px solid ${C.navy}`,borderRadius:10,
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,
+                      cursor:"pointer"}}>Cerrar</button>
+                </div>
+              </div>
+            )}
+
+          </div>
+        </Modal>
+      )}
 
       {/* ── Modal limpieza anual ── */}
       {modalLimpieza&&(
