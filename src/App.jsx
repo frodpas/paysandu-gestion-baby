@@ -567,8 +567,13 @@ function PublicoView({ user, onLogout }) {
   const [plan,  setPlan]  = useState([]);
   const [modal, setModal] = useState(null);
   const [payMethod, setPayMethod] = useState(null);
-  const [selectedMeses, setSelectedMeses] = useState([]); // multi-selección
+  const [selectedMeses, setSelectedMeses] = useState([]);
   const [paying, setPaying] = useState(false);
+  const [tipoMetodo, setTipoMetodo] = useState(null); // "transferencia" | "electronico"
+  const [comprobante, setComprobante] = useState(null); // base64
+  const [notaTransf, setNotaTransf] = useState("");
+  const CBU_CLUB  = "037-0014628-00001";
+  const ALIAS_CLUB = "PAYSANDU.BABY";
 
   const añoActual = new Date().getFullYear();
 
@@ -608,28 +613,62 @@ function PublicoView({ user, onLogout }) {
     });
   };
 
+  const handleComprobante = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async ev => {
+      const compressed = await comprimirImagen(ev.target.result, 900, 0.75);
+      setComprobante(compressed);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const resetModal = () => {
+    setModal(null); setTipoMetodo(null);
+    setPayMethod(null); setComprobante(null); setNotaTransf("");
+  };
+
+  const confirmarTransferencia = async () => {
+    if (selectedMeses.length===0 || !comprobante) return;
+    setPaying(true);
+    const grupoId = uid();
+    const detalle = notaTransf || `Meses: ${selectedMeses.map(m=>MESES[m-1]).join(", ")}`;
+    for (const mes of selectedMeses) {
+      await sbFetch("baby_pagos","POST",{
+        id: uid(), jugador_id: jug.id, org_id: jug.org_id||"paysandu",
+        año: añoActual, mes, monto: cuotaMes(mes),
+        metodo_pago: "transferencia", fecha_pago: fdate(),
+        pendiente_verificacion: true,
+        comprobante_url: comprobante,
+        nota: detalle,
+        grupo_comprobante: grupoId,
+      });
+    }
+    const p = await sbFetch(`baby_pagos?jugador_id=eq.${jug.id}&año=eq.${añoActual}&select=*`);
+    setPagos(p||[]);
+    setPaying(false);
+    setModal("success_transf");
+    setSelectedMeses([]);
+    setComprobante(null); setNotaTransf(""); setTipoMetodo(null);
+  };
+
   const confirmarPago = async () => {
     if (!payMethod || selectedMeses.length===0) return;
     setPaying(true);
     for (const mes of selectedMeses) {
-      const monto = cuotaMes(mes);
       await sbFetch("baby_pagos","POST",{
-        id: uid(),
-        jugador_id: jug.id,
-        org_id: jug.org_id||"paysandu",
-        año: añoActual,
-        mes,
-        monto,
-        metodo_pago: payMethod,
-        fecha_pago: fdate(),
+        id: uid(), jugador_id: jug.id, org_id: jug.org_id||"paysandu",
+        año: añoActual, mes, monto: cuotaMes(mes),
+        metodo_pago: payMethod, fecha_pago: fdate(),
+        pendiente_verificacion: false,
       });
     }
     const p = await sbFetch(`baby_pagos?jugador_id=eq.${jug.id}&año=eq.${añoActual}&select=*`);
     setPagos(p||[]);
     setPaying(false);
     setModal("success");
-    setPayMethod(null);
-    setSelectedMeses([]);
+    resetModal();
   };
 
   return (
@@ -727,62 +766,191 @@ function PublicoView({ user, onLogout }) {
 
       {/* Modal pago */}
       {modal==="pagar"&&(
-        <Modal onClose={()=>setModal(null)}>
-          <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"18px 22px"}}>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,
-              color:C.white,textTransform:"uppercase"}}>💳 Registrar Pago</div>
+        <Modal onClose={resetModal} maxWidth={500}>
+          <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"16px 20px",
+            display:"flex",alignItems:"center",gap:10}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,
+              color:C.white,textTransform:"uppercase",flex:1}}>💳 Registrar Pago</div>
+            {selectedMeses.length>0&&(
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
+                color:C.gold}}>{fmt(totalPub)}</div>
+            )}
           </div>
-          <div style={{padding:"20px 22px"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,
-                color:C.navy,textTransform:"uppercase"}}>Seleccioná los meses a pagar</div>
-              {selectedMeses.length>0&&<div style={{fontFamily:"'Barlow Condensed',sans-serif",
-                fontWeight:900,fontSize:14,color:C.green}}>Total: {fmt(totalPub)}</div>}
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:18}}>
+          <div style={{padding:"16px 20px",maxHeight:"80dvh",overflowY:"auto"}}>
+
+            {/* MESES */}
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
+              color:C.navy,textTransform:"uppercase",marginBottom:8}}>Meses a pagar</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:18}}>
               {mesesConDeuda().map(mes=>{
                 const sel=selectedMeses.includes(mes);
                 return(
                   <button key={mes} onClick={()=>toggleMesPub(mes)}
-                    style={{padding:"10px 6px",borderRadius:10,position:"relative",
+                    style={{padding:"9px 5px",borderRadius:10,position:"relative",
                       border:`2px solid ${sel?"#16a34a":C.gray}`,
                       background:sel?"#dcfce7":C.white,cursor:"pointer",
-                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
                       color:sel?"#16a34a":C.navy}}>
-                    {sel&&<span style={{position:"absolute",top:3,right:5,fontSize:10}}>✓</span>}
-                    <div>{MESES[mes-1]}</div>
-                    <div style={{fontWeight:900,fontSize:15}}>{fmt(cuotaMes(mes))}</div>
+                    {sel&&<span style={{position:"absolute",top:2,right:4,fontSize:9}}>✓</span>}
+                    <div>{MESES[mes-1].slice(0,3)}</div>
+                    <div style={{fontWeight:900,fontSize:14}}>{fmt(cuotaMes(mes))}</div>
                   </button>
                 );
               })}
             </div>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,
-              color:C.navy,textTransform:"uppercase",marginBottom:10}}>Medio de pago</div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:18}}>
-              {PAY_METHODS.map(pm=>(
-                <button key={pm.id} onClick={()=>setPayMethod(pm.id)}
-                  style={{padding:"12px 8px",borderRadius:12,border:`2px solid ${payMethod===pm.id?pm.color:C.gray}`,
-                    background:payMethod===pm.id?pm.color+"18":C.white,cursor:"pointer",
-                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,
-                    color:payMethod===pm.id?pm.color:C.navy,display:"flex",flexDirection:"column",
-                    alignItems:"center",gap:4}}>
-                  <span style={{fontSize:22}}>{pm.icon}</span>{pm.label}
-                </button>
-              ))}
-            </div>
-            <div style={{display:"flex",gap:10}}>
-              <button onClick={()=>setModal(null)}
-                style={{flex:1,padding:"11px",background:"transparent",color:C.navy,
-                  border:`2px solid ${C.navy}`,borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
-                  fontWeight:700,fontSize:14,textTransform:"uppercase"}}>Cancelar</button>
-              <button onClick={confirmarPago} disabled={!payMethod||selectedMeses.length===0||paying}
-                style={{flex:2,padding:"11px",
-                  background:payMethod&&selectedMeses.length>0?`linear-gradient(135deg,${C.green},#15803d)`:"#e2e2da",
-                  color:payMethod&&selectedMeses.length>0?C.white:C.grayMid,border:"none",borderRadius:10,
-                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:15,
-                  textTransform:"uppercase"}}>
-                {paying?"⏳ Procesando...":`✅ Confirmar${selectedMeses.length>1?" ("+selectedMeses.length+" meses)":""}`}
+
+            {/* TIPO DE MÉTODO */}
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
+              color:C.navy,textTransform:"uppercase",marginBottom:8}}>Forma de pago</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+              <button onClick={()=>{setTipoMetodo("transferencia");setPayMethod(null);}}
+                style={{padding:"14px 8px",borderRadius:14,cursor:"pointer",
+                  border:`2px solid ${tipoMetodo==="transferencia"?"#0ea5e9":C.gray}`,
+                  background:tipoMetodo==="transferencia"?"#f0f9ff":C.white,
+                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
+                  color:tipoMetodo==="transferencia"?"#0284c7":C.navy,
+                  display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
+                <span style={{fontSize:28}}>🏦</span>
+                <span>Transferencia</span>
+                <span style={{fontSize:9,fontWeight:600,color:tipoMetodo==="transferencia"?"#0284c7":C.grayMid,
+                  textAlign:"center",lineHeight:1.2}}>Adjuntar comprobante</span>
               </button>
+              <button onClick={()=>{setTipoMetodo("electronico");setComprobante(null);}}
+                style={{padding:"14px 8px",borderRadius:14,cursor:"pointer",
+                  border:`2px solid ${tipoMetodo==="electronico"?"#7c3aed":C.gray}`,
+                  background:tipoMetodo==="electronico"?"#faf5ff":C.white,
+                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
+                  color:tipoMetodo==="electronico"?"#7c3aed":C.navy,
+                  display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
+                <span style={{fontSize:28}}>💳</span>
+                <span>Débito / MP</span>
+                <span style={{fontSize:9,fontWeight:600,color:tipoMetodo==="electronico"?"#7c3aed":C.grayMid,
+                  textAlign:"center",lineHeight:1.2}}>Pasarela / QR</span>
+              </button>
+            </div>
+
+            {/* ── SECCIÓN TRANSFERENCIA ── */}
+            {tipoMetodo==="transferencia"&&(
+              <div style={{background:"#f0f9ff",borderRadius:14,padding:14,
+                border:"1px solid #bae6fd",marginBottom:14}}>
+                {/* Datos bancarios */}
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
+                  color:"#0369a1",textTransform:"uppercase",marginBottom:8}}>📋 Datos del club</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:12}}>
+                  {[["CBU",CBU_CLUB],["Alias",ALIAS_CLUB],
+                    ["Monto a transferir",fmt(totalPub)],
+                    ["A nombre de","Paysandú FC Baby"]].map(([lbl,val])=>(
+                    <div key={lbl} style={{background:"white",borderRadius:8,padding:"8px 10px"}}>
+                      <div style={{fontSize:9,color:C.grayMid,textTransform:"uppercase",fontWeight:600}}>{lbl}</div>
+                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
+                        color:C.navy,wordBreak:"break-all"}}>{val}</div>
+                    </div>
+                  ))}
+                </div>
+                {/* Nota / detalle */}
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:11,
+                  color:C.navy,textTransform:"uppercase",marginBottom:5}}>
+                  Detalle de meses pagados *
+                </div>
+                <textarea value={notaTransf}
+                  onChange={e=>setNotaTransf(e.target.value)}
+                  placeholder={`Ej: ${selectedMeses.map(m=>MESES[m-1]).join(", ")} — ${jug.nombre}`}
+                  rows={2}
+                  style={{width:"100%",padding:"8px 10px",borderRadius:8,
+                    border:`1px solid ${C.gray}`,fontSize:13,fontFamily:"'Barlow',sans-serif",
+                    resize:"none",outline:"none",marginBottom:10}}/>
+                {/* Foto comprobante */}
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:11,
+                  color:C.navy,textTransform:"uppercase",marginBottom:6}}>
+                  Comprobante de transferencia *
+                </div>
+                {comprobante?(
+                  <div style={{textAlign:"center",marginBottom:8}}>
+                    <img src={comprobante} style={{maxWidth:"100%",maxHeight:180,borderRadius:10,
+                      border:`2px solid #0ea5e9`}}/>
+                    <button onClick={()=>setComprobante(null)}
+                      style={{display:"block",margin:"6px auto 0",background:"none",border:"none",
+                        color:"#dc2626",fontSize:12,cursor:"pointer",fontWeight:600}}>
+                      ✕ Eliminar foto
+                    </button>
+                  </div>
+                ):(
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                    <label style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,
+                      padding:"14px 8px",border:`2px dashed #0ea5e9`,borderRadius:12,
+                      cursor:"pointer",background:"white",textAlign:"center"}}>
+                      <span style={{fontSize:26}}>📸</span>
+                      <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                        fontSize:12,color:C.navy,textTransform:"uppercase"}}>Sacar foto</span>
+                      <span style={{fontSize:10,color:C.grayMid}}>Cámara</span>
+                      <input type="file" accept="image/*" capture="environment"
+                        style={{display:"none"}} onChange={handleComprobante}/>
+                    </label>
+                    <label style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,
+                      padding:"14px 8px",border:`2px dashed ${C.gray}`,borderRadius:12,
+                      cursor:"pointer",background:"white",textAlign:"center"}}>
+                      <span style={{fontSize:26}}>📁</span>
+                      <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                        fontSize:12,color:C.navy,textTransform:"uppercase"}}>Adjuntar</span>
+                      <span style={{fontSize:10,color:C.grayMid}}>Galería / archivo</span>
+                      <input type="file" accept="image/*"
+                        style={{display:"none"}} onChange={handleComprobante}/>
+                    </label>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── SECCIÓN ELECTRÓNICO ── */}
+            {tipoMetodo==="electronico"&&(
+              <div style={{marginBottom:14}}>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+                  {PAY_METHODS.map(pm=>(
+                    <button key={pm.id} onClick={()=>setPayMethod(pm.id)}
+                      style={{padding:"12px 6px",borderRadius:12,
+                        border:`2px solid ${payMethod===pm.id?pm.color:C.gray}`,
+                        background:payMethod===pm.id?pm.color+"18":C.white,cursor:"pointer",
+                        fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,
+                        color:payMethod===pm.id?pm.color:C.navy,
+                        display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+                      <span style={{fontSize:22}}>{pm.icon}</span>{pm.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* BOTONES ACCIÓN */}
+            <div style={{display:"flex",gap:8,marginTop:4}}>
+              <button onClick={resetModal}
+                style={{flex:1,padding:"11px",background:"transparent",color:C.navy,
+                  border:`2px solid ${C.navy}`,borderRadius:10,
+                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                  fontSize:13,textTransform:"uppercase"}}>Cancelar</button>
+              {tipoMetodo==="transferencia"&&(
+                <button onClick={confirmarTransferencia}
+                  disabled={!comprobante||selectedMeses.length===0||paying}
+                  style={{flex:2,padding:"11px",border:"none",borderRadius:10,
+                    background:comprobante&&selectedMeses.length>0
+                      ?"linear-gradient(135deg,#0ea5e9,#0369a1)":"#e2e2da",
+                    color:comprobante&&selectedMeses.length>0?C.white:C.grayMid,
+                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+                    fontSize:14,textTransform:"uppercase"}}>
+                  {paying?"⏳ Enviando...":"📤 Enviar comprobante"}
+                </button>
+              )}
+              {tipoMetodo==="electronico"&&(
+                <button onClick={confirmarPago}
+                  disabled={!payMethod||selectedMeses.length===0||paying}
+                  style={{flex:2,padding:"11px",border:"none",borderRadius:10,
+                    background:payMethod&&selectedMeses.length>0
+                      ?`linear-gradient(135deg,${C.green},#15803d)`:"#e2e2da",
+                    color:payMethod&&selectedMeses.length>0?C.white:C.grayMid,
+                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+                    fontSize:14,textTransform:"uppercase"}}>
+                  {paying?"⏳ Procesando...":"✅ Confirmar pago"}
+                </button>
+              )}
             </div>
           </div>
         </Modal>
@@ -796,6 +964,24 @@ function PublicoView({ user, onLogout }) {
             <div style={{color:C.grayMid,fontSize:14,marginBottom:20}}>El pago fue registrado correctamente.</div>
             <button onClick={()=>setModal(null)}
               style={{width:"100%",padding:"12px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+                fontWeight:900,fontSize:16,textTransform:"uppercase"}}>Cerrar</button>
+          </div>
+        </Modal>
+      )}
+      {modal==="success_transf"&&(
+        <Modal onClose={()=>setModal(null)} maxWidth={360}>
+          <div style={{padding:"36px 28px",textAlign:"center"}}>
+            <div style={{fontSize:56,marginBottom:12}}>📤</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:24,
+              color:C.navy,textTransform:"uppercase",marginBottom:8}}>¡Comprobante enviado!</div>
+            <div style={{background:"#fef3c7",borderRadius:12,padding:"12px 16px",marginBottom:20,
+              border:"1px solid #fde68a",fontSize:13,color:"#92400e",lineHeight:1.5}}>
+              ⏳ Tu pago está <strong>pendiente de verificación</strong>.<br/>
+              El administrador lo confirmará en breve.
+            </div>
+            <button onClick={()=>setModal(null)}
+              style={{width:"100%",padding:"12px",background:`linear-gradient(135deg,#0ea5e9,#0369a1)`,
                 color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
                 fontWeight:900,fontSize:16,textTransform:"uppercase"}}>Cerrar</button>
           </div>
@@ -1378,7 +1564,10 @@ function AdminScreen({ user, onLogout }) {
               const parts = label.split(" ");
               const icon = parts[0];
               const text = parts.slice(1).join(" ");
-              const hasBadge = id==="pendientes" && pendientes.length>0;
+              const hasBadge = id==="pendientes" && pendientes.length>0
+                || (id==="pagos" && pagos.filter(p=>p.pendiente_verificacion).length>0);
+              const badgeCount = id==="pendientes" ? pendientes.length
+                : id==="pagos" ? pagos.filter(p=>p.pendiente_verificacion).length : 0;
               return(
                 <button key={id} onClick={()=>setTab(id)}
                   className="sidebar-navbtn"
@@ -1396,7 +1585,7 @@ function AdminScreen({ user, onLogout }) {
                   {hasBadge&&<span style={{position:"absolute",top:7,right:7,
                     background:C.red,color:C.white,borderRadius:"50%",width:19,height:19,
                     fontSize:10,fontWeight:900,display:"flex",alignItems:"center",
-                    justifyContent:"center",lineHeight:1}}>{pendientes.length}</span>}
+                    justifyContent:"center",lineHeight:1}}>{badgeCount}</span>}
                   <span className="sic" style={{fontSize:32,lineHeight:1}}>{icon}</span>
                   <span className="slb" style={{fontSize:11,fontWeight:800,letterSpacing:".02em",
                     textAlign:"center",lineHeight:1.2}}>{text}</span>
@@ -1591,10 +1780,87 @@ function AdminScreen({ user, onLogout }) {
 
         {/* ── TAB PAGOS ── */}
         {!loading&&tab==="pagos"&&(
-          <PagosTab jugadores={jugadoresFilt} pagos={pagos} planPagos={planPagos}
-            categorias={categorias} tiposCuota={tiposCuota}
-            filtCat={filtCat} setFiltCat={setFiltCat}
-            onRegistrarPago={registrarPago} añoActual={añoActual}/>
+          <div>
+            {/* COMPROBANTES PENDIENTES */}
+            {(()=>{
+              const pendTransf = pagos.filter(p=>p.pendiente_verificacion&&p.comprobante_url);
+              if (pendTransf.length===0) return null;
+              return(
+                <div style={{marginBottom:20}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,
+                    color:"#dc2626",textTransform:"uppercase",marginBottom:10,
+                    display:"flex",alignItems:"center",gap:8}}>
+                    ⏳ Transferencias pendientes de verificación
+                    <span style={{background:"#dc2626",color:"white",borderRadius:20,padding:"1px 10px",
+                      fontSize:13,fontWeight:900}}>{pendTransf.length}</span>
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                    {pendTransf.map(p=>{
+                      const jug = jugadores.find(j=>j.id===p.jugador_id);
+                      return(
+                        <div key={p.id} style={{background:"white",borderRadius:14,overflow:"hidden",
+                          border:"2px solid #fca5a5",display:"flex",flexDirection:"row",gap:0}}>
+                          {/* Comprobante */}
+                          <div style={{width:120,flexShrink:0,background:"#f9fafb",
+                            display:"flex",alignItems:"center",justifyContent:"center",
+                            cursor:"pointer",borderRight:"1px solid #fca5a5"}}
+                            onClick={()=>window.open(p.comprobante_url,"_blank")}>
+                            <img src={p.comprobante_url}
+                              style={{width:120,height:100,objectFit:"cover"}}
+                              title="Click para ver completo"/>
+                          </div>
+                          {/* Datos */}
+                          <div style={{flex:1,padding:"10px 14px"}}>
+                            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
+                              fontSize:14,color:C.navy,textTransform:"uppercase",marginBottom:2}}>
+                              {jug?.nombre||"Jugador"}
+                            </div>
+                            <div style={{fontSize:11,color:C.grayMid,marginBottom:4}}>
+                              {MESES[p.mes-1]} · ${p.monto?.toLocaleString("es-UY")||"—"}
+                            </div>
+                            {p.nota&&(
+                              <div style={{fontSize:11,color:C.navy,background:"#f0f9ff",
+                                borderRadius:6,padding:"4px 8px",marginBottom:8,
+                                fontStyle:"italic"}}>"{p.nota}"</div>
+                            )}
+                            <div style={{display:"flex",gap:6}}>
+                              <button onClick={async()=>{
+                                  if(!confirm("¿Aprobar este pago por transferencia?")) return;
+                                  await sbFetch(`baby_pagos?id=eq.${p.id}`,"PATCH",
+                                    {pendiente_verificacion:false});
+                                  syncPagos();
+                                }}
+                                style={{flex:1,padding:"6px 8px",background:`linear-gradient(135deg,${C.green},#15803d)`,
+                                  color:"white",border:"none",borderRadius:8,
+                                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
+                                  fontSize:12,cursor:"pointer",textTransform:"uppercase"}}>
+                                ✅ Aprobar
+                              </button>
+                              <button onClick={async()=>{
+                                  if(!confirm("¿Rechazar y eliminar este pago?")) return;
+                                  await sbFetch(`baby_pagos?id=eq.${p.id}`,"DELETE");
+                                  syncPagos();
+                                }}
+                                style={{padding:"6px 10px",background:"#fff5f5",
+                                  color:"#dc2626",border:"1px solid #fca5a5",borderRadius:8,
+                                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
+                                  fontSize:12,cursor:"pointer",textTransform:"uppercase"}}>
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+            <PagosTab jugadores={jugadoresFilt} pagos={pagos} planPagos={planPagos}
+              categorias={categorias} tiposCuota={tiposCuota}
+              filtCat={filtCat} setFiltCat={setFiltCat}
+              onRegistrarPago={registrarPago} añoActual={añoActual}/>
+          </div>
         )}
 
         {/* ── TAB PLAN DE PAGOS ── */}
@@ -3116,7 +3382,7 @@ function DelegadoScreen({ user, onLogout }) {
                   {hasBadge&&<span style={{position:"absolute",top:7,right:7,
                     background:C.red,color:C.white,borderRadius:"50%",width:19,height:19,
                     fontSize:10,fontWeight:900,display:"flex",alignItems:"center",
-                    justifyContent:"center",lineHeight:1}}>{pendientes.length}</span>}
+                    justifyContent:"center",lineHeight:1}}>{badgeCount}</span>}
                   <span style={{fontSize:32,lineHeight:1}}>{icon}</span>
                   <span style={{fontSize:11,fontWeight:800,textAlign:"center",lineHeight:1.2}}>{lbl}</span>
                 </button>
