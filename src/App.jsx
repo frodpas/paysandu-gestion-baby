@@ -1628,6 +1628,14 @@ function AdminScreen({ user, onLogout }) {
                   alignItems:"center",justifyContent:"center",gap:6,lineHeight:1.2,textAlign:"center"}}>
                 <span style={{fontSize:24}}>📋</span>Crear acceso alta
               </button>
+              <button onClick={()=>setModalReporte(true)}
+                style={{width:110,height:80,background:C.offWhite,color:"#d97706",
+                  border:"2px solid #d97706",borderRadius:12,
+                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:12,
+                  textTransform:"uppercase",cursor:"pointer",display:"flex",flexDirection:"column",
+                  alignItems:"center",justifyContent:"center",gap:6,lineHeight:1.2,textAlign:"center"}}>
+                <span style={{fontSize:24}}>📊</span>Reporte jugadores
+              </button>
             </div>
             {/* Filtros categoría — alineados con la tabla */}
             <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
@@ -1800,15 +1808,6 @@ function AdminScreen({ user, onLogout }) {
                       return(
                         <div key={p.id} style={{background:"white",borderRadius:14,overflow:"hidden",
                           border:"2px solid #fca5a5",display:"flex",flexDirection:"row",gap:0}}>
-                          {/* Comprobante */}
-                          <div style={{width:120,flexShrink:0,background:"#f9fafb",
-                            display:"flex",alignItems:"center",justifyContent:"center",
-                            cursor:"pointer",borderRight:"1px solid #fca5a5"}}
-                            onClick={()=>setVerComprobante(p.comprobante_url)}>
-                            <img src={p.comprobante_url}
-                              style={{width:120,height:100,objectFit:"cover"}}
-                              title="Click para ver completo"/>
-                          </div>
                           {/* Datos */}
                           <div style={{flex:1,padding:"10px 14px"}}>
                             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
@@ -1820,9 +1819,19 @@ function AdminScreen({ user, onLogout }) {
                             </div>
                             {p.nota&&(
                               <div style={{fontSize:11,color:C.navy,background:"#f0f9ff",
-                                borderRadius:6,padding:"4px 8px",marginBottom:8,
+                                borderRadius:6,padding:"4px 8px",marginBottom:6,
                                 fontStyle:"italic"}}>"{p.nota}"</div>
                             )}
+                            <button
+                              onClick={(e)=>{e.stopPropagation();setVerComprobante(p.comprobante_url);}}
+                              style={{display:"flex",alignItems:"center",gap:6,
+                                marginBottom:8,padding:"5px 10px",
+                                background:"#f0f9ff",border:"1px solid #0ea5e9",
+                                borderRadius:8,cursor:"pointer",
+                                fontFamily:"'Barlow Condensed',sans-serif",
+                                fontWeight:700,fontSize:12,color:"#0284c7"}}>
+                              🔍 Ver comprobante
+                            </button>
                             <div style={{display:"flex",gap:6}}>
                               <button onClick={async()=>{
                                   if(!confirm("¿Aprobar este pago por transferencia?")) return;
