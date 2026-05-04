@@ -1530,9 +1530,10 @@ function AdminScreen({ user, onLogout }) {
       return d.length === 0 ? "Al día" : d.length + " mes" + (d.length > 1 ? "es" : "") + " adeudado" + (d.length > 1 ? "s" : "");
     };
     const fecha = new Date().toLocaleDateString("es-UY").replace(/\//g, "-");
-    generarXlsxMultihoja([
+    // Generar 3 archivos CSV separados (sin advertencia de formato)
+    const hojas = [
       {
-        nombre: "Jugadores",
+        nombre: "jugadores",
         cols: ["Nombre","CI","Categoría","Nacimiento","Camiseta","Celular","Tipo cuota","Estado","Código"],
         filas: jugadores.map(j => [
           j.nombre||"", j.ci||"", j.categoria_id||"",
@@ -1542,7 +1543,7 @@ function AdminScreen({ user, onLogout }) {
         ])
       },
       {
-        nombre: "Pagos",
+        nombre: "pagos",
         cols: ["Jugador","Categoría","Mes","Año","Monto","Método","Fecha","Pendiente"],
         filas: pagos.map(p => {
           const j = jugadores.find(x => x.id === p.jugador_id);
@@ -1555,7 +1556,7 @@ function AdminScreen({ user, onLogout }) {
         })
       },
       {
-        nombre: "Delegados",
+        nombre: "delegados",
         cols: ["Nombre","Celular","Email","PIN","Categorías","Estado"],
         filas: delegados.map(d => [
           d.nombre||"", d.celular||"", d.mail||"",
@@ -1563,7 +1564,10 @@ function AdminScreen({ user, onLogout }) {
           d.activo === false ? "Suspendido" : "Activo"
         ])
       }
-    ], `paysandu-baby-${fecha}.xls`);
+    ];
+    hojas.forEach(h => {
+      descargarCSV(h.filas, h.cols, `paysandu-baby-${h.nombre}-${fecha}.csv`);
+    });
   };
   const [modalRespaldo,  setModalRespaldo]  = useState(false);
   const [respaldoStep,   setRespaldoStep]   = useState("idle"); // idle | generando | listo
