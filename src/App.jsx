@@ -1351,6 +1351,54 @@ function AdminScreen({ user, onLogout }) {
   const [limpiezaErr,    setLimpiezaErr]    = useState("");
   const [limpiezaOk,     setLimpiezaOk]     = useState(false);
   const CLAVE_LIMPIEZA  = "PAYSANDU2025"; // clave para operaciones destructivas
+
+  const exportarExcel = () => {
+    const mesLim = (new Date().getDate()>10 ? new Date().getMonth()+1 : new Date().getMonth());
+    const getEstado = j => {
+      const d = planPagos.filter(pl => {
+        if (!pl.monto || pl.mes > mesLim) return false;
+        const tc = tiposCuota.find(t => t.id === j.tipo_cuota) || tiposCuota[0];
+        return Math.round(pl.monto * tc.porcentaje / 100) > 0 &&
+          !pagos.find(p => p.jugador_id === j.id && p.mes === pl.mes);
+      });
+      return d.length === 0 ? "Al día" : d.length + " mes" + (d.length > 1 ? "es" : "") + " adeudado" + (d.length > 1 ? "s" : "");
+    };
+    const fecha = new Date().toLocaleDateString("es-UY").replace(/\//g, "-");
+    generarXlsxMultihoja([
+      {
+        nombre: "Jugadores",
+        cols: ["Nombre","CI","Categoría","Nacimiento","Camiseta","Celular","Tipo cuota","Estado","Código"],
+        filas: jugadores.map(j => [
+          j.nombre||"", j.ci||"", j.categoria_id||"",
+          j.fecha_nacimiento||"", j.numero_camiseta||"",
+          j.celular||"", (tiposCuota.find(t => t.id === j.tipo_cuota) || tiposCuota[0]).nombre,
+          getEstado(j), j.id||""
+        ])
+      },
+      {
+        nombre: "Pagos",
+        cols: ["Jugador","Categoría","Mes","Año","Monto","Método","Fecha","Pendiente"],
+        filas: pagos.map(p => {
+          const j = jugadores.find(x => x.id === p.jugador_id);
+          return [
+            j?.nombre||"", j?.categoria_id||"",
+            MESES[(p.mes||1)-1], p.año||"", p.monto||"",
+            p.metodo_pago||"", p.fecha_pago||"",
+            p.pendiente_verificacion ? "Sí" : "No"
+          ];
+        })
+      },
+      {
+        nombre: "Delegados",
+        cols: ["Nombre","Celular","Email","PIN","Categorías","Estado"],
+        filas: delegados.map(d => [
+          d.nombre||"", d.celular||"", d.mail||"",
+          d.pin||"", (d.categorias||[]).join(", "),
+          d.activo === false ? "Suspendido" : "Activo"
+        ])
+      }
+    ], `paysandu-baby-${fecha}.xls`);
+  };
   const [modalRespaldo,  setModalRespaldo]  = useState(false);
   const [respaldoStep,   setRespaldoStep]   = useState("idle"); // idle | generando | listo
   const [respaldoInfo,   setRespaldoInfo]   = useState(null);
