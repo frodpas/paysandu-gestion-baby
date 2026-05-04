@@ -564,25 +564,32 @@ function LoginScreen({ onLogin }) {
 /* ══ HELPERS REPORTE ════════════════════════════════════════════════ */
 
 function generarXlsxMultihoja(hojas, filename) {
-  // SpreadsheetML — Excel lo abre como .xlsx nativo
+  // SpreadsheetML (Excel 2003 XML) — abre sin advertencia con .xls
   const esc = s => String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   const sheets = hojas.map(({nombre, cols, filas}) => {
-    const rows = [
-      `<Row>${cols.map(c=>`<Cell><Data ss:Type="String">${esc(c)}</Data></Cell>`).join("")}</Row>`,
-      ...filas.map(f=>`<Row>${f.map(v=>`<Cell><Data ss:Type="String">${esc(v)}</Data></Cell>`).join("")}</Row>`)
-    ].join("");
-    return `<Worksheet ss:Name="${esc(nombre)}"><Table>${rows}</Table></Worksheet>`;
+    const headerRow = `<Row ss:StyleID="s1">${cols.map(c=>`<Cell><Data ss:Type="String">${esc(c)}</Data></Cell>`).join("")}</Row>`;
+    const dataRows = filas.map(f=>`<Row>${f.map(v=>`<Cell><Data ss:Type="String">${esc(v)}</Data></Cell>`).join("")}</Row>`).join("");
+    return `<Worksheet ss:Name="${esc(nombre)}"><Table>${headerRow}${dataRows}</Table></Worksheet>`;
   }).join("");
-  const xml = `<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?>
-<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
-  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
-  <Styles><Style ss:ID="s1"><Font ss:Bold="1"/></Style></Styles>
-  ${sheets}
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+`+
+    `<?mso-application progid="Excel.Sheet"?>
+`+
+    `<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" `+
+    `xmlns:o="urn:schemas-microsoft-com:office:office" `+
+    `xmlns:x="urn:schemas-microsoft-com:office:excel" `+
+    `xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+`+
+    `<Styles><Style ss:ID="s1"><Font ss:Bold="1" ss:Color="#FFFFFF"/>`+
+    `<Interior ss:Color="#1E2A6E" ss:Pattern="Solid"/></Style></Styles>
+`+
+    sheets+`
 </Workbook>`;
-  const b = new Blob([xml], {type:"application/vnd.ms-excel;charset=utf-8"});
+  const BOM = "﻿";
+  const b = new Blob([BOM+xml], {type:"application/vnd.ms-excel"});
   const u = URL.createObjectURL(b);
   const a = document.createElement("a");
-  a.href = u; a.download = filename;
+  a.href = u; a.download = filename.replace(".xlsx",".xls");
   document.body.appendChild(a); a.click();
   document.body.removeChild(a); URL.revokeObjectURL(u);
 }
@@ -1400,7 +1407,7 @@ function ModalQRJugador({ jugId, jug, onClose }) {
 
 /* ══ ADMIN SCREEN ═════════════════════════════════════════════════════ */
 function AdminScreen({ user, onLogout }) {
-  const [tab,          setTab]         = useState("delegados");
+  const [tab,          setTab]         = useState("planteles");
   const [categorias,   setCategorias]  = useState([]);
   const [jugadores,    setJugadores]   = useState([]);
   const [pendientes,   setPendientes]  = useState([]);
@@ -1530,12 +1537,6 @@ function AdminScreen({ user, onLogout }) {
       return d.length === 0 ? "Al día" : d.length + " mes" + (d.length > 1 ? "es" : "") + " adeudado" + (d.length > 1 ? "s" : "");
     };
     const fecha = new Date().toLocaleDateString("es-UY").replace(/\//g, "-");
-    // Generar un único CSV con todas las secciones separadas
-    const BOM = "\uFEFF";
-    const sep = ";";
-    const esc = v => `"${String(v||"").replace(/"/g,'""')}"`;
-    const fila = arr => arr.map(esc).join(sep);
-
     const colsJugs = ["Nombre","CI","Categoría","Nacimiento","Camiseta","Celular","Tipo cuota","Estado","Código"];
     const filasJugs = jugadores.map(j=>[
       j.nombre||"", j.ci||"", j.categoria_id||"", j.fecha_nacimiento||"",
@@ -1543,41 +1544,22 @@ function AdminScreen({ user, onLogout }) {
       (tiposCuota.find(t=>t.id===j.tipo_cuota)||tiposCuota[0]).nombre,
       getEstado(j), j.id||""
     ]);
-
     const colsPags = ["Jugador","Categoría","Mes","Año","Monto","Método","Fecha","Pendiente"];
     const filasPags = pagos.map(p=>{
       const j=jugadores.find(x=>x.id===p.jugador_id);
       return [j?.nombre||"",j?.categoria_id||"",MESES[(p.mes||1)-1],p.año||"",p.monto||"",
         p.metodo_pago||"",p.fecha_pago||"",p.pendiente_verificacion?"Sí":"No"];
     });
-
     const colsDels = ["Nombre","Celular","Email","PIN","Categorías","Estado"];
     const filasDels = delegados.map(d=>[
       d.nombre||"",d.celular||"",d.mail||"",d.pin||"",
       (d.categorias||[]).join(", "),d.activo===false?"Suspendido":"Activo"
     ]);
-
-    const csv = BOM + [
-      "=== JUGADORES ===",
-      fila(colsJugs),
-      ...filasJugs.map(fila),
-      "",
-      "=== PAGOS ===",
-      fila(colsPags),
-      ...filasPags.map(fila),
-      "",
-      "=== DELEGADOS ===",
-      fila(colsDels),
-      ...filasDels.map(fila),
-    ].join("\r\n");
-
-    const b = new Blob([csv],{type:"text/csv;charset=utf-8"});
-    const u = URL.createObjectURL(b);
-    const a = document.createElement("a");
-    a.href = u;
-    a.download = `paysandu-baby-${fecha}.csv`;
-    document.body.appendChild(a); a.click();
-    document.body.removeChild(a); URL.revokeObjectURL(u);
+    generarXlsxMultihoja([
+      {nombre:"Jugadores", cols:colsJugs, filas:filasJugs},
+      {nombre:"Pagos",     cols:colsPags, filas:filasPags},
+      {nombre:"Delegados", cols:colsDels, filas:filasDels},
+    ], `paysandu-baby-${fecha}.xlsx`);
   };
   const [modalRespaldo,  setModalRespaldo]  = useState(false);
   const [respaldoStep,   setRespaldoStep]   = useState("idle"); // idle | generando | listo
