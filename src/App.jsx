@@ -2592,18 +2592,24 @@ function AdminScreen({ user, onLogout }) {
                     try {
                       const txt = await file.text();
                       const data = JSON.parse(txt);
-                      if (!data.datos?.jugadores) {
-                        alert("❌ El archivo no es un respaldo válido de este sistema.");
+                      // Aceptar estructura "tablas" (nueva) o "datos" (vieja)
+                      const tablas = data.tablas || data.datos;
+                      if (!tablas?.jugadores) {
+                        alert("❌ El archivo no es un respaldo válido de este sistema.\n\nAsegurate de usar un archivo generado con el botón 'Exportar JSON' de este sistema.");
                         return;
                       }
-                      const res = data.resumen;
+                      const res = data.resumen || {};
+                      const nJugs = tablas.jugadores?.length || res.total_jugadores || res.jugadores || 0;
+                      const nPags = tablas.pagos?.length || res.total_pagos || res.pagos || 0;
+                      const nDels = tablas.delegados?.length || res.total_delegados || res.delegados || 0;
+                      const nPends = tablas.formularios_pendientes?.length || res.total_pendientes || res.pendientes || 0;
                       const ok = confirm(
                         `📋 Respaldo del ${new Date(data.fecha).toLocaleDateString("es-UY")}\n\n` +
-                        `· ${res.jugadores} jugadores\n` +
-                        `· ${res.pagos} registros de pago\n` +
-                        `· ${res.pendientes} formularios pendientes\n` +
-                        `· ${res.delegados} delegados\n\n` +
-                        `⚠️ ATENCIÓN: Esto reemplazará todos los datos actuales.\n¿Continuar?`
+                        `· ${nJugs} jugadores\n` +
+                        `· ${nPags} registros de pago\n` +
+                        `· ${nPends} formularios pendientes\n` +
+                        `· ${nDels} delegados\n\n` +
+                        `⚠️ ATENCIÓN: Esta función está disponible para consulta.\n¿Ver resumen del respaldo?`
                       );
                       if (!ok) return;
                       const clave = prompt("Ingresá la clave de administrador:");
@@ -2611,7 +2617,19 @@ function AdminScreen({ user, onLogout }) {
                         alert("❌ Clave incorrecta");
                         return;
                       }
-                      alert("ℹ️ Restauración en desarrollo. Por ahora usá el respaldo JSON solo como consulta.");
+                      if (ok) {
+                        // Mostrar resumen del backup
+                        const fechaBackup = new Date(data.fecha).toLocaleDateString("es-UY");
+                        let resumen = `✅ Archivo de respaldo válido\n\n`;
+                        resumen += `📅 Fecha: ${fechaBackup}\n`;
+                        resumen += `👥 Jugadores: ${nJugs}\n`;
+                        resumen += `💳 Pagos: ${nPags}\n`;
+                        resumen += `🏃 Delegados: ${nDels}\n`;
+                        resumen += `📋 Pendientes: ${nPends}\n\n`;
+                        resumen += `ℹ️ El archivo es válido y puede usarse como\nconsulta o respaldo de seguridad.\n\n`;
+                        resumen += `Para restaurar datos contactá al administrador\ndel sistema.`;
+                        alert(resumen);
+                      }
                     } catch(err) {
                       alert("❌ Error al leer el archivo: " + err.message);
                     }
