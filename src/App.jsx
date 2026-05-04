@@ -647,6 +647,77 @@ function htmlReporteBase(titulo, subtitulo, colsHTML, rowsHTML, totalHTML="") {
     </body></html>`;
 }
 
+/* ══ RESTAURAR PROGRESO ═══════════════════════════════════════════════ */
+function RestaurarProgreso({ tablas, opts, onLog, log, onDone, onError }) {
+  const [running, setRunning] = React.useState(false);
+
+  React.useEffect(()=>{
+    if (running) return;
+    setRunning(true);
+
+    (async () => {
+      try {
+        // Restaurar jugadores
+        if (opts.jugadores && tablas.jugadores?.length > 0) {
+          onLog("🔄 Eliminando jugadores actuales...");
+          await sbFetch("baby_jugadores?org_id=eq.paysandu","DELETE");
+          onLog(`📥 Insertando ${tablas.jugadores.length} jugadores...`);
+          // Insertar en lotes de 50
+          for (let i=0; i<tablas.jugadores.length; i+=50) {
+            const lote = tablas.jugadores.slice(i,i+50);
+            await sbFetch("baby_jugadores","POST",lote);
+          }
+          onLog(`✅ ${tablas.jugadores.length} jugadores restaurados`);
+        }
+        // Restaurar pagos
+        if (opts.pagos && tablas.pagos?.length > 0) {
+          onLog("🔄 Eliminando pagos actuales...");
+          await sbFetch("baby_pagos?org_id=eq.paysandu","DELETE");
+          onLog(`📥 Insertando ${tablas.pagos.length} registros de pago...`);
+          for (let i=0; i<tablas.pagos.length; i+=50) {
+            const lote = tablas.pagos.slice(i,i+50);
+            await sbFetch("baby_pagos","POST",lote);
+          }
+          onLog(`✅ ${tablas.pagos.length} pagos restaurados`);
+        }
+        // Restaurar delegados
+        if (opts.delegados && tablas.delegados?.length > 0) {
+          onLog("🔄 Eliminando delegados actuales...");
+          await sbFetch("baby_delegados?org_id=eq.paysandu","DELETE");
+          onLog(`📥 Insertando ${tablas.delegados.length} delegados...`);
+          for (let i=0; i<tablas.delegados.length; i+=50) {
+            const lote = tablas.delegados.slice(i,i+50);
+            await sbFetch("baby_delegados","POST",lote);
+          }
+          onLog(`✅ ${tablas.delegados.length} delegados restaurados`);
+        }
+        onLog("🎉 Restauración completada exitosamente");
+        onDone();
+      } catch(err) {
+        onError(err.message || "Error desconocido");
+      }
+    })();
+  },[]);
+
+  return (
+    <div>
+      <div style={{textAlign:"center",marginBottom:16}}>
+        <div style={{fontSize:44,marginBottom:8}}>⏳</div>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
+          fontSize:16,color:"#1e2a6e",textTransform:"uppercase"}}>
+          Restaurando datos...
+        </div>
+      </div>
+      <div style={{background:"#f0f9ff",borderRadius:10,padding:"12px 14px",
+        border:"1px solid #bae6fd",fontSize:12,color:"#0369a1",lineHeight:2,
+        maxHeight:200,overflowY:"auto"}}>
+        {log.map((l,i)=><div key={i}>{l}</div>)}
+        {log.length===0&&<div style={{color:"#93c5fd"}}>Iniciando...</div>}
+      </div>
+    </div>
+  );
+}
+
 function PublicoView({ user, onLogout }) {
   const jug = user.jugador;
   const [pagos, setPagos] = useState([]);
@@ -1497,6 +1568,12 @@ function AdminScreen({ user, onLogout }) {
   const [modalRespaldo,  setModalRespaldo]  = useState(false);
   const [respaldoStep,   setRespaldoStep]   = useState("idle"); // idle | generando | listo
   const [respaldoInfo,   setRespaldoInfo]   = useState(null);
+  const [modalRestaurar, setModalRestaurar] = useState(false);
+  const [datosRestaurar, setDatosRestaurar] = useState(null); // {tablas, fecha, nJugs, nPags...}
+  const [restaurarOpts,  setRestaurarOpts]  = useState({jugadores:true,pagos:true,delegados:false});
+  const [restaurarStep,  setRestaurarStep]  = useState("confirm"); // confirm|clave|progreso|listo|error
+  const [restaurarClave, setRestaurarClave] = useState("");
+  const [restaurarLog,   setRestaurarLog]   = useState([]);
   const [selJugador,   setSelJugador]  = useState(null);
   const [loading,      setLoading]     = useState(true);
   const [qrLink,       setQrLink]      = useState(null);
@@ -2603,33 +2680,13 @@ function AdminScreen({ user, onLogout }) {
                       const nPags = tablas.pagos?.length || res.total_pagos || res.pagos || 0;
                       const nDels = tablas.delegados?.length || res.total_delegados || res.delegados || 0;
                       const nPends = tablas.formularios_pendientes?.length || res.total_pendientes || res.pendientes || 0;
-                      const ok = confirm(
-                        `📋 Respaldo del ${new Date(data.fecha).toLocaleDateString("es-UY")}\n\n` +
-                        `· ${nJugs} jugadores\n` +
-                        `· ${nPags} registros de pago\n` +
-                        `· ${nPends} formularios pendientes\n` +
-                        `· ${nDels} delegados\n\n` +
-                        `⚠️ ATENCIÓN: Esta función está disponible para consulta.\n¿Ver resumen del respaldo?`
-                      );
-                      if (!ok) return;
-                      const clave = prompt("Ingresá la clave de administrador:");
-                      if (clave !== "PAYSANDU2025") {
-                        alert("❌ Clave incorrecta");
-                        return;
-                      }
-                      if (ok) {
-                        // Mostrar resumen del backup
-                        const fechaBackup = new Date(data.fecha).toLocaleDateString("es-UY");
-                        let resumen = `✅ Archivo de respaldo válido\n\n`;
-                        resumen += `📅 Fecha: ${fechaBackup}\n`;
-                        resumen += `👥 Jugadores: ${nJugs}\n`;
-                        resumen += `💳 Pagos: ${nPags}\n`;
-                        resumen += `🏃 Delegados: ${nDels}\n`;
-                        resumen += `📋 Pendientes: ${nPends}\n\n`;
-                        resumen += `ℹ️ El archivo es válido y puede usarse como\nconsulta o respaldo de seguridad.\n\n`;
-                        resumen += `Para restaurar datos contactá al administrador\ndel sistema.`;
-                        alert(resumen);
-                      }
+                      // Abrir modal de restauración con los datos del backup
+                      setDatosRestaurar({tablas, fecha: data.fecha, nJugs, nPags, nDels, nPends});
+                      setRestaurarOpts({jugadores:true, pagos:true, delegados:false});
+                      setRestaurarStep("confirm");
+                      setRestaurarClave("");
+                      setRestaurarLog([]);
+                      setModalRestaurar(true);
                     } catch(err) {
                       alert("❌ Error al leer el archivo: " + err.message);
                     }
@@ -2853,6 +2910,195 @@ function AdminScreen({ user, onLogout }) {
                     cursor:"pointer",textTransform:"uppercase"}}>
                   Cerrar
                 </button>
+              </div>
+            )}
+
+          </div>
+        </Modal>
+      )}
+
+      {/* ── Modal restaurar respaldo ── */}
+      {modalRestaurar&&datosRestaurar&&(
+        <Modal onClose={()=>{setModalRestaurar(false);setRestaurarStep("confirm");}} maxWidth={500}>
+          <div style={{background:"linear-gradient(135deg,#1d4ed8,#2563eb)",padding:"18px 22px",
+            display:"flex",alignItems:"center",gap:12}}>
+            <span style={{fontSize:28}}>📤</span>
+            <div>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,
+                color:"white",textTransform:"uppercase"}}>Restaurar respaldo</div>
+              <div style={{color:"rgba(255,255,255,.7)",fontSize:12}}>
+                Backup del {new Date(datosRestaurar.fecha).toLocaleDateString("es-UY")}
+              </div>
+            </div>
+          </div>
+          <div style={{padding:"22px 24px"}}>
+
+            {/* PASO 1: elegir qué restaurar */}
+            {restaurarStep==="confirm"&&(
+              <>
+                <div style={{background:"#eff6ff",borderRadius:12,padding:"14px",
+                  border:"1px solid #93c5fd",marginBottom:16}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
+                    fontSize:14,color:"#1d4ed8",marginBottom:10}}>Contenido del respaldo:</div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,fontSize:13,color:"#1e3a8a"}}>
+                    <div>👥 {datosRestaurar.nJugs} jugadores</div>
+                    <div>💳 {datosRestaurar.nPags} pagos</div>
+                    <div>🏃 {datosRestaurar.nDels} delegados</div>
+                    <div>📋 {datosRestaurar.nPends} pendientes</div>
+                  </div>
+                </div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,
+                  color:C.navy,textTransform:"uppercase",marginBottom:10}}>¿Qué querés restaurar?</div>
+                {[
+                  ["jugadores","👥 Jugadores","Sobrescribe todos los jugadores actuales"],
+                  ["pagos","💳 Pagos","Sobrescribe todos los registros de pago"],
+                  ["delegados","🏃 Delegados","Sobrescribe todos los delegados"],
+                ].map(([k,lbl,desc])=>(
+                  <label key={k} style={{display:"flex",alignItems:"flex-start",gap:10,
+                    padding:"10px 12px",borderRadius:10,cursor:"pointer",marginBottom:8,
+                    background:restaurarOpts[k]?"#eff6ff":"#f9fafb",
+                    border:`2px solid ${restaurarOpts[k]?"#3b82f6":C.gray}`}}>
+                    <input type="checkbox" checked={!!restaurarOpts[k]}
+                      onChange={e=>setRestaurarOpts(p=>({...p,[k]:e.target.checked}))}
+                      style={{accentColor:"#2563eb",width:18,height:18,marginTop:2,cursor:"pointer",flexShrink:0}}/>
+                    <div>
+                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
+                        fontSize:14,color:C.navy}}>{lbl}</div>
+                      <div style={{fontSize:11,color:C.grayMid}}>{desc}</div>
+                    </div>
+                  </label>
+                ))}
+                <div style={{background:"#fff7ed",borderRadius:8,padding:"10px 12px",
+                  marginTop:8,marginBottom:16,border:"1px solid #fed7aa",fontSize:12,color:"#9a3412"}}>
+                  ⚠️ Los datos seleccionados serán <strong>reemplazados</strong> por los del respaldo.
+                  Los no seleccionados quedan intactos.
+                </div>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={()=>setModalRestaurar(false)}
+                    style={{flex:1,padding:"11px",background:"transparent",color:C.navy,
+                      border:`2px solid ${C.navy}`,borderRadius:10,
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14}}>
+                    Cancelar
+                  </button>
+                  <button
+                    disabled={!Object.values(restaurarOpts).some(Boolean)}
+                    onClick={()=>setRestaurarStep("clave")}
+                    style={{flex:2,padding:"11px",
+                      background:Object.values(restaurarOpts).some(Boolean)
+                        ?"linear-gradient(135deg,#2563eb,#1d4ed8)":"#e2e2da",
+                      color:"white",border:"none",borderRadius:10,
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,
+                      cursor:"pointer",textTransform:"uppercase"}}>
+                    Continuar →
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* PASO 2: clave */}
+            {restaurarStep==="clave"&&(
+              <>
+                <div style={{textAlign:"center",marginBottom:20}}>
+                  <div style={{fontSize:44,marginBottom:10}}>🔐</div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
+                    fontSize:16,color:C.navy,textTransform:"uppercase",marginBottom:6}}>
+                    Clave de administrador
+                  </div>
+                  <div style={{fontSize:12,color:C.grayMid}}>Requerida para restaurar datos</div>
+                </div>
+                <input type="password" value={restaurarClave}
+                  onChange={e=>setRestaurarClave(e.target.value)}
+                  onKeyDown={e=>e.key==="Enter"&&restaurarClave===CLAVE_LIMPIEZA&&setRestaurarStep("progreso")}
+                  placeholder="Clave de administrador" autoFocus
+                  style={{width:"100%",padding:"13px 16px",borderRadius:10,
+                    border:`2px solid ${C.gray}`,fontSize:16,textAlign:"center",
+                    letterSpacing:".1em",marginBottom:14,outline:"none"}}/>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={()=>setRestaurarStep("confirm")}
+                    style={{flex:1,padding:"11px",background:"transparent",color:C.navy,
+                      border:`2px solid ${C.navy}`,borderRadius:10,
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14}}>
+                    ← Volver
+                  </button>
+                  <button onClick={()=>{
+                      if(restaurarClave!==CLAVE_LIMPIEZA){
+                        alert("❌ Clave incorrecta");
+                        return;
+                      }
+                      setRestaurarStep("progreso");
+                    }}
+                    style={{flex:2,padding:"11px",
+                      background:"linear-gradient(135deg,#2563eb,#1d4ed8)",
+                      color:"white",border:"none",borderRadius:10,
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,
+                      cursor:"pointer",textTransform:"uppercase"}}>
+                    Verificar y restaurar
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* PASO 3: progreso */}
+            {restaurarStep==="progreso"&&(
+              <RestaurarProgreso
+                tablas={datosRestaurar.tablas}
+                opts={restaurarOpts}
+                onLog={msg=>setRestaurarLog(p=>[...p,msg])}
+                log={restaurarLog}
+                onDone={()=>{setRestaurarStep("listo");load();}}
+                onError={msg=>{setRestaurarStep("error");setRestaurarLog(p=>[...p,"❌ "+msg]);}}
+              />
+            )}
+
+            {/* RESULTADO OK */}
+            {restaurarStep==="listo"&&(
+              <div style={{textAlign:"center",padding:"10px 0"}}>
+                <div style={{fontSize:56,marginBottom:12}}>✅</div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+                  fontSize:22,color:C.navy,textTransform:"uppercase",marginBottom:12}}>
+                  Restauración completada
+                </div>
+                <div style={{background:"#f0fdf4",borderRadius:10,padding:"12px 14px",
+                  marginBottom:16,border:"1px solid #86efac",fontSize:12,color:"#166534",
+                  textAlign:"left",lineHeight:1.8}}>
+                  {restaurarLog.map((l,i)=><div key={i}>{l}</div>)}
+                </div>
+                <button onClick={()=>{setModalRestaurar(false);setRestaurarStep("confirm");}}
+                  style={{width:"100%",padding:"12px",
+                    background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                    color:"white",border:"none",borderRadius:10,
+                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:15,
+                    cursor:"pointer",textTransform:"uppercase"}}>
+                  Cerrar
+                </button>
+              </div>
+            )}
+
+            {/* ERROR */}
+            {restaurarStep==="error"&&(
+              <div style={{textAlign:"center",padding:"10px 0"}}>
+                <div style={{fontSize:56,marginBottom:12}}>❌</div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+                  fontSize:20,color:"#dc2626",textTransform:"uppercase",marginBottom:10}}>
+                  Error en la restauración
+                </div>
+                <div style={{background:"#fff5f5",borderRadius:10,padding:"12px 14px",
+                  marginBottom:16,border:"1px solid #fca5a5",fontSize:12,color:"#7f1d1d",
+                  textAlign:"left",lineHeight:1.8}}>
+                  {restaurarLog.map((l,i)=><div key={i}>{l}</div>)}
+                </div>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={()=>setRestaurarStep("confirm")}
+                    style={{flex:1,padding:"10px",background:C.offWhite,color:C.navy,
+                      border:`1px solid ${C.gray}`,borderRadius:10,
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,
+                      cursor:"pointer"}}>Reintentar</button>
+                  <button onClick={()=>setModalRestaurar(false)}
+                    style={{flex:1,padding:"10px",background:"transparent",color:C.navy,
+                      border:`2px solid ${C.navy}`,borderRadius:10,
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,
+                      cursor:"pointer"}}>Cerrar</button>
+                </div>
               </div>
             )}
 
