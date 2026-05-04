@@ -1530,44 +1530,54 @@ function AdminScreen({ user, onLogout }) {
       return d.length === 0 ? "Al día" : d.length + " mes" + (d.length > 1 ? "es" : "") + " adeudado" + (d.length > 1 ? "s" : "");
     };
     const fecha = new Date().toLocaleDateString("es-UY").replace(/\//g, "-");
-    // Generar 3 archivos CSV separados (sin advertencia de formato)
-    const hojas = [
-      {
-        nombre: "jugadores",
-        cols: ["Nombre","CI","Categoría","Nacimiento","Camiseta","Celular","Tipo cuota","Estado","Código"],
-        filas: jugadores.map(j => [
-          j.nombre||"", j.ci||"", j.categoria_id||"",
-          j.fecha_nacimiento||"", j.numero_camiseta||"",
-          j.celular||"", (tiposCuota.find(t => t.id === j.tipo_cuota) || tiposCuota[0]).nombre,
-          getEstado(j), j.id||""
-        ])
-      },
-      {
-        nombre: "pagos",
-        cols: ["Jugador","Categoría","Mes","Año","Monto","Método","Fecha","Pendiente"],
-        filas: pagos.map(p => {
-          const j = jugadores.find(x => x.id === p.jugador_id);
-          return [
-            j?.nombre||"", j?.categoria_id||"",
-            MESES[(p.mes||1)-1], p.año||"", p.monto||"",
-            p.metodo_pago||"", p.fecha_pago||"",
-            p.pendiente_verificacion ? "Sí" : "No"
-          ];
-        })
-      },
-      {
-        nombre: "delegados",
-        cols: ["Nombre","Celular","Email","PIN","Categorías","Estado"],
-        filas: delegados.map(d => [
-          d.nombre||"", d.celular||"", d.mail||"",
-          d.pin||"", (d.categorias||[]).join(", "),
-          d.activo === false ? "Suspendido" : "Activo"
-        ])
-      }
-    ];
-    hojas.forEach(h => {
-      descargarCSV(h.filas, h.cols, `paysandu-baby-${h.nombre}-${fecha}.csv`);
+    // Generar un único CSV con todas las secciones separadas
+    const BOM = "\uFEFF";
+    const sep = ";";
+    const esc = v => `"${String(v||"").replace(/"/g,'""')}"`;
+    const fila = arr => arr.map(esc).join(sep);
+
+    const colsJugs = ["Nombre","CI","Categoría","Nacimiento","Camiseta","Celular","Tipo cuota","Estado","Código"];
+    const filasJugs = jugadores.map(j=>[
+      j.nombre||"", j.ci||"", j.categoria_id||"", j.fecha_nacimiento||"",
+      j.numero_camiseta||"", j.celular||"",
+      (tiposCuota.find(t=>t.id===j.tipo_cuota)||tiposCuota[0]).nombre,
+      getEstado(j), j.id||""
+    ]);
+
+    const colsPags = ["Jugador","Categoría","Mes","Año","Monto","Método","Fecha","Pendiente"];
+    const filasPags = pagos.map(p=>{
+      const j=jugadores.find(x=>x.id===p.jugador_id);
+      return [j?.nombre||"",j?.categoria_id||"",MESES[(p.mes||1)-1],p.año||"",p.monto||"",
+        p.metodo_pago||"",p.fecha_pago||"",p.pendiente_verificacion?"Sí":"No"];
     });
+
+    const colsDels = ["Nombre","Celular","Email","PIN","Categorías","Estado"];
+    const filasDels = delegados.map(d=>[
+      d.nombre||"",d.celular||"",d.mail||"",d.pin||"",
+      (d.categorias||[]).join(", "),d.activo===false?"Suspendido":"Activo"
+    ]);
+
+    const csv = BOM + [
+      "=== JUGADORES ===",
+      fila(colsJugs),
+      ...filasJugs.map(fila),
+      "",
+      "=== PAGOS ===",
+      fila(colsPags),
+      ...filasPags.map(fila),
+      "",
+      "=== DELEGADOS ===",
+      fila(colsDels),
+      ...filasDels.map(fila),
+    ].join("\r\n");
+
+    const b = new Blob([csv],{type:"text/csv;charset=utf-8"});
+    const u = URL.createObjectURL(b);
+    const a = document.createElement("a");
+    a.href = u;
+    a.download = `paysandu-baby-${fecha}.csv`;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(u);
   };
   const [modalRespaldo,  setModalRespaldo]  = useState(false);
   const [respaldoStep,   setRespaldoStep]   = useState("idle"); // idle | generando | listo
