@@ -1352,6 +1352,101 @@ function AdminScreen({ user, onLogout }) {
   const [limpiezaOk,     setLimpiezaOk]     = useState(false);
   const CLAVE_LIMPIEZA  = "PAYSANDU2025"; // clave para operaciones destructivas
 
+  const exportarAlbum = (catFiltro="todos") => {
+    const jugs = catFiltro === "todos"
+      ? jugadores.filter(j => j.estado !== "baja")
+      : jugadores.filter(j => j.estado !== "baja" && j.categoria_id === catFiltro);
+
+    const mesLim = (new Date().getDate() > 10 ? new Date().getMonth()+1 : new Date().getMonth());
+    const getEstado = j => {
+      const d = planPagos.filter(pl => {
+        if (!pl.monto || pl.mes > mesLim) return false;
+        const tc = tiposCuota.find(t => t.id === j.tipo_cuota) || tiposCuota[0];
+        return Math.round(pl.monto * tc.porcentaje / 100) > 0 &&
+          !pagos.find(p => p.jugador_id === j.id && p.mes === pl.mes);
+      });
+      return d.length === 0
+        ? {txt:"Al día", color:"#16a34a", bg:"#dcfce7"}
+        : {txt: d.length + " mes"+(d.length>1?"es":"")+" adeudado"+(d.length>1?"s":""), color:"#dc2626", bg:"#fee2e2"};
+    };
+
+    const silhouette = `<svg viewBox="0 0 24 24" width="64" height="64"><circle cx="12" cy="8" r="4" fill="#a8b8e8"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" fill="#a8b8e8"/></svg>`;
+
+    // Agrupar por categoría
+    const cats = [...new Set(jugs.map(j => j.categoria_id))].sort();
+
+    const secciones = cats.map(cat => {
+      const jugsCat = jugs.filter(j => j.categoria_id === cat);
+      const cards = jugsCat.map(j => {
+        const est = getEstado(j);
+        const tc = (tiposCuota.find(t => t.id === j.tipo_cuota) || tiposCuota[0]).nombre;
+        const foto = j.foto_url
+          ? `<img src="${j.foto_url}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #1e2a6e;display:block;margin:0 auto 8px;"/>`
+          : `<div style="width:80px;height:80px;border-radius:50%;background:#c9d4f0;border:3px solid #a8b8e8;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;">${silhouette}</div>`;
+        return `
+          <div style="background:white;border-radius:12px;padding:16px 12px;text-align:center;
+            box-shadow:0 2px 8px rgba(30,42,110,.1);border:1px solid #e2e2da;
+            display:flex;flex-direction:column;align-items:center;gap:4px;">
+            ${foto}
+            <div style="font-family:'Arial Black',sans-serif;font-weight:900;font-size:13px;
+              color:#1e2a6e;text-transform:uppercase;line-height:1.2;">${j.nombre||""}</div>
+            ${j.ci ? `<div style="font-size:10px;color:#666;">CI: ${j.ci}</div>` : ""}
+            ${j.numero_camiseta ? `<div style="font-size:10px;color:#1e2a6e;">👕 #${j.numero_camiseta}</div>` : ""}
+            <div style="font-size:10px;color:#666;">${tc}</div>
+            <div style="margin-top:4px;padding:2px 8px;border-radius:10px;font-size:10px;
+              font-weight:700;background:${est.bg};color:${est.color};">${est.txt}</div>
+          </div>`;
+      }).join("");
+      return `
+        <div style="margin-bottom:36px;">
+          <div style="background:linear-gradient(135deg,#1e2a6e,#2d3d9a);color:white;
+            padding:10px 20px;border-radius:10px;font-size:18px;font-weight:900;
+            text-transform:uppercase;letter-spacing:.05em;margin-bottom:16px;
+            display:flex;align-items:center;justify-content:space-between;">
+            <span>Categoría ${cat}</span>
+            <span style="font-size:13px;opacity:.8;">${jugsCat.length} jugadores</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;">
+            ${cards}
+          </div>
+        </div>`;
+    }).join("");
+
+    const fecha = new Date().toLocaleDateString("es-UY");
+    const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Álbum Paysandú FC Baby${catFiltro!=="todos"?" — "+catFiltro:""}</title>
+  <style>
+    body{font-family:Arial,sans-serif;background:#f5f5f0;padding:24px;color:#1e2a6e;margin:0;}
+    .header{display:flex;align-items:center;gap:16px;margin-bottom:8px;
+      background:linear-gradient(135deg,#0f1535,#1e2a6e);color:white;
+      padding:16px 24px;border-radius:16px;margin-bottom:24px;}
+    .header h1{margin:0;font-size:22px;text-transform:uppercase;letter-spacing:.05em;}
+    .header .sub{font-size:12px;opacity:.7;margin-top:4px;}
+    .btn{padding:8px 18px;border:none;border-radius:8px;cursor:pointer;
+      font-size:13px;font-weight:700;background:#1e2a6e;color:white;margin-right:8px;}
+    @media print{.btn{display:none;}body{background:white;padding:12px;}}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>⚽ Paysandú FC — Baby Fútbol</h1>
+      <div class="sub">Álbum de jugadores${catFiltro!=="todos"?" — Categoría "+catFiltro:""} · ${jugs.length} jugadores · ${fecha}</div>
+    </div>
+  </div>
+  <div style="margin-bottom:16px;">
+    <button class="btn" onclick="window.print()">🖨 Imprimir</button>
+  </div>
+  ${secciones}
+</body>
+</html>`;
+
+    descargarHTML(html, `album-paysandu-baby${catFiltro!=="todos"?"-"+catFiltro:""}.html`);
+  };
+
   const exportarExcel = () => {
     const mesLim = (new Date().getDate()>10 ? new Date().getMonth()+1 : new Date().getMonth());
     const getEstado = j => {
@@ -2438,7 +2533,7 @@ function AdminScreen({ user, onLogout }) {
                 padding:"10px 12px",marginBottom:14,lineHeight:1.7}}>
                 ✓ Planteles con fotos · ✓ Pagos · ✓ Comprobantes · ✓ Delegados · ✓ Categorías
               </div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:8}}>
                 <button onClick={()=>{setModalRespaldo(true);setRespaldoStep("idle");setRespaldoInfo(null);}}
                   style={{padding:"12px",background:"linear-gradient(135deg,#16a34a,#166534)",
                     color:"white",border:"none",borderRadius:10,cursor:"pointer",
@@ -2456,6 +2551,15 @@ function AdminScreen({ user, onLogout }) {
                   📊 Exportar Excel
                 </button>
               </div>
+              <button onClick={()=>exportarAlbum("todos")}
+                style={{width:"100%",padding:"12px",
+                  background:"linear-gradient(135deg,#7c3aed,#6d28d9)",
+                  color:"white",border:"none",borderRadius:10,cursor:"pointer",
+                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,
+                  textTransform:"uppercase",display:"flex",alignItems:"center",
+                  justifyContent:"center",gap:8}}>
+                📸 Álbum de jugadores con fotos
+              </button>
             </div>
 
             {/* IMPORTAR RESPALDO */}
