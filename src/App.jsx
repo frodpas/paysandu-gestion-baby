@@ -649,9 +649,9 @@ function htmlReporteBase(titulo, subtitulo, colsHTML, rowsHTML, totalHTML="") {
 
 /* ══ RESTAURAR PROGRESO ═══════════════════════════════════════════════ */
 function RestaurarProgreso({ tablas, opts, onLog, log, onDone, onError }) {
-  const [running, setRunning] = React.useState(false);
+  const [running, setRunning] = useState(false);
 
-  React.useEffect(()=>{
+  useEffect(()=>{
     if (running) return;
     setRunning(true);
 
