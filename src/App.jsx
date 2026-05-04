@@ -562,6 +562,31 @@ function LoginScreen({ onLogin }) {
 
 /* ══ VISTA PÚBLICA — ficha del jugador ════════════════════════════════ */
 /* ══ HELPERS REPORTE ════════════════════════════════════════════════ */
+
+function generarXlsxMultihoja(hojas, filename) {
+  // SpreadsheetML — Excel lo abre como .xlsx nativo
+  const esc = s => String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  const sheets = hojas.map(({nombre, cols, filas}) => {
+    const rows = [
+      `<Row>${cols.map(c=>`<Cell><Data ss:Type="String">${esc(c)}</Data></Cell>`).join("")}</Row>`,
+      ...filas.map(f=>`<Row>${f.map(v=>`<Cell><Data ss:Type="String">${esc(v)}</Data></Cell>`).join("")}</Row>`)
+    ].join("");
+    return `<Worksheet ss:Name="${esc(nombre)}"><Table>${rows}</Table></Worksheet>`;
+  }).join("");
+  const xml = `<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+  <Styles><Style ss:ID="s1"><Font ss:Bold="1"/></Style></Styles>
+  ${sheets}
+</Workbook>`;
+  const b = new Blob([xml], {type:"application/vnd.ms-excel;charset=utf-8"});
+  const u = URL.createObjectURL(b);
+  const a = document.createElement("a");
+  a.href = u; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(u);
+}
+
 function descargarHTML(html, filename) {
   const b = new Blob([html], {type:"text/html;charset=utf-8"});
   const u = URL.createObjectURL(b);
@@ -1611,6 +1636,7 @@ function AdminScreen({ user, onLogout }) {
     ["pendientes", "⏳ Pendientes"],
     ["deudores",   "📛 Deudores"],
     ["categorias", "🏷 Categorías"],
+    ["respaldo",   "💾 Respaldo"],
   ];
 
   useEffect(()=>{
@@ -1718,22 +1744,7 @@ function AdminScreen({ user, onLogout }) {
                   alignItems:"center",justifyContent:"center",gap:6,lineHeight:1.2,textAlign:"center"}}>
                 <span style={{fontSize:24}}>📊</span>Reporte jugadores
               </button>
-              <button onClick={()=>{setModalLimpieza(true);setLimpiezaStep(1);setClaveInput("");setLimpiezaErr("");setLimpiezaOk(false);}}
-                style={{width:110,height:80,background:"#fff5f5",color:"#dc2626",
-                  border:"2px solid #fca5a5",borderRadius:12,
-                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:11,
-                  textTransform:"uppercase",cursor:"pointer",display:"flex",flexDirection:"column",
-                  alignItems:"center",justifyContent:"center",gap:6,lineHeight:1.2,textAlign:"center"}}>
-                <span style={{fontSize:24}}>🗑</span>Limpieza anual
-              </button>
-              <button onClick={()=>{setModalRespaldo(true);setRespaldoStep("idle");setRespaldoInfo(null);}}
-                style={{width:110,height:80,background:"#f0fdf4",color:"#16a34a",
-                  border:"2px solid #86efac",borderRadius:12,
-                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:11,
-                  textTransform:"uppercase",cursor:"pointer",display:"flex",flexDirection:"column",
-                  alignItems:"center",justifyContent:"center",gap:6,lineHeight:1.2,textAlign:"center"}}>
-                <span style={{fontSize:24}}>💾</span>Exportar respaldo
-              </button>
+
             </div>
             {/* Filtros categoría — alineados con la tabla */}
             <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
@@ -2353,6 +2364,143 @@ function AdminScreen({ user, onLogout }) {
 
         {!loading&&tab==="categorias"&&(
           <CategoriasTab categorias={categorias} onRefresh={load}/>
+        )}
+
+        {/* ── TAB RESPALDO ── */}
+        {tab==="respaldo"&&(
+          <div style={{maxWidth:540}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
+              color:C.navy,textTransform:"uppercase",marginBottom:20}}>
+              💾 Respaldo y mantenimiento
+            </div>
+
+            {/* EXPORTAR RESPALDO */}
+            <div style={{background:C.white,borderRadius:16,padding:"20px 22px",
+              border:`2px solid #86efac`,marginBottom:16,
+              boxShadow:"0 2px 8px rgba(22,163,74,.1)"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+                <span style={{fontSize:28}}>💾</span>
+                <div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+                    fontSize:16,color:C.navy,textTransform:"uppercase"}}>Exportar respaldo completo</div>
+                  <div style={{fontSize:12,color:C.grayMid}}>Descarga todos los datos en formato Excel</div>
+                </div>
+              </div>
+              <div style={{fontSize:12,color:"#166534",background:"#f0fdf4",borderRadius:8,
+                padding:"10px 12px",marginBottom:14,lineHeight:1.7}}>
+                ✓ Planteles con fotos · ✓ Pagos · ✓ Comprobantes · ✓ Delegados · ✓ Categorías
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                <button onClick={()=>{setModalRespaldo(true);setRespaldoStep("idle");setRespaldoInfo(null);}}
+                  style={{padding:"12px",background:"linear-gradient(135deg,#16a34a,#166534)",
+                    color:"white",border:"none",borderRadius:10,cursor:"pointer",
+                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,
+                    textTransform:"uppercase",display:"flex",alignItems:"center",
+                    justifyContent:"center",gap:8}}>
+                  📥 Exportar JSON
+                </button>
+                <button onClick={()=>exportarExcel()}
+                  style={{padding:"12px",background:"linear-gradient(135deg,#16a34a,#15803d)",
+                    color:"white",border:"none",borderRadius:10,cursor:"pointer",
+                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,
+                    textTransform:"uppercase",display:"flex",alignItems:"center",
+                    justifyContent:"center",gap:8}}>
+                  📊 Exportar Excel
+                </button>
+              </div>
+            </div>
+
+            {/* IMPORTAR RESPALDO */}
+            <div style={{background:C.white,borderRadius:16,padding:"20px 22px",
+              border:`2px solid #93c5fd`,marginBottom:16,
+              boxShadow:"0 2px 8px rgba(37,99,235,.08)"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+                <span style={{fontSize:28}}>📤</span>
+                <div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+                    fontSize:16,color:C.navy,textTransform:"uppercase"}}>Importar respaldo</div>
+                  <div style={{fontSize:12,color:C.grayMid}}>Restaura datos desde un archivo JSON exportado</div>
+                </div>
+              </div>
+              <label style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8,
+                padding:"20px",border:"2px dashed #93c5fd",borderRadius:12,
+                cursor:"pointer",background:"#eff6ff",marginBottom:12}}>
+                <span style={{fontSize:32}}>📁</span>
+                <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                  fontSize:14,color:"#1d4ed8",textTransform:"uppercase"}}>
+                  Elegir archivo de respaldo (.json)
+                </span>
+                <span style={{fontSize:11,color:C.grayMid}}>
+                  Solo archivos generados por este sistema
+                </span>
+                <input type="file" accept=".json" style={{display:"none"}}
+                  onChange={async(e)=>{
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    try {
+                      const txt = await file.text();
+                      const data = JSON.parse(txt);
+                      if (!data.datos?.jugadores) {
+                        alert("❌ El archivo no es un respaldo válido de este sistema.");
+                        return;
+                      }
+                      const res = data.resumen;
+                      const ok = confirm(
+                        `📋 Respaldo del ${new Date(data.fecha).toLocaleDateString("es-UY")}\n\n` +
+                        `· ${res.jugadores} jugadores\n` +
+                        `· ${res.pagos} registros de pago\n` +
+                        `· ${res.pendientes} formularios pendientes\n` +
+                        `· ${res.delegados} delegados\n\n` +
+                        `⚠️ ATENCIÓN: Esto reemplazará todos los datos actuales.\n¿Continuar?`
+                      );
+                      if (!ok) return;
+                      const clave = prompt("Ingresá la clave de administrador:");
+                      if (clave !== "PAYSANDU2025") {
+                        alert("❌ Clave incorrecta");
+                        return;
+                      }
+                      alert("ℹ️ Restauración en desarrollo. Por ahora usá el respaldo JSON solo como consulta.");
+                    } catch(err) {
+                      alert("❌ Error al leer el archivo: " + err.message);
+                    }
+                    e.target.value = "";
+                  }}/>
+              </label>
+              <div style={{fontSize:11,color:"#1d4ed8",background:"#eff6ff",borderRadius:8,
+                padding:"8px 12px",lineHeight:1.6}}>
+                💡 El archivo JSON se puede abrir en Excel: <br/>
+                <strong>Datos → Obtener datos → Desde archivo → Desde JSON</strong>
+              </div>
+            </div>
+
+            {/* LIMPIEZA ANUAL */}
+            <div style={{background:C.white,borderRadius:16,padding:"20px 22px",
+              border:"2px solid #fca5a5",
+              boxShadow:"0 2px 8px rgba(220,38,38,.08)"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+                <span style={{fontSize:28}}>🗑</span>
+                <div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+                    fontSize:16,color:"#dc2626",textTransform:"uppercase"}}>Limpieza anual</div>
+                  <div style={{fontSize:12,color:C.grayMid}}>Libera espacio eliminando comprobantes viejos</div>
+                </div>
+              </div>
+              <div style={{fontSize:12,color:"#7f1d1d",background:"#fff5f5",borderRadius:8,
+                padding:"10px 12px",marginBottom:12,lineHeight:1.6}}>
+                ⚠️ Elimina fotos de comprobantes de transferencia.<br/>
+                Los registros de pago y fotos de jugadores <strong>no se tocan</strong>.<br/>
+                <strong>Realizar DESPUÉS de exportar el respaldo.</strong>
+              </div>
+              <button onClick={()=>{setModalLimpieza(true);setLimpiezaStep(1);setClaveInput("");setLimpiezaErr("");setLimpiezaOk(false);}}
+                style={{width:"100%",padding:"12px",
+                  background:"linear-gradient(135deg,#dc2626,#b91c1c)",
+                  color:"white",border:"none",borderRadius:10,cursor:"pointer",
+                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,
+                  textTransform:"uppercase"}}>
+                🗑 Iniciar limpieza anual
+              </button>
+            </div>
+          </div>
         )}
       </div>{/* fin contenido principal */}
       </div>{/* fin layout sidebar+contenido */}
