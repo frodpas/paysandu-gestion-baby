@@ -722,7 +722,7 @@ function PublicoView({ user, onLogout }) {
   const [tipoMetodo, setTipoMetodo] = useState(null); // "transferencia"
   const [comprobante, setComprobante] = useState(null); // base64
   const [notaTransf, setNotaTransf] = useState("");
-  const [configPago, setConfigPago] = useState({});
+  const [configPago, setConfigPago] = useState(null); // null = cargando, {} = sin datos
 
   const añoActual = new Date().getFullYear();
 
@@ -735,7 +735,8 @@ function PublicoView({ user, onLogout }) {
       ]);
       setPagos(p||[]);
       setPlan(pl||[]);
-      if (cfg&&cfg.length>0) setConfigPago(cfg[0]);
+      // cfg puede tener las columnas viejas (cbu, alias) o las nuevas (numero_cuenta, nombre_banco)
+      setConfigPago(cfg&&cfg.length>0 ? cfg[0] : {});
     };
     load();
   },[jug.id]);
@@ -936,7 +937,11 @@ function PublicoView({ user, onLogout }) {
           <div style={{padding:"16px 20px",maxHeight:"80dvh",overflowY:"auto"}}>
 
             {/* DATOS BANCARIOS — siempre visibles arriba */}
-            {(configPago.numero_cuenta||configPago.cbu||configPago.nombre_banco||configPago.alias||configPago.nombre_club)&&(
+            {configPago===null ? (
+              <div style={{background:"#eff6ff",borderRadius:12,padding:"12px 14px",
+                marginBottom:16,border:"2px solid #bfdbfe",textAlign:"center",
+                color:"#64748b",fontSize:13}}>⏳ Cargando datos bancarios...</div>
+            ) : (configPago.numero_cuenta||configPago.cbu||configPago.nombre_banco||configPago.alias||configPago.nombre_club||configPago.instrucciones_pago) ? (
               <div style={{background:"#eff6ff",borderRadius:12,padding:"10px 14px",
                 marginBottom:16,border:"2px solid #bfdbfe"}}>
                 <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:12,
@@ -988,7 +993,7 @@ function PublicoView({ user, onLogout }) {
                   </div>
                 )}
               </div>
-            )}
+            ) : null}
 
             {/* PASO 1: MESES */}
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
@@ -3861,16 +3866,25 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
   filtCat, setFiltCat, onRegistrarPago, añoActual, onTransfRep }) {
   const [selJug,    setSelJug]   = useState(null);
   const [verHistorial, setVerHistorial] = useState(null);
-  const [selMeses,  setSelMeses] = useState([]); // múltiples meses
+  const [selMeses,  setSelMeses] = useState([]); // meses a PAGAR
+  const [exemMeses, setExemMeses] = useState([]); // meses a EXIMIR
+  const [mostrarTodos, setMostrarTodos] = useState(false); // ver todos los meses
   const [verReporte, setVerReporte] = useState(false);
   const [reporteCat, setReporteCat] = useState("todos");
   const [metodo,    setMetodo]   = useState(null);
   const [saving,    setSaving]   = useState(false);
   const [done,      setDone]     = useState(false);
+  const [modoAccion, setModoAccion] = useState("pagar"); // "pagar" | "eximir"
 
-  const toggleMes = (mes) => setSelMeses(prev =>
-    prev.includes(mes) ? prev.filter(m=>m!==mes) : [...prev, mes]
-  );
+  const toggleMes = (mes) => {
+    if (modoAccion==="pagar") {
+      setSelMeses(prev => prev.includes(mes) ? prev.filter(m=>m!==mes) : [...prev, mes]);
+      setExemMeses(prev => prev.filter(m=>m!==mes));
+    } else {
+      setExemMeses(prev => prev.includes(mes) ? prev.filter(m=>m!==mes) : [...prev, mes]);
+      setSelMeses(prev => prev.filter(m=>m!==mes));
+    }
+  };
   const totalSeleccionado = selJug
     ? selMeses.reduce((acc,mes)=>acc+cuotaMes(selJug,mes),0) : 0;
 
@@ -3897,13 +3911,20 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
   };
 
   const confirmar = async () => {
-    if (!selJug||selMeses.length===0||!metodo) return;
+    if (!selJug) return;
+    if (modoAccion==="pagar" && (selMeses.length===0||!metodo)) return;
+    if (modoAccion==="eximir" && exemMeses.length===0) return;
     setSaving(true);
+    // Registrar pagos normales
     for (const mes of selMeses) {
       await onRegistrarPago(selJug.id, mes, cuotaMes(selJug,mes), metodo);
     }
+    // Registrar meses eximidos (monto 0, metodo "exento")
+    for (const mes of exemMeses) {
+      await onRegistrarPago(selJug.id, mes, 0, "exento");
+    }
     setSaving(false); setDone(true);
-    setTimeout(()=>{setDone(false);setSelJug(null);setSelMeses([]);setMetodo(null);},2500);
+    setTimeout(()=>{setDone(false);setSelJug(null);setSelMeses([]);setExemMeses([]);setMetodo(null);setModoAccion("pagar");setMostrarTodos(false);},2500);
   };
 
   // Ordenar jugadores: por categoría luego alfabético
@@ -4122,60 +4143,121 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
               </div>
             ):(
               <>
+                {/* MODO: Pagar vs Eximir */}
+                <div style={{display:"flex",gap:6,marginBottom:12,background:"#f1f5f9",
+                  borderRadius:10,padding:4}}>
+                  {[["pagar","💳 Registrar pago"],["eximir","🚫 Eximir meses"]].map(([m,lbl])=>(
+                    <button key={m} onClick={()=>{setModoAccion(m);setSelMeses([]);setExemMeses([]);}}
+                      style={{flex:1,padding:"8px 6px",borderRadius:8,border:"none",cursor:"pointer",
+                        fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:12,
+                        textTransform:"uppercase",
+                        background:modoAccion===m?(m==="eximir"?"#dc2626":C.navy):"transparent",
+                        color:modoAccion===m?"white":C.grayMid}}>
+                      {lbl}
+                    </button>
+                  ))}
+                </div>
+
+                {modoAccion==="eximir"&&(
+                  <div style={{background:"#fef2f2",borderRadius:10,padding:"8px 12px",
+                    marginBottom:12,border:"1px solid #fecaca",fontSize:12,color:"#7f1d1d",lineHeight:1.5}}>
+                    <strong>Eximir meses</strong>: marcá los meses anteriores al ingreso del jugador para que no aparezcan como deuda. Se registran con monto $0.
+                  </div>
+                )}
+
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
-                    color:C.navy,textTransform:"uppercase"}}>Seleccioná los meses a pagar</div>
-                  {selMeses.length>0&&<div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
-                    fontSize:14,color:C.green}}>Total: {fmt(totalSeleccionado)}</div>}
+                    color:C.navy,textTransform:"uppercase"}}>
+                    {modoAccion==="eximir" ? "Seleccioná meses a eximir" : "Seleccioná meses a pagar"}
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    {selMeses.length>0&&modoAccion==="pagar"&&<div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+                      fontSize:14,color:C.green}}>Total: {fmt(totalSeleccionado)}</div>}
+                    <button onClick={()=>setMostrarTodos(p=>!p)}
+                      style={{background:"none",border:`1px solid ${C.gray}`,borderRadius:6,
+                        padding:"3px 8px",fontSize:11,cursor:"pointer",color:C.grayMid,
+                        fontFamily:"'Barlow Condensed',sans-serif",fontWeight:600}}>
+                      {mostrarTodos?"Solo pendientes":"Ver todos"}
+                    </button>
+                  </div>
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:16}}>
                   {MESES.map((_,i)=>{
                     const mes=i+1;
                     const monto=cuotaMes(selJug,mes);
                     const pago=pagoJugMes(selJug.id,mes);
-                    if(monto===0||pago) return null;
-                    if(mes>mesActual+1) return null;
-                    const sel=selMeses.includes(mes);
+                    // Sin cuota y no mostrar todos → skip
+                    if(monto===0&&!mostrarTodos) return null;
+                    // Ya pagado → mostrar como pagado (no seleccionable)
+                    if(pago) return(
+                      <div key={mes} style={{padding:"10px 4px",borderRadius:8,
+                        background:"#dcfce7",border:"2px solid #86efac",
+                        textAlign:"center",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
+                        color:"#16a34a"}}>
+                        <div>{MESES[i].slice(0,3)}</div>
+                        <div style={{fontSize:10,fontWeight:600}}>
+                          {pago.metodo_pago==="exento"?"Exento":"✓ Pago"}
+                        </div>
+                      </div>
+                    );
+                    // Filtro meses futuros solo en modo pagar y sin mostrar todos
+                    if(!mostrarTodos&&modoAccion==="pagar"&&mes>mesActual+1) return null;
+                    const selP=selMeses.includes(mes);
+                    const selE=exemMeses.includes(mes);
+                    const isSelected=selP||selE;
                     return(
                       <button key={mes} onClick={()=>toggleMes(mes)}
                         style={{padding:"10px 4px",borderRadius:8,
-                          border:`2px solid ${sel?C.green:C.gray}`,
-                          background:sel?"#dcfce7":C.white,cursor:"pointer",
+                          border:`2px solid ${selE?"#dc2626":selP?C.green:C.gray}`,
+                          background:selE?"#fee2e2":selP?"#dcfce7":C.white,cursor:"pointer",
                           fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
-                          color:sel?"#16a34a":C.navy,position:"relative"}}>
-                        {sel&&<span style={{position:"absolute",top:3,right:5,fontSize:10}}>✓</span>}
+                          color:selE?"#dc2626":selP?"#16a34a":C.navy,position:"relative"}}>
+                        {isSelected&&<span style={{position:"absolute",top:3,right:5,fontSize:10}}>✓</span>}
                         <div>{MESES[i].slice(0,3)}</div>
-                        <div style={{fontWeight:900,fontSize:13}}>{fmt(monto)}</div>
+                        <div style={{fontWeight:900,fontSize:13}}>{monto>0?fmt(monto):"—"}</div>
                       </button>
                     );
                   })}
                 </div>
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
-                  color:C.navy,textTransform:"uppercase",marginBottom:8}}>Medio de pago</div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:16}}>
-                  {PAY_METHODS.map(pm=>(
-                    <button key={pm.id} onClick={()=>setMetodo(pm.id)}
-                      style={{padding:"10px 6px",borderRadius:10,border:`2px solid ${metodo===pm.id?pm.color:C.gray}`,
-                        background:metodo===pm.id?pm.color+"18":C.white,cursor:"pointer",
-                        fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
-                        color:metodo===pm.id?pm.color:C.navy,display:"flex",flexDirection:"column",
-                        alignItems:"center",gap:3}}>
-                      <span style={{fontSize:18}}>{pm.icon}</span>{pm.label}
-                    </button>
-                  ))}
-                </div>
+
+                {/* Método de pago — solo en modo pagar */}
+                {modoAccion==="pagar"&&(
+                  <>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
+                      color:C.navy,textTransform:"uppercase",marginBottom:8}}>Medio de pago</div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:16}}>
+                      {PAY_METHODS.map(pm=>(
+                        <button key={pm.id} onClick={()=>setMetodo(pm.id)}
+                          style={{padding:"10px 6px",borderRadius:10,border:`2px solid ${metodo===pm.id?pm.color:C.gray}`,
+                            background:metodo===pm.id?pm.color+"18":C.white,cursor:"pointer",
+                            fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
+                            color:metodo===pm.id?pm.color:C.navy,display:"flex",flexDirection:"column",
+                            alignItems:"center",gap:3}}>
+                          <span style={{fontSize:18}}>{pm.icon}</span>{pm.label}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+
                 <div style={{display:"flex",gap:8}}>
                   <button onClick={()=>setSelJug(null)}
                     style={{flex:1,padding:"10px",background:"transparent",color:C.navy,
                       border:`2px solid ${C.navy}`,borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
                       fontWeight:700,fontSize:13,textTransform:"uppercase"}}>Cancelar</button>
-                  <button onClick={confirmar} disabled={selMeses.length===0||!metodo||saving}
+                  <button onClick={confirmar}
+                    disabled={(modoAccion==="pagar"&&(selMeses.length===0||!metodo))||(modoAccion==="eximir"&&exemMeses.length===0)||saving}
                     style={{flex:2,padding:"10px",
-                      background:selMeses.length>0&&metodo?`linear-gradient(135deg,${C.green},#15803d)`:"#e2e2da",
-                      color:selMeses.length>0&&metodo?C.white:C.grayMid,border:"none",borderRadius:10,
+                      background:(modoAccion==="pagar"&&selMeses.length>0&&metodo)||(modoAccion==="eximir"&&exemMeses.length>0)
+                        ?(modoAccion==="eximir"?"linear-gradient(135deg,#dc2626,#b91c1c)":`linear-gradient(135deg,${C.green},#15803d)`):"#e2e2da",
+                      color:(modoAccion==="pagar"&&selMeses.length>0&&metodo)||(modoAccion==="eximir"&&exemMeses.length>0)?C.white:C.grayMid,
+                      border:"none",borderRadius:10,
                       fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,
                       textTransform:"uppercase"}}>
-                    {saving?"⏳ Guardando...":`✅ Confirmar ${selMeses.length>1?"("+selMeses.length+" meses)":""}`}
+                    {saving?"⏳ Guardando...":
+                      modoAccion==="eximir"
+                        ?`🚫 Eximir ${exemMeses.length>0?"("+exemMeses.length+" meses)":""}`
+                        :`✅ Confirmar ${selMeses.length>1?"("+selMeses.length+" meses)":""}`}
                   </button>
                 </div>
               </>
