@@ -881,273 +881,234 @@ function PublicoView({ user, onLogout }) {
           </div>
         </div>
 
-        {/* Estado pagos */}
+        {/* ── DATOS BANCARIOS (siempre visibles) ── */}
+        {configPago===null ? (
+          <div style={{background:"#eff6ff",borderRadius:14,padding:"12px 16px",
+            marginBottom:16,border:"2px solid #bfdbfe",textAlign:"center",color:"#64748b",fontSize:13}}>
+            ⏳ Cargando datos bancarios...
+          </div>
+        ) : (configPago.numero_cuenta||configPago.cbu||configPago.nombre_banco||configPago.alias||configPago.nombre_club||configPago.instrucciones_pago) ? (
+          <div style={{background:"linear-gradient(135deg,#1e3a8a,#1e40af)",borderRadius:14,
+            padding:"14px 16px",marginBottom:16,border:"2px solid #3b82f6"}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,
+              color:"white",textTransform:"uppercase",marginBottom:10,letterSpacing:".05em"}}>
+              🏦 Datos y procedimiento para realizar los pagos
+            </div>
+            {/* Datos en grid */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:8}}>
+              {(configPago.numero_cuenta||configPago.cbu)&&(
+                <div style={{background:"rgba(255,255,255,.15)",borderRadius:8,padding:"8px 10px"}}>
+                  <div style={{fontSize:9,color:"rgba(255,255,255,.6)",textTransform:"uppercase",fontWeight:700,marginBottom:2}}>
+                    {configPago.numero_cuenta?"N° Cuenta":"CBU"}
+                  </div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
+                    color:"white",wordBreak:"break-all"}}>
+                    {configPago.numero_cuenta||configPago.cbu}
+                  </div>
+                </div>
+              )}
+              {(configPago.nombre_banco||configPago.alias)&&(
+                <div style={{background:"rgba(255,255,255,.15)",borderRadius:8,padding:"8px 10px"}}>
+                  <div style={{fontSize:9,color:"rgba(255,255,255,.6)",textTransform:"uppercase",fontWeight:700,marginBottom:2}}>
+                    {configPago.nombre_banco?"Banco":"Alias"}
+                  </div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
+                    color:"white"}}>
+                    {configPago.nombre_banco||configPago.alias}
+                  </div>
+                </div>
+              )}
+              {configPago.sucursal&&(
+                <div style={{background:"rgba(255,255,255,.15)",borderRadius:8,padding:"8px 10px",gridColumn:"span 2"}}>
+                  <div style={{fontSize:9,color:"rgba(255,255,255,.6)",textTransform:"uppercase",fontWeight:700,marginBottom:2}}>Sucursal</div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,color:"white"}}>
+                    {configPago.sucursal}
+                  </div>
+                </div>
+              )}
+              {configPago.nombre_club&&(
+                <div style={{background:"rgba(255,255,255,.15)",borderRadius:8,padding:"8px 10px",gridColumn:"span 2"}}>
+                  <div style={{fontSize:9,color:"rgba(255,255,255,.6)",textTransform:"uppercase",fontWeight:700,marginBottom:2}}>A nombre de</div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,color:"white"}}>
+                    {configPago.nombre_club}
+                  </div>
+                </div>
+              )}
+            </div>
+            {/* Instrucciones */}
+            <div style={{background:"rgba(255,255,255,.1)",borderRadius:8,padding:"8px 10px",
+              fontSize:11,color:"rgba(255,255,255,.85)",lineHeight:1.6}}>
+              {configPago.instrucciones_pago
+                ? <span>📝 {configPago.instrucciones_pago}</span>
+                : <><span>1. Realizá la transferencia al número de cuenta indicado.</span><br/>
+                   <span>2. Seleccioná los meses a pagar abajo y apretá <strong>"Registrar Pago"</strong>.</span><br/>
+                   <span>3. Adjuntá la foto del comprobante.</span></>
+              }
+            </div>
+          </div>
+        ) : null}
+
+        {/* ── PAGOS DEL AÑO ── */}
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:16,
           color:C.navy,textTransform:"uppercase",marginBottom:10}}>Pagos {añoActual}</div>
+
+        {/* Grilla de meses — seleccionable directamente */}
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
           {MESES.map((m,i)=>{
             const mes=i+1;
             const monto=cuotaMes(mes);
             const pago=pagoMes(mes);
+            const sel=selectedMeses.includes(mes);
             if (monto===0) return(
-              <div key={mes} style={{background:C.offWhite,borderRadius:10,padding:"8px 10px",textAlign:"center",opacity:.5}}>
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:11,color:C.grayMid}}>{m}</div>
+              <div key={mes} style={{background:C.offWhite,borderRadius:10,padding:"8px 10px",
+                textAlign:"center",opacity:.45}}>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                  fontSize:11,color:C.grayMid}}>{m}</div>
                 <div style={{fontSize:10,color:C.grayMid}}>Sin cuota</div>
               </div>
             );
-            return(
-              <div key={mes} style={{background:pago?"#f0fdf4":C.white,borderRadius:10,padding:"8px 10px",
-                textAlign:"center",border:`1px solid ${pago?"#86efac":C.gray}`}}>
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:11,
-                  color:pago?C.green:C.navy}}>{m}</div>
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,
-                  color:pago?C.green:C.navy}}>{fmt(monto)}</div>
-                <div style={{fontSize:9,marginTop:2,
-                  color:pago?"#16a34a":"#d97706",fontWeight:700,textTransform:"uppercase"}}>
-                  {pago?"✓ Pagado":"Pendiente"}
+            if (pago) return(
+              <div key={mes} style={{background:"#f0fdf4",borderRadius:10,padding:"8px 10px",
+                textAlign:"center",border:"1px solid #86efac"}}>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                  fontSize:11,color:C.green}}>{m}</div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+                  fontSize:13,color:C.green}}>{fmt(monto)}</div>
+                <div style={{fontSize:9,marginTop:2,color:"#16a34a",fontWeight:700,textTransform:"uppercase"}}>
+                  {pago.metodo_pago==="exento"?"Exento":"✓ Pagado"}
                 </div>
               </div>
+            );
+            // Mes pendiente — SELECCIONABLE directamente
+            return(
+              <button key={mes} onClick={()=>!tipoMetodo&&toggleMesPub(mes)}
+                style={{padding:"8px 10px",borderRadius:10,textAlign:"center",
+                  border:`2px solid ${sel?"#16a34a":"#e2e8f0"}`,
+                  background:sel?"#dcfce7":C.white,
+                  cursor:tipoMetodo?"default":"pointer",position:"relative",
+                  boxShadow:sel?"0 0 0 2px #bbf7d0":"none"}}>
+                {sel&&<span style={{position:"absolute",top:3,right:6,fontSize:10,color:"#16a34a"}}>✓</span>}
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                  fontSize:11,color:sel?"#16a34a":C.navy}}>{m}</div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+                  fontSize:13,color:sel?"#16a34a":C.navy}}>{fmt(monto)}</div>
+                <div style={{fontSize:9,marginTop:2,
+                  color:sel?"#16a34a":"#d97706",fontWeight:700,textTransform:"uppercase"}}>
+                  {sel?"Seleccionado":"Pendiente"}
+                </div>
+              </button>
             );
           })}
         </div>
 
-        {/* Botón pagar */}
-        {mesesConDeuda().length>0&&(
-          <button onClick={()=>setModal("pagar")}
-            style={{width:"100%",padding:"14px",background:`linear-gradient(135deg,${C.green},#15803d)`,
-              color:C.white,border:"none",borderRadius:12,fontFamily:"'Barlow Condensed',sans-serif",
-              fontWeight:900,fontSize:18,textTransform:"uppercase"}}>
-            💳 Registrar Pago
+        {/* ── SECCIÓN PAGO INLINE (aparece al seleccionar meses) ── */}
+        {mesesConDeuda().length>0&&!tipoMetodo&&(
+          <button
+            onClick={()=>selectedMeses.length>0&&setTipoMetodo("transferencia")}
+            disabled={selectedMeses.length===0}
+            style={{width:"100%",padding:"14px",border:"none",borderRadius:12,
+              background:selectedMeses.length>0
+                ?`linear-gradient(135deg,${C.green},#15803d)`:"#e2e8f0",
+              color:selectedMeses.length>0?C.white:"#94a3b8",
+              fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:17,
+              textTransform:"uppercase",marginBottom:16,
+              transition:"background .2s"}}>
+            {selectedMeses.length===0
+              ? "← Seleccioná los meses a pagar"
+              : `💳 Registrar Pago${selectedMeses.length>1?" ("+selectedMeses.length+" meses)":""} — ${fmt(totalPub)}`}
           </button>
         )}
-      </div>
 
-      {/* Modal pago */}
-      {modal==="pagar"&&(
-        <Modal onClose={resetModal} maxWidth={500}>
-          <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"16px 20px",
-            display:"flex",alignItems:"center",gap:10}}>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,
-              color:C.white,textTransform:"uppercase",flex:1}}>💳 Registrar Pago</div>
-            {selectedMeses.length>0&&(
-              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
-                color:C.gold}}>{fmt(totalPub)}</div>
-            )}
-          </div>
-          <div style={{padding:"16px 20px",maxHeight:"80dvh",overflowY:"auto"}}>
-
-            {/* DATOS BANCARIOS — siempre visibles arriba */}
-            {configPago===null ? (
-              <div style={{background:"#eff6ff",borderRadius:12,padding:"12px 14px",
-                marginBottom:16,border:"2px solid #bfdbfe",textAlign:"center",
-                color:"#64748b",fontSize:13}}>⏳ Cargando datos bancarios...</div>
-            ) : (configPago.numero_cuenta||configPago.cbu||configPago.nombre_banco||configPago.alias||configPago.nombre_club||configPago.instrucciones_pago) ? (
-              <div style={{background:"#eff6ff",borderRadius:12,padding:"10px 14px",
-                marginBottom:16,border:"2px solid #bfdbfe"}}>
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:12,
-                  color:"#1d4ed8",textTransform:"uppercase",marginBottom:8}}>
-                  🏦 Datos para la transferencia
-                </div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-                  {(configPago.numero_cuenta||configPago.cbu)&&(
-                    <div style={{background:"white",borderRadius:8,padding:"7px 10px",border:"1px solid #dbeafe"}}>
-                      <div style={{fontSize:9,color:"#64748b",textTransform:"uppercase",fontWeight:700,marginBottom:2}}>
-                        {configPago.numero_cuenta ? "N° Cuenta" : "CBU"}
-                      </div>
-                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:12,
-                        color:"#1e2a6e",wordBreak:"break-all"}}>
-                        {configPago.numero_cuenta||configPago.cbu}
-                      </div>
-                    </div>
-                  )}
-                  {(configPago.nombre_banco||configPago.alias)&&(
-                    <div style={{background:"white",borderRadius:8,padding:"7px 10px",border:"1px solid #dbeafe"}}>
-                      <div style={{fontSize:9,color:"#64748b",textTransform:"uppercase",fontWeight:700,marginBottom:2}}>
-                        {configPago.nombre_banco ? "Banco" : "Alias"}
-                      </div>
-                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
-                        color:"#1e2a6e"}}>
-                        {configPago.nombre_banco||configPago.alias}
-                      </div>
-                    </div>
-                  )}
-                  {configPago.sucursal&&(
-                    <div style={{background:"white",borderRadius:8,padding:"7px 10px",border:"1px solid #dbeafe",gridColumn:"span 2"}}>
-                      <div style={{fontSize:9,color:"#64748b",textTransform:"uppercase",fontWeight:700,marginBottom:2}}>Sucursal</div>
-                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
-                        color:"#1e2a6e"}}>{configPago.sucursal}</div>
-                    </div>
-                  )}
-                  {configPago.nombre_club&&(
-                    <div style={{background:"white",borderRadius:8,padding:"7px 10px",border:"1px solid #dbeafe",gridColumn:"span 2"}}>
-                      <div style={{fontSize:9,color:"#64748b",textTransform:"uppercase",fontWeight:700,marginBottom:2}}>A nombre de</div>
-                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
-                        color:"#1e2a6e"}}>{configPago.nombre_club}</div>
-                    </div>
-                  )}
-                </div>
-                {configPago.instrucciones_pago&&(
-                  <div style={{marginTop:8,fontSize:11,color:"#374151",fontStyle:"italic",
-                    background:"white",borderRadius:8,padding:"6px 10px",border:"1px solid #dbeafe"}}>
-                    📝 {configPago.instrucciones_pago}
-                  </div>
-                )}
-              </div>
-            ) : null}
-
-            {/* PASO 1: MESES */}
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
-              color:C.navy,textTransform:"uppercase",marginBottom:8}}>
-              {tipoMetodo ? "Meses seleccionados" : "Seleccioná los meses a pagar"}
+        {/* ── FORMULARIO COMPROBANTE (inline, no modal) ── */}
+        {tipoMetodo==="transferencia"&&(
+          <div style={{background:C.white,borderRadius:14,border:"2px solid #bae6fd",
+            padding:"16px",marginBottom:16}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:15,
+              color:"#0369a1",textTransform:"uppercase",marginBottom:12}}>
+              📤 Adjuntá el comprobante
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:18}}>
-              {mesesConDeuda().map(mes=>{
-                const sel=selectedMeses.includes(mes);
-                return(
-                  <button key={mes} onClick={()=>!tipoMetodo&&toggleMesPub(mes)}
-                    style={{padding:"9px 5px",borderRadius:10,position:"relative",
-                      border:`2px solid ${sel?"#16a34a":C.gray}`,
-                      background:sel?"#dcfce7":C.white,
-                      cursor:tipoMetodo?"default":"pointer",
-                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
-                      color:sel?"#16a34a":C.navy,opacity:tipoMetodo&&!sel?.4:1}}>
-                    {sel&&<span style={{position:"absolute",top:2,right:4,fontSize:9}}>✓</span>}
-                    <div>{MESES[mes-1].slice(0,3)}</div>
-                    <div style={{fontWeight:900,fontSize:14}}>{fmt(cuotaMes(mes))}</div>
-                  </button>
-                );
-              })}
+            {/* Monto resumen */}
+            <div style={{background:"#eff6ff",borderRadius:8,padding:"10px 14px",marginBottom:12,
+              display:"flex",justifyContent:"space-between",alignItems:"center",border:"1px solid #bfdbfe"}}>
+              <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,color:C.navy}}>
+                Meses: {selectedMeses.map(m=>MESES[m-1].slice(0,3)).join(", ")}
+              </span>
+              <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,color:"#0369a1"}}>
+                {fmt(totalPub)}
+              </span>
             </div>
-
-            {/* PASO 2: BOTÓN CONTINUAR (antes de mostrar el formulario de transferencia) */}
-            {!tipoMetodo&&(
-              <div style={{display:"flex",gap:8}}>
-                <button onClick={resetModal}
-                  style={{flex:1,padding:"11px",background:"transparent",color:C.navy,
-                    border:`2px solid ${C.navy}`,borderRadius:10,
-                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
-                    fontSize:13,textTransform:"uppercase"}}>Cancelar</button>
-                <button
-                  onClick={()=>selectedMeses.length>0&&setTipoMetodo("transferencia")}
-                  disabled={selectedMeses.length===0}
-                  style={{flex:2,padding:"11px",border:"none",borderRadius:10,
-                    background:selectedMeses.length>0
-                      ?"linear-gradient(135deg,#0ea5e9,#0369a1)":"#e2e2da",
-                    color:selectedMeses.length>0?C.white:C.grayMid,
-                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
-                    fontSize:14,textTransform:"uppercase",cursor:selectedMeses.length>0?"pointer":"not-allowed"}}>
-                  {selectedMeses.length===0?"Seleccioná al menos un mes":"Continuar →"}
+            {/* Detalle opcional */}
+            <textarea value={notaTransf} onChange={e=>setNotaTransf(e.target.value)}
+              placeholder={`Ej: ${selectedMeses.map(m=>MESES[m-1]).join(", ")} — ${jug.nombre}`}
+              rows={2}
+              style={{width:"100%",padding:"8px 10px",borderRadius:8,marginBottom:10,
+                border:`1px solid ${C.gray}`,fontSize:13,fontFamily:"'Barlow',sans-serif",
+                resize:"none",outline:"none",boxSizing:"border-box"}}/>
+            {/* Foto */}
+            {comprobante?(
+              <div style={{textAlign:"center",marginBottom:12}}>
+                <img src={comprobante} style={{maxWidth:"100%",maxHeight:200,borderRadius:10,
+                  border:"2px solid #0ea5e9"}}/>
+                <button onClick={()=>setComprobante(null)}
+                  style={{display:"block",margin:"6px auto 0",background:"none",border:"none",
+                    color:"#dc2626",fontSize:12,cursor:"pointer",fontWeight:600}}>
+                  ✕ Cambiar foto
                 </button>
               </div>
+            ):(
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+                <label style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,
+                  padding:"16px 8px",border:"2px dashed #0ea5e9",borderRadius:12,
+                  cursor:"pointer",background:"#f0f9ff",textAlign:"center"}}>
+                  <span style={{fontSize:28}}>📸</span>
+                  <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                    fontSize:12,color:C.navy,textTransform:"uppercase"}}>Sacar foto</span>
+                  <span style={{fontSize:10,color:C.grayMid}}>Cámara</span>
+                  <input type="file" accept="image/*" capture="environment"
+                    style={{display:"none"}} onChange={handleComprobante}/>
+                </label>
+                <label style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,
+                  padding:"16px 8px",border:`2px dashed ${C.gray}`,borderRadius:12,
+                  cursor:"pointer",background:C.offWhite,textAlign:"center"}}>
+                  <span style={{fontSize:28}}>📁</span>
+                  <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                    fontSize:12,color:C.navy,textTransform:"uppercase"}}>Adjuntar</span>
+                  <span style={{fontSize:10,color:C.grayMid}}>Galería / archivo</span>
+                  <input type="file" accept="image/*"
+                    style={{display:"none"}} onChange={handleComprobante}/>
+                </label>
+              </div>
             )}
-
-            {/* ── PASO 2: SECCIÓN TRANSFERENCIA ── */}
-            {tipoMetodo==="transferencia"&&(
-              <>
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
-                  color:C.navy,textTransform:"uppercase",marginBottom:8}}>Adjuntá el comprobante</div>
-                <div style={{background:"#f0f9ff",borderRadius:14,padding:14,
-                  border:"1px solid #bae6fd",marginBottom:14}}>
-                  {/* Monto resumen */}
-                  <div style={{background:"white",borderRadius:8,padding:"8px 12px",marginBottom:12,
-                    border:"1px solid #bae6fd",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,color:C.navy}}>
-                      💰 Monto a transferir
-                    </span>
-                    <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,color:"#0369a1"}}>
-                      {fmt(totalPub)}
-                    </span>
-                  </div>
-                  {/* Nota / detalle */}
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:11,
-                    color:C.navy,textTransform:"uppercase",marginBottom:5}}>
-                    Detalle (opcional)
-                  </div>
-                  <textarea value={notaTransf}
-                    onChange={e=>setNotaTransf(e.target.value)}
-                    placeholder={`Ej: ${selectedMeses.map(m=>MESES[m-1]).join(", ")} — ${jug.nombre}`}
-                    rows={2}
-                    style={{width:"100%",padding:"8px 10px",borderRadius:8,
-                      border:`1px solid ${C.gray}`,fontSize:13,fontFamily:"'Barlow',sans-serif",
-                      resize:"none",outline:"none",marginBottom:10}}/>
-                  {/* Foto comprobante */}
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:11,
-                    color:C.navy,textTransform:"uppercase",marginBottom:6}}>
-                    📸 Foto del comprobante *
-                  </div>
-                  {comprobante?(
-                    <div style={{textAlign:"center",marginBottom:8}}>
-                      <img src={comprobante} style={{maxWidth:"100%",maxHeight:180,borderRadius:10,
-                        border:`2px solid #0ea5e9`}}/>
-                      <button onClick={()=>setComprobante(null)}
-                        style={{display:"block",margin:"6px auto 0",background:"none",border:"none",
-                          color:"#dc2626",fontSize:12,cursor:"pointer",fontWeight:600}}>
-                        ✕ Eliminar foto
-                      </button>
-                    </div>
-                  ):(
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-                      <label style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,
-                        padding:"14px 8px",border:`2px dashed #0ea5e9`,borderRadius:12,
-                        cursor:"pointer",background:"white",textAlign:"center"}}>
-                        <span style={{fontSize:26}}>📸</span>
-                        <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
-                          fontSize:12,color:C.navy,textTransform:"uppercase"}}>Sacar foto</span>
-                        <span style={{fontSize:10,color:C.grayMid}}>Cámara</span>
-                        <input type="file" accept="image/*" capture="environment"
-                          style={{display:"none"}} onChange={handleComprobante}/>
-                      </label>
-                      <label style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,
-                        padding:"14px 8px",border:`2px dashed ${C.gray}`,borderRadius:12,
-                        cursor:"pointer",background:"white",textAlign:"center"}}>
-                        <span style={{fontSize:26}}>📁</span>
-                        <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
-                          fontSize:12,color:C.navy,textTransform:"uppercase"}}>Adjuntar</span>
-                        <span style={{fontSize:10,color:C.grayMid}}>Galería / archivo</span>
-                        <input type="file" accept="image/*"
-                          style={{display:"none"}} onChange={handleComprobante}/>
-                      </label>
-                    </div>
-                  )}
-                </div>
-
-                {/* BOTONES */}
-                <div style={{display:"flex",gap:8,marginTop:4}}>
-                  <button onClick={()=>{setTipoMetodo(null);setComprobante(null);setNotaTransf("");}}
-                    style={{flex:1,padding:"11px",background:"transparent",color:C.navy,
-                      border:`2px solid ${C.navy}`,borderRadius:10,
-                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
-                      fontSize:13,textTransform:"uppercase"}}>← Volver</button>
-                  <button onClick={confirmarTransferencia}
-                    disabled={!comprobante||paying}
-                    style={{flex:2,padding:"11px",border:"none",borderRadius:10,
-                      background:comprobante
-                        ?"linear-gradient(135deg,#0ea5e9,#0369a1)":"#e2e2da",
-                      color:comprobante?C.white:C.grayMid,
-                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
-                      fontSize:14,textTransform:"uppercase"}}>
-                    {paying?"⏳ Enviando...":"📤 Enviar comprobante"}
-                  </button>
-                </div>
-              </>
-            )}
+            {/* Botones */}
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>{setTipoMetodo(null);setComprobante(null);setNotaTransf("");}}
+                style={{flex:1,padding:"11px",background:"transparent",color:C.navy,
+                  border:`2px solid ${C.navy}`,borderRadius:10,
+                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                  fontSize:13,textTransform:"uppercase"}}>← Volver</button>
+              <button onClick={confirmarTransferencia} disabled={!comprobante||paying}
+                style={{flex:2,padding:"11px",border:"none",borderRadius:10,
+                  background:comprobante?"linear-gradient(135deg,#0ea5e9,#0369a1)":"#e2e2da",
+                  color:comprobante?C.white:C.grayMid,
+                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+                  fontSize:14,textTransform:"uppercase"}}>
+                {paying?"⏳ Enviando...":"📤 Enviar comprobante"}
+              </button>
+            </div>
           </div>
-        </Modal>
-      )}
-      {modal==="success"&&(
-        <Modal onClose={()=>setModal(null)} maxWidth={340}>
-          <div style={{padding:"36px 28px",textAlign:"center"}}>
-            <div style={{fontSize:56,marginBottom:12}}>✅</div>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:26,
-              color:C.navy,textTransform:"uppercase",marginBottom:8}}>¡Pago registrado!</div>
-            <div style={{color:C.grayMid,fontSize:14,marginBottom:20}}>El pago fue registrado correctamente.</div>
-            <button onClick={()=>setModal(null)}
-              style={{width:"100%",padding:"12px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
-                color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
-                fontWeight:900,fontSize:16,textTransform:"uppercase"}}>Cerrar</button>
+        )}
+
+        {/* ── ÉXITO inline ── */}
+        {modal==="success"&&(
+          <div style={{background:"#f0fdf4",borderRadius:14,border:"2px solid #86efac",
+            padding:"28px 20px",textAlign:"center",marginBottom:16}}>
+            <div style={{fontSize:48,marginBottom:8}}>✅</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,
+              color:"#15803d",textTransform:"uppercase",marginBottom:6}}>¡Pago registrado!</div>
+            <div style={{color:"#374151",fontSize:14}}>Tu comprobante fue enviado correctamente.</div>
           </div>
-        </Modal>
-      )}
+        )}
+      </div>
       {modal==="success_transf"&&(
         <Modal onClose={()=>setModal(null)} maxWidth={360}>
           <div style={{padding:"36px 28px",textAlign:"center"}}>
