@@ -5322,8 +5322,9 @@ export default function App() {
   const [autoLoading, setAutoLoading] = useState(false);
 
   const params = new URLSearchParams(window.location.search);
-  const formType = params.get("form");
-  const directId  = params.get("id"); // link directo ?id=XXXXXX
+  const formType   = params.get("form");
+  const directId   = params.get("id");    // link directo ?id=XXXXXX
+  const accesoTipo = params.get("acceso"); // ?acceso=jugadores | delegados
 
   // Acceso directo con link de jugador
   useEffect(()=>{
