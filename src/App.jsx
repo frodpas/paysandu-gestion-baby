@@ -324,7 +324,7 @@ function LoginScreen({ onLogin }) {
               Admin
             </button>
 
-            {/* DELEGADO — mismo tamaño, camiseta azul */}
+            {/* DELEGADO — camiseta blanca */}
             <button onClick={abrirDelegado}
               style={{width:150,height:150,borderRadius:"50%",cursor:"pointer",
                 background:"linear-gradient(135deg,#c0272d,#9b1c21)",
@@ -336,9 +336,15 @@ function LoginScreen({ onLogin }) {
                 boxShadow:"0 6px 20px rgba(192,39,45,.45), 0 0 0 5px rgba(192,39,45,.12)",
                 fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,
                 textTransform:"uppercase",color:"white"}}>
-              <img src="data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCAHGAScDASIAAhEBAxEB/8QAHQAAAgIDAQEBAAAAAAAAAAAAAAIBAwQHCAYFCf/EAEMQAAIBAwIDBwIDBAcGBwEAAAABAgMEEQUhBhIxBwgTIjJBUWFxQlKBFCMzkRUWY3JzkrElJjRDYoIXJDU2U2Shg//EABoBAQADAQEBAAAAAAAAAAAAAAABAgMFBAb/xAAsEQEAAgICAQMEAQQCAwAAAAAAAQIDEQQxIQUSQRMiMjNRFBUjJAZCNENS/9oADAMBAAIRAxEAPwDssAAAAAAAAAAPcAyRMbEMjAwCPCJjaNgyR+pGCfC0RBk8kNER6smTUVlvC+pHcmhstwcl8GHW1G3pJydWDS64Zh1NftI9HkvGOZH2U/oG552fE9CL2jJ/oUz4oi5ZhCWPsTOKyNvUbgeV/rO/yS/kD4n29Ev5Fq8e6k2h6oM4PKrif5hJfoWR4li/wSb+wtgtCay9LzE5PnaPfx1CjKotuV4wz6GDPUR4aahOQTFewy+SJRKQACukAAAsAAAAAAAAAAAAAAAAAAAABkEsgAISwSQ2N6A3giWXHYYWTXRS3KT93Qrpyi20otP5ZEfG5n54uPsJcXVGhTk6s4xSXVmuOMO0K00NVJUrynNr8KZri4l79Mr5Yq2RVq8soxhUipN+ZM8txhxZpulf+WvNRt4Oe2OdJnnOyzierxPWvLytCfI1mDZyf3mL6+n2iVqKuZwpxqtJczPdg4v3alnOZ0VedoXCmm1Kni3fixm8vlqZPkXna/wfS3pub/7zkKpVqS8tSVSX15mUTUebfn/mdnF6fuGU53V9z248PUv4cZP9T51bvA6TTlywt6sl8pHMXJScd4z/AJkxk4x5acJcptHAiO1P6h0lV7xGnJ7Wtb/KUy7xNlh8tpWz7eU50zNPeDGVdRW8GbRxaxCv1nQk+8ZbvEKlrVk/wuMfT9z7fBfbXV4o1ujpek2Fw683h1OTMUc48L6HqPEeqQ0/SLSpUlWlipKKyo/c7Y7Buy7TOAdEV/qUKauppTlUl+FnM5fsxw3x5NtoaJbwoWVCfhyVScE6n973PouvHOE0vuat4u7ZtC0PVVZc8akfeUZbH0uGu1DhHWUl+2UaU3+aaOLbh5Lffpt9b4bBnVpOHmmv5k02nS/cPY8/dyt9Qp+Jpl5TksZ8rzk+ZUv9bsYN0bWtOK+Imf0ZrC0X29rCMutR7kxbbe6aPJ6PxTWrz8G8sa0ZfLR6ahUU4qcIOKl8lJaMjr1InlLyh5X0kskczXXcgOugAAAAAAAAAAAAAAABGSWyAIrv5ETlhZxkiMk4poipJRwn+LYRpU8rm9XRCZ/gmTyk1JRUc59/girONOLlJpJe7PJdpvF9rwdw9Vuq1RKq45gm+py1xB2y8Ua1Uq07GtWo05PZxl7Hr43Cvn6YZM0VdX6/xxw7o1KTudSoKa/A5bmqeLO3a2pwnS02xlN5wqsZHO1xqF/e1XU1a6nVk/zMjmSXkfk+Dv8AE9Fr3aHgy8y0dS99r/aZxJqylGne1KMJfhPG3d9Xr8zvKkq0pe7Zh+LgSU89TvY+Dhxx08FuTe09ugO7hrNOcf2HKhGCSa+Txney7OatW8fEWnxdXGZyjFHiuCOKKnC+v0Ll1GqE5rxPhI6n0TVdK4t0iFSnTpX9GpHzwb2OHzcFsOX306eylptV+fNGcar5M8tSG0oe+QShLPNJQafRnUnaf2A2mpXFbUNEasKsm5eHTXU0xrXZDxzpjlC30OterPrPTxOV4+5b2TLznDfDl3rif7NJrHwhNY0C+0mpKFw3Fx33Rs/ss4I4306XiVNGrQf5D72udjPGXF+sq+uqdawt5Yi4+wyc6vu1KPpac9QrOrmFF+JU/KjYXZh2Q8TcbXVOfhVbS3bTlKUdsHRfAPd+4d4XhTvNWnSu5LeXOj2eu8fcGcGafKhYVLe3qRWI0o/i+hz8vNyXnWLy1rjr8p7N+znhrs40jxqlOjC5Uc1bh/ifya47a+1arcxq6Ro03UpSzGU4PY8V2kdruq8RuVrQlOjby2yntg1o7mtRk5QqOs5btmnH4Ns1vdl8yzyZIr0yq2mu8qO4vbzxZS3w30+hlWlKyst7ek1NfiTPnU3OT5uZ79TIjUUVuzvYuJjrX26eOc99+Hq9H404m0xxVnqdSnBfhPd8PdueuadOMNRpVLun7s0tO59kyt306EeWo/EX1Mc/p2C0eYXpyskfLrzhXtb4U1xx/aIUrau/zS3ye/tdVtry2lKxrxrRxtyvofn3+00/E8a3r+FU6rB93Qu0LijRKqjR1Ku4y9MM+o4PJ9Jp/wCvt78fKme3Yl9res2mqQo0tPrV4TfqXRF0+PaNnqdGx1Szlaqot6s3sjSPBfb5cy8O21awVJx2dWT/AP02rR4h4I4u0+M3cW9zdY2i+qZzb8DJTuHqrliWx7a+t7qgq1rUjVg+jRepNrODxXDV5b6dT8GNROHNsvg9h4niU41KT5kzx5cc458ta2iVyae3uSLHHNn3GMonawAAJAAAAA+gAwFbBA0AmfCS1MY36+xRcVI0aMq9XZU1ll9RJrPweK7YNfpaLwhdylU5Z1KbUd9yOPjm99MM1vbDm/vI8Yy1/X1YU6r8C3k4ySexqWhPpCm/DS2yvcXU76pealdXc5OWZ53Ft5rCbWMn3np+GuGu5hxc+aZfUo1HFeZeL9xpVG90uVfBhRbbzkyIyTjhnXrkr8PFa0yyIboieUJCdN7czCosLKeSZ8lYmVVSbhGUVRjWVTZ834T6PD3EWr6HUjPSNTrpR3nRUsR+x86bfJ8Mwppxk3B8ueuDycjHF409Fc+vDenD3eA1BUqcLrTKM4UVy1aknvk9VHt34ZnRUrupCnN/hSOXX5YSSeE+q+SmUKcvVCL+6OZ/b6TO9PTTkulNT7wtjZrGm6fQrL83Q8vqveG4gv6kqNlZQprGUoywaSxFLHKsERTU+aHlfyjL+2atvTW2b3Rp7bW+0nizWZypXGp3NrH4hM83Xurm7k1c153T/PN7oxIpvruyyCw9tj3YeDFWc5PCXz8vh8uI/I9JqhHEXzt/JEmVyZ7Y9uOPDyZLTK+FSUU8e5VUqz+Smc2l1KJ1sdWPfvyVruF8rhpNNmP+0Omtn4i+ph3FdZ6mHVrtrZ4Fr7hPsmGfUuoylhpQf0L7acV+/qTcnT3jk+NRlzTy9z6VtJKLTxhmUTWLbkiZh9W0qTqXMKlZYpS3M3SeKHw/xNbq2uGoTe6TPhV7tU7ZrPRbHkbivKtfKfM21LZ/BjyLUtHh6Md5d3W+qKXB9O/hUzUlFPY9j2Raze6jYt3UlyptLMjQHd54mp6xpX9BXdRSnjbmfwei1Wve8I8X0a9O5rRtpzS5E/L1PmOZh90+HQx3l07TWarmnlMtPncP39PU9Mo3dPpKKPoYZx5r7Z09dZ3CQBAQsAAAAAB9AFzuMhEt8kxaayRG57VgTztjp7nLfex4jq1NQttHt6nlUnGaTOluIL6Gn6Jd303iNGk5/wAjhXtG12eu8VXeoOWafO3BP2Op6ZhnJfcPLyrRENeavOpZXlOj7Te59Sjh04NfB83imaXJVn6n6TJ02TqW1Oedkj7OsV9sVlxte6X0m+WH1LqMZcnO02voUfxIrHzg9/wXpFtG0d7qNN1LdrlUY9ciZrT5Vmnnw8VKnFrO6ZWnOLx1PW8a6ErTT46pbRcbepPljH3R46VXkajNpSZameJ6WimuzTqbtGPOW4taeJvLyUTrR+prExPav04POWzKsiSqpkc6Zla2p8Jih3Iem1gpznow51H3NPqeF4iYZSmkR4qz1MR1kL4mX1I+oeWbKr9RJVTGcyudTBXxbsiq+rVWDBq1t+otxWXtkwZzbkUtqOmla6WV6mfco6iVJMhTSMbWltFYZNJqJkK4UV1Pmyq/BVOpL5M4tudSr9PyyNTu26bimfMsIt1XKRFw5N7vKLLZroupS8VaVpp7Tsp1e70njChcU5ONPKizr3UtIocRWltc1MPEYyyvk4lheys6dKvT8rjNHX/ZJrUtS4Ft6nM6lRSSeN9jm56N66hurgDw7fSIWsZZcD06afQ1Vw5xTp2m66rKvU89XEIrPRs2fRk+dwfss5OByKTF9vZjndVrJXQXmTbXwMuh5tw0AABIAYAAvQSbccJe4VX5U18jTSxzfAid+EROoaw7xWvvReDZ04T5ZV4uLX6HFdKpO4q1Jt9Wb271/EcrrUY6VGTxSn0yaEs5+HVcT6r0PD7fLkcy+5fK4tpvwYP4RZo9VfskEk+hZxVFztXL4R87hms6tGcZRaUXjJ2ckavt5cfT0cajVFOM0tzd3YTC01NTs7+UalNU3JR+Gam4W0yx1HMKtzCO/ue1dtDh/SlW0fWadvcuWG11cfgxzV91VazqzB7XL29p6zU0W0vaUbai+dQNfXNeE5KVWlJ1G8Nmy3LhqrTp3mq1KVxeylic298HguLP2KPENxOxqw/ZHFeHFdMlMEalrkncPl1JbvHQxqk2PKomsmNUnuezbOIMpPIOeCmVTCyVusRteIZDqtMWVbJjSqZKZ1cMiZW0zHV3BVDCVbcdVMors0zHWKqlb6lDkyqpJjZpZWq53MZzyyJNtFfuPcvHQqSK3MmoVGVpaQfmIbIQT2iZx4WhTV3ZZbLBUnmRkRWEY2nysablVnyVtodVk6K7rPECoQraXVlzw8OTivqc604zrwdCt5Z9Vn4NidgGprT+LYUqkvLLESuWu6jel3Rtbfi2jqmoXUaS8VOClLG+Tpfh69hqOjW93TkpRmuq9zlft64dr31C2urCv4cabU1j3Nrd2nW7++4bhp17zNW8dmzh8zH9u3qwzqG4XLfl5XgeKxsI30x0LF0OPry9MT4D6AAF0SAAH0CSTcYx6bZMLWbqNnpl1cTlhU6Tkn+hmPEnyv23Nedveuw0jgeu4z5alaMoL+RbHXeSIUyTqHIvapq89Z4zvbt1XUpt+U8lQ3uP1MipzzpSq1G3OUm2U2azWyff8LDGPFEvneRfdlHE3/CYXwed4equNWcM7N7o9BxFLNLl+h5fS5eHdS/vDPbqWmP8XrLerUoTzQk4Z+D6Hj16lP8AeVZSX1Pk0ZZSZ9GDzQNIrurzzb7mNdScpPLyYlTlaSZdcvdmHVkzGI1L0b3CaktupjSlvuyastjGcmW2mIPKW+BHgrlLzBzZI2vEJbYjaxv1BsrqPciZW0iUtxlLCKG3klN4K+5Glzqv5EdT6lbQuCfcaPKWejEbfyHQXJSbLH6rcRYXUlMiS+CNrwltY2K6npe5MU8iXT5Yoiel4V0d5bmVS3e5iW27MunszzxO5SdSbreJJ5aWEz7HB1z+xa9bV1Ll/exy/wBT481iH6hOrKi6U4PDjJM3tXdR3bpELPV9Btq1xTjWg4rZ/Y9JwI7XTdSqUra3jb06mEkjVfYHrsdW4NhRlPM6MXJ7l2s8WX0ddoULGH8Op5mmcnlU+1pS2nTMPQl7Fi2R8XhG7rXmg2tetHzyjvufZ9j560al7Kz4TkCF1AhdJDexJEgK5S5Fzv5OYO9nxDGvqNPRbarmVOSlOOdsHS2pVa9PT7irTim4U5NZ+cHCfanfXep8a3l3qtKrBbxi1FpbHv4GGMmSJs8vKvMV8PLXkopOC6exVY0pRm5SxgtqU6lShFRceRPZ53Eh4NNfvJSz9D72mvpe2Hzt92s+br8llnl6C5Lpv5Z6bVpwefDy/uefhTbuMv5PBeszOpe3F15fet8ukmj6dpmdPl9z5VNuFFJH09Mbcc/Q9WOZ1p570iJ2ou1h7mBVM++fnZg1ehW0RC1Zli1JRawUMsmvMyuRjLeIVyWXsK00OxJMheEN4EnJEyZVP1CY2sh9SVhIgCmkIbFbYzQrRAhsVslojA0nSUyyO/UqwWUyISdxSWxh32cRRm+xiXqy4lrVj2rRKq1TXUyo9SmitjIRhFI7Ts0pJ4QcvNNt+nl2+5E1KS2SGpxil5+b9DbVpjSPdLbPdv4gqWWrT02dTHOuXDe25tPtBpX2h07rUbS3hUcoZg38nN3Bl3Cw4gt69GcoSc1lt4OsoRpcQcNUIXDyqkcZPFyMca8tKeXt+7XxbW4j4VVG7SjcW8FzxRtrKwah7IdD07huTp0akuavtjJttdNj5rPSK28PdTo4AgPO0SRIkGgPn6rOorWp4WG+V5j8o1Bxdw1onFltK1uLGdK4jJtz5eVG6vBpuq6rXmxg+XqmlUayk4QSclh4PVx+RGKWOenuhyFxl2PatpVR19PnGrbyflUd2jXOtaPq2lzlGvZVpY91BnclfSri1p8kKfPD2WMnw77R9OvG4X+n82evlO9x/VPGnMnj+XCN7VqTeJU5Uv7ywfMnOMKi3WTsrinsn4R1LMlbKm39cGrONOweUMVNHuaWMZUVuzof1dbr/S1DT9BqdFM+jpst3FfA2r8M6rw1VdLUYycV74wVaZiVZzjNcuPT7ntxXi0PJkrqVOoP94zEbyi2/m/GaF5VyZK5VaMOovMyqQ9RvxGiGlgybKZ7RZU2W1OhVJBaFcmI+pM2R7BZADRSZEtmVlCGiGh0LPboVkI0GCE/kmW3Qn4WRgKRMd08kQ2kVgXroUXUcuJlQScRqVhXvm428W3HrhGut1IYVNFiQ06dSNf9mp286taLxJR65PUcP8AcS6zVp+DYV6UJe8oMxnVF4rLzMUob8yf6mRbRuLiSjRt5zf8A0xybw4Y7BpUZwq6tXp1ovdxWzRs/QuznhvTFFWumydVe/UynmVotFJczcM8DazrWo0f/ACtWhGlJT5pRaTOm+GLOtYaPbWVZPmhseutOGL+5hClb0o0oR3XkPTaTwdNuLvcSa+Ec7lcyLzvbalNPhcMwdDU7auqdScYSy0tzbFKoqtONRJpSWcMwdN0qzsIp0qWGvk+kkmsnCy3907eusagICcAZJ2AAAlGxDJI3I9qdbLLfbBjXFjb1k+amssyZRb6PBMOZPD3L1ma9KzSJea1DhOldN8tRQyfBueDL+1lKpQuVP4SRsVrKEUZRT82cm1OTes9q+yJcg95XSNQsrTxbinJLC3waK0dU4NyT82DrHvkRn/VpVE9kkjkuxaVNyjDDx6j6b03NbJWHM5VIiWNez5rnb5L2uWjlmJJOV3+pm3i5bb9DszES5252+ZPeoyX0Fgm9xpbLcwmPL0xPhRUKpFtToVSaI0vCmZHsTJEewWNAWfUaO3UWe/QrKBFhMiDx1GksrYpIpe0h5LYSaamtizrHBM9JVxY8Y7iPZ7lscZ2KwlfDaJszu56VS1ji5WdeCnTnNJp+5rNY5epuLulU2+P6dTOOWqtvky5eb6WGbQvjjdm6tI7JtDtuIrytHQnOfi5UsGw9N4RuouEbacbKEVjDibBUY063NCkk57ykNKLUW5effY+bv6hks9kY3mrPhGjSalWqxqP3eOp9W20XTqDTjSi2j6kI7boHFZzg8ls1rdy1ikEjSjCKVOKiOk11JwwM9p9vlEunQZdAba6IEV2uH0AAJQAAAkAAAAAAA+hBL6CiRoLvjLPB0vujkG3nyWbZ2F3wlngyT+qONqrxZPHyfV+hdOXyuxa+eu2W6pV5afKRpEc5f0MXVZN1+U7U/seKpbf0Jk1mPSjy00U3D3JntKqe8WUvYu6xKKmxnK0EkQkC3GwVXqXAYGwSkRKZlVL1Dx6CVtmNSeUUlSYJV2YtN5ZdUjmOTGW0iq8LZwzuLGWGXRw4mO00xsZEJG7u6GnPjtP4qI0bT6m+u5xDm41m/iojxc/9MtcX5O5ZdCceXBHuxj5OXTqAYAysLShEkIklEAAAJAAAAAAAAAAAAAA+gj9SQ76CP1oDRHe/f+6Eo+zaONLjanyLpk7J737/AN0n+hxrXeZJH1foXTl8rtmWEVSpOS64PmXj57vL+T6UXyW/6Hy889ds7Vv2PFVlx9Ji3HUy8YhkwbmW5M9pJnylM1ksi8oWaM5WhUlgnIYDBVbekoZLcUlPciTe1VwsMik30LKqyslEXiWCkrRDJz5cGJXSi8oyVvgx7pCeg9CblHDDlyU27wZUUsGO/ISG0jf/AHMknxjWfxURoCWzN/dy154wr/4iMOf/AOPLXF+Tt9PzSG90LH1yGfqR8jZ06pBgDKwtKESQiSUQAAAkAAAAAAAAAAAAAD6C/iQz6CP1IDQnfCaXCTy/g41l5qixujsTvlPHCL/Q49tFlo+q9Dnw5XKnyuu5cltvtsfOtfNPJmarLNLBjWEfL0O33keKssyW1M+ZdPzPB9Gq8U8Hza/qZM9rIpPbcmYsCX0M5WJgCWQ+pUlDIJAgiTLeBiSyqnQzI7RMes8MrppErqKyhLqOwW0uZD1l5S2twb8sOmsF1KT9yiTxItizy3j2yt7Vrw31N99y/bjCv/fRoBdTfvcznjjGqvmojPmxvjSti/OHcMfXIZ+pC/jYx8daXUqnIPoQHsFpCJIRJETtEAAAlIAAAAAAAAAAAAAH0F9xmJJ4TYHPPfPljhXH2OR9OjmGfodZd9Of+7cYfODlC0/cUE1vlH1PofTlcrtg6hPM+UusoeUxLqXNXz9TPtdoJnc/7vDVXdPDaPm1X5j6N51bR82W8ibdrpgS+gRQzjsZytCtivqWOIsluVTooLqTgOm40GXwVXFN4yWRe49XeGMDSdsG1lytxfyZ0lzUzAlDlqp5M+hLnhgRPlZ86vHEh6W6LLyHKyijLz8p58seVtrvc3n3O6nLxu181EaMa82DdHdCrOPaDCljrVW5hy5/15Xw/m72l8kv05Iay2vgH6cHxtnTqkn2IJ9ifhaQiSESRCIAABKQAAAAAAAAAAAAAMrqehlhXU9DA5x76f8A6BD7I5Rzi2X2Oru+n/6BD7I5PrPFpH7I+p9D6crldvnz81Y+jQWKZ8+G9U+nHakdz/u8NWLdPOTBcfMZld7sx0tyZ7XKluS+hLIfQzlYjFl1GYsupELQgABFtEoWzLGsxK31LobxwNKSwriLUky21nh4HuIbGPSeJmUfk2j8WRcx5jBprlrvJ9DOUjDulyV9imWFNrcZkza/dOreF2m28W8c1ZGpqMuaTybH7ttV0O1XTlnHNXR5OX5wzD0Ye36LkS6C0Zc1NMaXpPjr/wAOlVK6E+xC6E+xPwtIRJCJIhEAAAlIAAAAAAAAAAAAABW9mML0TKz3A5s76j/2PTX0Rybcv0r/AKUdW99Wp/s2nH6I5Pudqkf7qPsfSY1ihyuV2rprzmdnyGHRXnMuo8QOw8NWHX9bKPcsqPM2LgzloZekrkOJIjSSiVPUORNbkxArAbANbFgLoEPUEegQ9QFtZZiYfLieTPaykiitDBnK0SRPoJcRJi9x6mGjG0Lww4eWR7bsYvFbdpmivOM1keNnHDPtdnE3T7QNIqZ9NVGN48LxL9OdJqeJptKp+aKZlr1I+dwtLxOHrGf5qSZ9L8R8Tm/a6mL8TEIkhCyZ7N7gHuBKQAAAAAAAAAAAAAAAAAr+PkYX8RWe4HLXfTrfwrbG7ink5cuHmcfpFI6X76dVf0pQjn/lo5oqrzr7H2XpX6ocrldpoR3yX1vRgqollV+U67w1YU1ibDqgn6mCK6aIaxuI1ktfQXlGkq+UiS8xbykOO40K+R4El8GRjYrnECrONiY7PJDQ0UBkU2pLIldcyEUuV4LV5kVmBh8vKx0th6kdxDK0LxJKkMmfwdmlxdp9XPpqIw3uX6O3T1u0qdOWaMLx4Xr2/TTgSp43COlVE+tBM+1GfNnbo8Hmuyyo6vAWjzz1t4npYLHN9z4jPGszrYvxOgQIERZM9m9wD3AlIAAAAAAAAAAAAAAAAAj5JEns/wBCs9jkHvpzf9OUEvyI54mt4/3TfvfPm3xhbQzt4XQ0DU9vsfaemR/jhxuTk3bSykia/pK6bGm/k6ryx4YkupKLJJZ6EDS+0Bgl9CENGxgiWzGYjTyNGyuQr6MbAEaNqSY9S1pfArQ0bLKPmTHjLCIRJWREtypjyFfUzmF4RHqPCfg3FOfumv8AUiJdZU4T1W1dR+VSWV8mOSPtlpXt+jvYvV8Xsz0Sb97aJ7E8h2QulPs90lUsKKt47I9d0klk+H5Ef55dbD+JgRIFLLT2n3AhdSSUgAAAAAAAAAAAAAAAABZe7+gwreVIj5J6cW98upnji2X9kaKrdV9jdffEqqpx/Qik9qRpSo+Zpr2WD7T039cOHnj7k0yZkQGludOWMx4UvqQEniTQZLAZMUCGSAVoXBY0R7AVtCjyEfUCGKx2thWgIXUkhLcbDM5XhXIh9RpRYODRSVoLEmSfi05J4aaBIWspOUOV+5lk/GWlX6J936UpdnGmuTb/AHEf9DYLS51I133fU32Z6bH38CJsVLEUmfD8r98urh/EwELoSuplZeewiSESSkAAAAAAAAAAAAAAAAAVz2UnH2TLCubUYy5erT2I+T4cNd7u7nU7Q6NNLfw2adjiMMP1G3e9la31PtJpVp05cjpv2NPycZVOdPfGMH2npv4OLyI+5bFjNiRJOmxnpXP1MEiX1BIsqlLcYhIkADADRWUBVJCY3LpIRoCtohodohoBPcZEPqSjOV4KxZNjS6FEqiKStBssiTxOP3QniLJEp5nH7ozt00r2/RXu9vPZtpv+BH/Q2K+hrju8PPZrpv8AgR/0Nj+x8Ry/3y6uH8Qg9wQe55rtPlK6kh7gXAAAAAAAAAAAAAAAAAAiScm/ccVbJsrPcJcpd92nTp3NCvTio1fDXmOXqcYrEsbtdTpzvv1M3NCP/QjmaK8sfsj7H0r9UOVyo8pQy6CoZdDsPFUraTIciJp8zEaZIZzfsNGUvdFSynnA/iP8oQt8RLrEenUi49DGlJ/BNLLZMJhlSw1sjHm8SwZMUuXcx6kfNsElbfwK2/gZqXwQ1L8oCvf6CtS9mM1J+2COWRS0JhW4zaxzFTpOMvNuZWGU1HKUjKy0MetFZxHYydH0uvqGtWdtCbSqTSa+THqxkmmfd4HqTjxdpkl0jUWTG3TSs+X6Gdj+kS0fgXTaE5/8hbHsvfrsfF4PzW4X0ySeF4KyfZe00j4fkTM5ty62H8Tke5JC6mV1/lK6kkIksAAAAAAAAAAAAAAAAABX6WMK/Sys9wORO+3L/adCn+J00zm9NOEX9DovvtyzxDbL+yRzpH0JfQ+y9L/XDl8rtKYyEHizrvFVO2ce5DgH/MH9iRWormwTJY2wRnEslk1umEMWvJ03uh6GXDLWCNQWcMtt1mkmTCYN58FUpNSXyZSWxj1YedMlKeab6RREnU/IiyBMugFUeZrdCyyvYtithJlZhG1Lk/gRtKWxZJFXuZWhaJV15JtI+pwtPwuIrGfRc6yz5Nb1o+joz5NVtJfEkYX6aVny/SfgKpzcE6VKnu5W8cH30spc3qPM9l8ufgTRpf8A10eoXU+Fzx/ldjD+KSF1JIXUzuv8pRJCJLAAAAAAAAAAAAAAAAAAR+mQ4rXVexWe4HG3fXnnie2X9kc/Q6L7G+++vLHGFtD28I0HHaKf0Ps/TfFIcvkpkTEnGUKup1+3hidJXrLPYqXrLV0CVNR43MiS/dxZTNJ7MsjJySi+iBol5HNNMa0/4f8AULhZhhhafw+X2JgWKRXU9Q8klLCEqLDWCTZ4ImS2Fg2M3kGypbCTH6CzxgSjSmSKsblsnuJj3MLWhaIY9ZedGVaS5Ly3l8Nf6lE4py3LqH/E0s+zRlfzDSviX6P9j8+fs60eX/1onrU/K2eH7Eakp9nGlJvpbxSPcpLlwfC8qNZ5djDP2pQLqT7AjGzT5CJIRJYAAAAAAAAAAAAAAAAAEP3JIfuR8kuKO+pUzxxbR/sjRXsvsbt76Df9frf/AAjSWz5Wvg+x9O/CHL5B/YWPUb2FXU7FXgH4y1dCr8ZaugleCSJpvcWp0Ck99wLK28BbbZYHqejIlvu9iYRKx+oiqhsebcKvQlBIDCwGASXUWWSxoiUdugnpZiyzklLYmeFIJOMIpzeE+h55hG1UvUWUtq1N/VEOLbTxs+gyTVSCa3yhav2pradv0N7B5c/Z1pn+BE9/7o133f5qXZ3pyTy1Rjk2I/Wj4Pmfvl2sH4mAAPPbtt8hEkIksSAAAAAAAAAAAAAAAAAFl6v0GFfV/Yj5JcPd86We0G3X9kaUo/w0jcXfJnntHoL+yZp6l6UfY+nfhDl8lY/SV+5Y/SVrqdirwSleotXQoT87L4dBK8K6i2ISwWtZFqLADy/hGPbSfi8qMjrSMajTq+Nzxj5SYRLKq8ykhuZOG/Uhz5nhoiccNEoKkMkCQyQCvqRJ7DT6lUmTMeE7UVknnLwvd/BZSt6tWlGNpTd7l/5SYxjOpGM3iDeJP4Rtvs64Zt6do62mQV2riPJHmXRnjvfTStNtU3+m6lp1GnK4tpKNfaD/ACmLGE6dWmqkuaSe+TdHEV/a8NWF7pvE1lTjVcGraUo5830NNXEc1f2lPMajyv5mcZd+F/pa8u/O7nJS7P7X/DibO90ao7s0+fgK2XxTibX90fF8z98upg/EwAB5rdtvkIkhEliQAAAAAAAAAAAAAAAAAsnu19Biufr/AO1jQ4R730vF7R6bfWMGjUdJZgmzaXewnzdpUV/0v/U1fGSUEj7D0yN1hy+QbOwuNyVIk7lseo8PHGiqCzksWyCI2Fgz+pEeNG4LzPJFT0jYWRZLLwPqx/BtMpNUG/oex4S4ejqHB1XU2nzQ5msL4PGV/wCDJL4N/wDYxpkK3YjeVpQzJRqf6GGfP7a+IaYqxadNB05OdvK4ksSTaSX0G5nKhTm/U+oqTdvyL/5ZZ/mWtYxFdEerj3i1fMMclZi3hCQPYZIiS2Fp8+IT7Z0iNOpUfMscq65KZcsZed7fQecXJcqk1+oiVONJxbbkTMz7elq0RSpVrznjZwlPC+Db3YpxFR4T0mV1qcZycU3GLjlJmveA9ft9IrVf2mipRcX1ifU1HjaLoQVlQh4fNupQPBkrM/Davh7btY1S87TbfTp6Xp1JJVMznKGHg1FxDpN1ot3UtLrHNB4STyemr9p2u0bSla6fQtYQh1ahhnlte1GpqbneV5ZrzeZ/BFMevhe1vDt/urVXV4Cg2vRCKRuL4Zpbuky5uAv+2P8AobpfVHxfOj/Yl0ePMe1KJBAeW3bWQiSESWAAAAAAAAAAAAAAAAAAk15m/oxxFzqTbeURNtDgrvU6dqk+0jx4adcyoqLzUUHy9fk0/OvGFbw6k4wkvZvc/T7iDhzRtct5UdQtKdRSWG8bmoOLe7TwRqzlWs7WNC5k887lsdvheoRijy8mXF7nEkKsZPyzT+zL45a6M6a1fur1Kaf9G3tGHxseYuu7LxfCbVPVaKj7eQ7VfVqTHbx2wS0hFv4G83wbVvO7/wAaWtSUVcKry+8YdT4932N8c0cpWter/dps3j1HDrzLKcEvAOWCYv39z2E+ybjhPfR7yX/82Xrsf44rThy6bdU/vTY/uOD+T6EvA8+a3JJ4b9jrLsO01/8AgRdylBrMKnX7GstE7uPFmpXlKrXuVRW2eeJ1HwpwXU4X7La/D9zcU69aFKcnOKwuh4ef6hjmkRTvbXDitWduCbii6V9c0nFrknJ//pTCTaUpbZPqcYUq9txbe26eyb9vqfIqtqMYSi20dDhXye3p5csz7l6x8kSKk8fhZLqY/Cz2Ta++ltzpKVLmzNPPsY8YQVdyXQarUlJbReCqMt90Vm1/4RFpFaTnUaiktiE5xouFTHKlkKsnjZbkQlKdJeJFy+xnM3/hHusRTh+zqVFNN9cldR8tpUc3hv5MmpTgqGUuR/LKJLxbaVqqEryrV2h4f4TK2W0R5hNZtadO4+6C88At+2Im7k05LG5pTukWV9Y8C+De21SjmMeVSWDdNOOISUNm2fE8u0Wzy7PHiYqtAhZwsknlu2+QiSESWSAAAAAAAAAAAAAAAAAIxvuySEt+o0Faj+Ujlg+scD4DBO9GoVS5k/L0JUZNeaS/kWY+oYIm0o9sK1GPTlT+uCeReyS/QfHwGGTuT2QrlGpy7SWfsM4tww2s/YbBCTB7YI4txwpJP5wYlzRde1uLZ7upTcVP7mdyr4FlT2Si+Uib2r5jymK1cedoXd+4mvuJ7nUrO/koTeVFRPA6t2Qcc2NWajpN1d8vSSifoJgXkXusnawet5sdenkvxomdvzp/8OePmv8A2xef5RJ9nHH/AF/qxe/5T9GVSp/kj/IPCp/kj/I2n/kGX/5T/TV0/OJ9nHaB0XDN7/lKJdmnaG5f+2b3/KfpF4FPPoj/ACJ8GH5I/wAiP79l/hn/AEsPzps+yvj+q4wlw3eLmeM8vQ9La93fji8UYqVa0z1zDod5xgo9EkS1LHUpf13NPUNK8avy5H4S7reockJaxrUZr3jKJtfgnsI4Q4eqePVtaN1UW+cG4OVuOG8kKnFdEeHJ6pyMvifENIwUhiadb29nRjbWtuqNKKwkjKys8qeGO1sRyLOcbnMn3Tk23rqIBIYDBpbyj5CJBICQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB//2Q==" alt="camiseta"
-                style={{width:70,objectFit:"contain",
-                  filter:"drop-shadow(0 2px 6px rgba(0,0,0,.3))"}}/>
+              {/* Camiseta blanca SVG */}
+              <svg width="64" height="58" viewBox="0 0 64 58" fill="none" xmlns="http://www.w3.org/2000/svg"
+                style={{filter:"drop-shadow(0 2px 6px rgba(0,0,0,.35))"}}>
+                <path d="M20 4 C20 4 24 10 32 10 C40 10 44 4 44 4 L56 14 L48 20 L48 54 L16 54 L16 20 L8 14 Z"
+                  fill="white" stroke="#ddd" strokeWidth="1.5"/>
+                <path d="M20 4 L8 14 L16 20 L16 54" fill="none" stroke="#ccc" strokeWidth="1"/>
+                <path d="M44 4 L56 14 L48 20 L48 54" fill="none" stroke="#ccc" strokeWidth="1"/>
+                <path d="M28 10 C28 10 30 13 32 13 C34 13 36 10 36 10" fill="none" stroke="#ccc" strokeWidth="1"/>
+              </svg>
               Delegado
             </button>
 
@@ -717,22 +723,23 @@ function PublicoView({ user, onLogout }) {
   const [payMethod, setPayMethod] = useState(null);
   const [selectedMeses, setSelectedMeses] = useState([]);
   const [paying, setPaying] = useState(false);
-  const [tipoMetodo, setTipoMetodo] = useState(null); // "transferencia" | "electronico"
+  const [tipoMetodo, setTipoMetodo] = useState(null); // "transferencia"
   const [comprobante, setComprobante] = useState(null); // base64
   const [notaTransf, setNotaTransf] = useState("");
-  const CBU_CLUB  = "037-0014628-00001";
-  const ALIAS_CLUB = "PAYSANDU.BABY";
+  const [configPago, setConfigPago] = useState({});
 
   const añoActual = new Date().getFullYear();
 
   useEffect(()=>{
     const load = async () => {
-      const [p, pl] = await Promise.all([
+      const [p, pl, cfg] = await Promise.all([
         sbFetch(`baby_pagos?jugador_id=eq.${jug.id}&año=eq.${añoActual}&select=*`),
         sbFetch(`baby_plan_pagos?año=eq.${añoActual}&select=*&order=mes.asc`),
+        sbFetch("baby_config_acceso?org_id=eq.paysandu&select=*"),
       ]);
       setPagos(p||[]);
       setPlan(pl||[]);
+      if (cfg&&cfg.length>0) setConfigPago(cfg[0]);
     };
     load();
   },[jug.id]);
@@ -932,19 +939,22 @@ function PublicoView({ user, onLogout }) {
           </div>
           <div style={{padding:"16px 20px",maxHeight:"80dvh",overflowY:"auto"}}>
 
-            {/* MESES */}
+            {/* PASO 1: MESES */}
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
-              color:C.navy,textTransform:"uppercase",marginBottom:8}}>Meses a pagar</div>
+              color:C.navy,textTransform:"uppercase",marginBottom:8}}>
+              {tipoMetodo ? "Meses seleccionados" : "1. Seleccioná los meses a pagar"}
+            </div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:18}}>
               {mesesConDeuda().map(mes=>{
                 const sel=selectedMeses.includes(mes);
                 return(
-                  <button key={mes} onClick={()=>toggleMesPub(mes)}
+                  <button key={mes} onClick={()=>!tipoMetodo&&toggleMesPub(mes)}
                     style={{padding:"9px 5px",borderRadius:10,position:"relative",
                       border:`2px solid ${sel?"#16a34a":C.gray}`,
-                      background:sel?"#dcfce7":C.white,cursor:"pointer",
+                      background:sel?"#dcfce7":C.white,
+                      cursor:tipoMetodo?"default":"pointer",
                       fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
-                      color:sel?"#16a34a":C.navy}}>
+                      color:sel?"#16a34a":C.navy,opacity:tipoMetodo&&!sel?.4:1}}>
                     {sel&&<span style={{position:"absolute",top:2,right:4,fontSize:9}}>✓</span>}
                     <div>{MESES[mes-1].slice(0,3)}</div>
                     <div style={{fontWeight:900,fontSize:14}}>{fmt(cuotaMes(mes))}</div>
@@ -953,159 +963,126 @@ function PublicoView({ user, onLogout }) {
               })}
             </div>
 
-            {/* TIPO DE MÉTODO */}
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
-              color:C.navy,textTransform:"uppercase",marginBottom:8}}>Forma de pago</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
-              <button onClick={()=>{setTipoMetodo("transferencia");setPayMethod(null);}}
-                style={{padding:"14px 8px",borderRadius:14,cursor:"pointer",
-                  border:`2px solid ${tipoMetodo==="transferencia"?"#0ea5e9":C.gray}`,
-                  background:tipoMetodo==="transferencia"?"#f0f9ff":C.white,
-                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
-                  color:tipoMetodo==="transferencia"?"#0284c7":C.navy,
-                  display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
-                <span style={{fontSize:28}}>🏦</span>
-                <span>Transferencia</span>
-                <span style={{fontSize:9,fontWeight:600,color:tipoMetodo==="transferencia"?"#0284c7":C.grayMid,
-                  textAlign:"center",lineHeight:1.2}}>Adjuntar comprobante</span>
-              </button>
-              <button onClick={()=>{setTipoMetodo("electronico");setComprobante(null);}}
-                style={{padding:"14px 8px",borderRadius:14,cursor:"pointer",
-                  border:`2px solid ${tipoMetodo==="electronico"?"#7c3aed":C.gray}`,
-                  background:tipoMetodo==="electronico"?"#faf5ff":C.white,
-                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
-                  color:tipoMetodo==="electronico"?"#7c3aed":C.navy,
-                  display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
-                <span style={{fontSize:28}}>💳</span>
-                <span>Débito / MP</span>
-                <span style={{fontSize:9,fontWeight:600,color:tipoMetodo==="electronico"?"#7c3aed":C.grayMid,
-                  textAlign:"center",lineHeight:1.2}}>Pasarela / QR</span>
-              </button>
-            </div>
-
-            {/* ── SECCIÓN TRANSFERENCIA ── */}
-            {tipoMetodo==="transferencia"&&(
-              <div style={{background:"#f0f9ff",borderRadius:14,padding:14,
-                border:"1px solid #bae6fd",marginBottom:14}}>
-                {/* Datos bancarios */}
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
-                  color:"#0369a1",textTransform:"uppercase",marginBottom:8}}>📋 Datos del club</div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:12}}>
-                  {[["CBU",CBU_CLUB],["Alias",ALIAS_CLUB],
-                    ["Monto a transferir",fmt(totalPub)],
-                    ["A nombre de","Paysandú FC Baby"]].map(([lbl,val])=>(
-                    <div key={lbl} style={{background:"white",borderRadius:8,padding:"8px 10px"}}>
-                      <div style={{fontSize:9,color:C.grayMid,textTransform:"uppercase",fontWeight:600}}>{lbl}</div>
-                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
-                        color:C.navy,wordBreak:"break-all"}}>{val}</div>
-                    </div>
-                  ))}
-                </div>
-                {/* Nota / detalle */}
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:11,
-                  color:C.navy,textTransform:"uppercase",marginBottom:5}}>
-                  Detalle de meses pagados *
-                </div>
-                <textarea value={notaTransf}
-                  onChange={e=>setNotaTransf(e.target.value)}
-                  placeholder={`Ej: ${selectedMeses.map(m=>MESES[m-1]).join(", ")} — ${jug.nombre}`}
-                  rows={2}
-                  style={{width:"100%",padding:"8px 10px",borderRadius:8,
-                    border:`1px solid ${C.gray}`,fontSize:13,fontFamily:"'Barlow',sans-serif",
-                    resize:"none",outline:"none",marginBottom:10}}/>
-                {/* Foto comprobante */}
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:11,
-                  color:C.navy,textTransform:"uppercase",marginBottom:6}}>
-                  Comprobante de transferencia *
-                </div>
-                {comprobante?(
-                  <div style={{textAlign:"center",marginBottom:8}}>
-                    <img src={comprobante} style={{maxWidth:"100%",maxHeight:180,borderRadius:10,
-                      border:`2px solid #0ea5e9`}}/>
-                    <button onClick={()=>setComprobante(null)}
-                      style={{display:"block",margin:"6px auto 0",background:"none",border:"none",
-                        color:"#dc2626",fontSize:12,cursor:"pointer",fontWeight:600}}>
-                      ✕ Eliminar foto
-                    </button>
-                  </div>
-                ):(
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-                    <label style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,
-                      padding:"14px 8px",border:`2px dashed #0ea5e9`,borderRadius:12,
-                      cursor:"pointer",background:"white",textAlign:"center"}}>
-                      <span style={{fontSize:26}}>📸</span>
-                      <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
-                        fontSize:12,color:C.navy,textTransform:"uppercase"}}>Sacar foto</span>
-                      <span style={{fontSize:10,color:C.grayMid}}>Cámara</span>
-                      <input type="file" accept="image/*" capture="environment"
-                        style={{display:"none"}} onChange={handleComprobante}/>
-                    </label>
-                    <label style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,
-                      padding:"14px 8px",border:`2px dashed ${C.gray}`,borderRadius:12,
-                      cursor:"pointer",background:"white",textAlign:"center"}}>
-                      <span style={{fontSize:26}}>📁</span>
-                      <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
-                        fontSize:12,color:C.navy,textTransform:"uppercase"}}>Adjuntar</span>
-                      <span style={{fontSize:10,color:C.grayMid}}>Galería / archivo</span>
-                      <input type="file" accept="image/*"
-                        style={{display:"none"}} onChange={handleComprobante}/>
-                    </label>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ── SECCIÓN ELECTRÓNICO ── */}
-            {tipoMetodo==="electronico"&&(
-              <div style={{marginBottom:14}}>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
-                  {PAY_METHODS.map(pm=>(
-                    <button key={pm.id} onClick={()=>setPayMethod(pm.id)}
-                      style={{padding:"12px 6px",borderRadius:12,
-                        border:`2px solid ${payMethod===pm.id?pm.color:C.gray}`,
-                        background:payMethod===pm.id?pm.color+"18":C.white,cursor:"pointer",
-                        fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,
-                        color:payMethod===pm.id?pm.color:C.navy,
-                        display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                      <span style={{fontSize:22}}>{pm.icon}</span>{pm.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* BOTONES ACCIÓN */}
-            <div style={{display:"flex",gap:8,marginTop:4}}>
-              <button onClick={resetModal}
-                style={{flex:1,padding:"11px",background:"transparent",color:C.navy,
-                  border:`2px solid ${C.navy}`,borderRadius:10,
-                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
-                  fontSize:13,textTransform:"uppercase"}}>Cancelar</button>
-              {tipoMetodo==="transferencia"&&(
-                <button onClick={confirmarTransferencia}
-                  disabled={!comprobante||selectedMeses.length===0||paying}
+            {/* PASO 2: BOTÓN CONTINUAR (antes de mostrar el formulario de transferencia) */}
+            {!tipoMetodo&&(
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={resetModal}
+                  style={{flex:1,padding:"11px",background:"transparent",color:C.navy,
+                    border:`2px solid ${C.navy}`,borderRadius:10,
+                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                    fontSize:13,textTransform:"uppercase"}}>Cancelar</button>
+                <button
+                  onClick={()=>selectedMeses.length>0&&setTipoMetodo("transferencia")}
+                  disabled={selectedMeses.length===0}
                   style={{flex:2,padding:"11px",border:"none",borderRadius:10,
-                    background:comprobante&&selectedMeses.length>0
+                    background:selectedMeses.length>0
                       ?"linear-gradient(135deg,#0ea5e9,#0369a1)":"#e2e2da",
-                    color:comprobante&&selectedMeses.length>0?C.white:C.grayMid,
+                    color:selectedMeses.length>0?C.white:C.grayMid,
                     fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
-                    fontSize:14,textTransform:"uppercase"}}>
-                  {paying?"⏳ Enviando...":"📤 Enviar comprobante"}
+                    fontSize:14,textTransform:"uppercase",cursor:selectedMeses.length>0?"pointer":"not-allowed"}}>
+                  {selectedMeses.length===0?"Seleccioná al menos un mes":"Continuar →"}
                 </button>
-              )}
-              {tipoMetodo==="electronico"&&(
-                <button onClick={confirmarPago}
-                  disabled={!payMethod||selectedMeses.length===0||paying}
-                  style={{flex:2,padding:"11px",border:"none",borderRadius:10,
-                    background:payMethod&&selectedMeses.length>0
-                      ?`linear-gradient(135deg,${C.green},#15803d)`:"#e2e2da",
-                    color:payMethod&&selectedMeses.length>0?C.white:C.grayMid,
-                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
-                    fontSize:14,textTransform:"uppercase"}}>
-                  {paying?"⏳ Procesando...":"✅ Confirmar pago"}
-                </button>
-              )}
-            </div>
+              </div>
+            )}
+
+            {/* ── PASO 2: SECCIÓN TRANSFERENCIA ── */}
+            {tipoMetodo==="transferencia"&&(
+              <>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
+                  color:C.navy,textTransform:"uppercase",marginBottom:8}}>2. Datos para la transferencia</div>
+                <div style={{background:"#f0f9ff",borderRadius:14,padding:14,
+                  border:"1px solid #bae6fd",marginBottom:14}}>
+                  {/* Datos bancarios */}
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
+                    color:"#0369a1",textTransform:"uppercase",marginBottom:8}}>📋 Datos del club</div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:12}}>
+                    {[
+                      ["N° de cuenta", configPago.numero_cuenta],
+                      ["Banco",        configPago.nombre_banco],
+                      configPago.sucursal ? ["Sucursal", configPago.sucursal] : null,
+                      ["Monto",        fmt(totalPub)],
+                      ["A nombre de",  configPago.nombre_club||"Paysandú FC Baby"],
+                    ].filter(Boolean).map(([lbl,val])=> val ? (
+                      <div key={lbl} style={{background:"white",borderRadius:8,padding:"8px 10px"}}>
+                        <div style={{fontSize:9,color:C.grayMid,textTransform:"uppercase",fontWeight:600}}>{lbl}</div>
+                        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
+                          color:C.navy,wordBreak:"break-all"}}>{val}</div>
+                      </div>
+                    ) : null)}
+                  </div>
+                  {/* Nota / detalle */}
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:11,
+                    color:C.navy,textTransform:"uppercase",marginBottom:5}}>
+                    Detalle de meses pagados *
+                  </div>
+                  <textarea value={notaTransf}
+                    onChange={e=>setNotaTransf(e.target.value)}
+                    placeholder={`Ej: ${selectedMeses.map(m=>MESES[m-1]).join(", ")} — ${jug.nombre}`}
+                    rows={2}
+                    style={{width:"100%",padding:"8px 10px",borderRadius:8,
+                      border:`1px solid ${C.gray}`,fontSize:13,fontFamily:"'Barlow',sans-serif",
+                      resize:"none",outline:"none",marginBottom:10}}/>
+                  {/* Foto comprobante */}
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:11,
+                    color:C.navy,textTransform:"uppercase",marginBottom:6}}>
+                    3. Adjuntá el comprobante *
+                  </div>
+                  {comprobante?(
+                    <div style={{textAlign:"center",marginBottom:8}}>
+                      <img src={comprobante} style={{maxWidth:"100%",maxHeight:180,borderRadius:10,
+                        border:`2px solid #0ea5e9`}}/>
+                      <button onClick={()=>setComprobante(null)}
+                        style={{display:"block",margin:"6px auto 0",background:"none",border:"none",
+                          color:"#dc2626",fontSize:12,cursor:"pointer",fontWeight:600}}>
+                        ✕ Eliminar foto
+                      </button>
+                    </div>
+                  ):(
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                      <label style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,
+                        padding:"14px 8px",border:`2px dashed #0ea5e9`,borderRadius:12,
+                        cursor:"pointer",background:"white",textAlign:"center"}}>
+                        <span style={{fontSize:26}}>📸</span>
+                        <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                          fontSize:12,color:C.navy,textTransform:"uppercase"}}>Sacar foto</span>
+                        <span style={{fontSize:10,color:C.grayMid}}>Cámara</span>
+                        <input type="file" accept="image/*" capture="environment"
+                          style={{display:"none"}} onChange={handleComprobante}/>
+                      </label>
+                      <label style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,
+                        padding:"14px 8px",border:`2px dashed ${C.gray}`,borderRadius:12,
+                        cursor:"pointer",background:"white",textAlign:"center"}}>
+                        <span style={{fontSize:26}}>📁</span>
+                        <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                          fontSize:12,color:C.navy,textTransform:"uppercase"}}>Adjuntar</span>
+                        <span style={{fontSize:10,color:C.grayMid}}>Galería / archivo</span>
+                        <input type="file" accept="image/*"
+                          style={{display:"none"}} onChange={handleComprobante}/>
+                      </label>
+                    </div>
+                  )}
+                </div>
+
+                {/* BOTONES */}
+                <div style={{display:"flex",gap:8,marginTop:4}}>
+                  <button onClick={()=>{setTipoMetodo(null);setComprobante(null);setNotaTransf("");}}
+                    style={{flex:1,padding:"11px",background:"transparent",color:C.navy,
+                      border:`2px solid ${C.navy}`,borderRadius:10,
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                      fontSize:13,textTransform:"uppercase"}}>← Volver</button>
+                  <button onClick={confirmarTransferencia}
+                    disabled={!comprobante||paying}
+                    style={{flex:2,padding:"11px",border:"none",borderRadius:10,
+                      background:comprobante
+                        ?"linear-gradient(135deg,#0ea5e9,#0369a1)":"#e2e2da",
+                      color:comprobante?C.white:C.grayMid,
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+                      fontSize:14,textTransform:"uppercase"}}>
+                    {paying?"⏳ Enviando...":"📤 Enviar comprobante"}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </Modal>
       )}
@@ -1408,7 +1385,7 @@ function AdminScreen({ user, onLogout }) {
   const [transfMesDesde, setTransfMesDesde] = useState(1);
   const [transfMesHasta, setTransfMesHasta] = useState(new Date().getMonth()+1);
   const [modalLimpieza,  setModalLimpieza]  = useState(false);
-  const [configAcceso,   setConfigAcceso]   = useState({cbu:"",alias:"",instrucciones_pago:"",nombre_club:"Paysandú FC"});
+  const [configAcceso,   setConfigAcceso]   = useState({numero_cuenta:"",nombre_banco:"",sucursal:"",instrucciones_pago:"",nombre_club:"Paysandú FC"});
   const [savingConfig,   setSavingConfig]   = useState(false);
   const [savedConfig,    setSavedConfig]    = useState(false);
   const [claveInput,     setClaveInput]     = useState("");
@@ -2587,8 +2564,9 @@ function AdminScreen({ user, onLogout }) {
                 🏦 Datos bancarios para transferencias
               </div>
               {[
-                ["cbu","CBU del club","037-0014628-00001"],
-                ["alias","Alias del club","PAYSANDU.BABY"],
+                ["numero_cuenta","Número de cuenta","Ej: 037-0014628-00001"],
+                ["nombre_banco","Nombre del banco","Ej: Banco República (BROU)"],
+                ["sucursal","Sucursal (si corresponde)","Ej: Paysandú Centro"],
                 ["nombre_club","Nombre del club","Paysandú FC — Baby Fútbol"],
               ].map(([k,lbl,ph])=>(
                 <div key={k} style={{marginBottom:12}}>
@@ -2648,9 +2626,14 @@ function AdminScreen({ user, onLogout }) {
               return(
                 <div key={id} style={{background:bg,borderRadius:14,padding:"16px 18px",
                   border:`2px solid ${border}`,marginBottom:12}}>
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
-                    fontSize:15,color:C.navy,textTransform:"uppercase",marginBottom:4}}>{titulo}</div>
-                  <div style={{fontSize:12,color:C.grayMid,marginBottom:10}}>{desc}</div>
+                  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+                    <ClubLogo size={36}/>
+                    <div>
+                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+                        fontSize:15,color:C.navy,textTransform:"uppercase"}}>{titulo}</div>
+                      <div style={{fontSize:12,color:C.grayMid}}>{desc}</div>
+                    </div>
+                  </div>
                   <div style={{background:"white",borderRadius:8,padding:"8px 12px",
                     fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:C.navy,
                     wordBreak:"break-all",marginBottom:10,border:`1px solid ${border}`}}>
@@ -5078,8 +5061,9 @@ function AccesoJugadoresDirecto() {
     }
   };
 
-  const cbu = configAcceso.cbu || "";
-  const alias = configAcceso.alias || "";
+  const numeroCuenta = configAcceso.numero_cuenta || "";
+  const nombreBanco  = configAcceso.nombre_banco  || "";
+  const sucursal     = configAcceso.sucursal       || "";
   const instrucciones = configAcceso.instrucciones_pago || "";
   const nombreClub = configAcceso.nombre_club || "Paysandú FC — Baby Fútbol";
 
@@ -5101,30 +5085,35 @@ function AccesoJugadoresDirecto() {
         </div>
 
         {/* INSTRUCCIONES TRANSFERENCIA */}
-        {(cbu||alias||instrucciones)&&(
+        {(numeroCuenta||nombreBanco||instrucciones)&&(
           <div style={{background:"rgba(255,255,255,.08)",borderRadius:16,padding:"14px 18px",
             marginBottom:18,border:"1px solid rgba(255,255,255,.15)"}}>
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:14,
               color:"#e8b84b",textTransform:"uppercase",marginBottom:10}}>
               🏦 Cómo pagar por transferencia
             </div>
-            {(cbu||alias)&&(
+            {(numeroCuenta||nombreBanco)&&(
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
-                {cbu&&<div style={{background:"rgba(255,255,255,.1)",borderRadius:8,padding:"8px 10px"}}>
-                  <div style={{fontSize:9,color:"rgba(255,255,255,.5)",textTransform:"uppercase",fontWeight:600}}>CBU</div>
+                {numeroCuenta&&<div style={{background:"rgba(255,255,255,.1)",borderRadius:8,padding:"8px 10px"}}>
+                  <div style={{fontSize:9,color:"rgba(255,255,255,.5)",textTransform:"uppercase",fontWeight:600}}>N° de cuenta</div>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
-                    color:"white",wordBreak:"break-all"}}>{cbu}</div>
+                    color:"white",wordBreak:"break-all"}}>{numeroCuenta}</div>
                 </div>}
-                {alias&&<div style={{background:"rgba(255,255,255,.1)",borderRadius:8,padding:"8px 10px"}}>
-                  <div style={{fontSize:9,color:"rgba(255,255,255,.5)",textTransform:"uppercase",fontWeight:600}}>Alias</div>
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,
-                    color:"white"}}>{alias}</div>
+                {nombreBanco&&<div style={{background:"rgba(255,255,255,.1)",borderRadius:8,padding:"8px 10px"}}>
+                  <div style={{fontSize:9,color:"rgba(255,255,255,.5)",textTransform:"uppercase",fontWeight:600}}>Banco</div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
+                    color:"white"}}>{nombreBanco}</div>
+                </div>}
+                {sucursal&&<div style={{background:"rgba(255,255,255,.1)",borderRadius:8,padding:"8px 10px",gridColumn:"span 2"}}>
+                  <div style={{fontSize:9,color:"rgba(255,255,255,.5)",textTransform:"uppercase",fontWeight:600}}>Sucursal</div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
+                    color:"white"}}>{sucursal}</div>
                 </div>}
               </div>
             )}
             <div style={{fontSize:12,color:"rgba(255,255,255,.75)",lineHeight:1.6}}>
               <div style={{marginBottom:4}}>📸 <strong>Para registrar el pago:</strong></div>
-              <div>1. Hacé la transferencia al CBU/alias indicado</div>
+              <div>1. Hacé la transferencia a la cuenta indicada</div>
               <div>2. Buscá tu nombre en la lista de abajo</div>
               <div>3. Entrá a tu ficha y seleccioná los meses a pagar</div>
               <div>4. Elegí <strong>Transferencia</strong>, sacá foto o adjuntá el comprobante</div>
