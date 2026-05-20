@@ -887,7 +887,7 @@ function PublicoView({ user, onLogout }) {
             marginBottom:16,border:"2px solid #bfdbfe",textAlign:"center",color:"#64748b",fontSize:13}}>
             ⏳ Cargando datos bancarios...
           </div>
-        ) : (configPago.numero_cuenta||configPago.cbu||configPago.nombre_banco||configPago.alias||configPago.nombre_club||configPago.instrucciones_pago) ? (
+        ) : (configPago.numero_cuenta||configPago.CBU||configPago.cbu||configPago.nombre_banco||configPago.alias||configPago.nombre_club||configPago.instrucciones_pago) ? (
           <div style={{background:"linear-gradient(135deg,#1e3a8a,#1e40af)",borderRadius:14,
             padding:"14px 16px",marginBottom:16,border:"2px solid #3b82f6"}}>
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,
@@ -896,14 +896,14 @@ function PublicoView({ user, onLogout }) {
             </div>
             {/* Datos en grid */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:8}}>
-              {(configPago.numero_cuenta||configPago.cbu)&&(
+              {(configPago.numero_cuenta||configPago.CBU||configPago.cbu)&&(
                 <div style={{background:"rgba(255,255,255,.15)",borderRadius:8,padding:"8px 10px"}}>
                   <div style={{fontSize:9,color:"rgba(255,255,255,.6)",textTransform:"uppercase",fontWeight:700,marginBottom:2}}>
                     {configPago.numero_cuenta?"N° Cuenta":"CBU"}
                   </div>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
                     color:"white",wordBreak:"break-all"}}>
-                    {configPago.numero_cuenta||configPago.cbu}
+                    {configPago.numero_cuenta||configPago.CBU||configPago.cbu}
                   </div>
                 </div>
               )}
@@ -5150,8 +5150,8 @@ function AccesoJugadoresDirecto() {
     }
   };
 
-  const numeroCuenta = configAcceso.numero_cuenta || "";
-  const nombreBanco  = configAcceso.nombre_banco  || "";
+  const numeroCuenta = configAcceso.numero_cuenta || configAcceso.CBU || configAcceso.cbu || "";
+  const nombreBanco  = configAcceso.nombre_banco  || configAcceso.alias || "";
   const sucursal     = configAcceso.sucursal       || "";
   const instrucciones = configAcceso.instrucciones_pago || "";
   const nombreClub = configAcceso.nombre_club || "Paysandú FC — Baby Fútbol";
