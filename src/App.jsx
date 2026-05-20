@@ -840,9 +840,9 @@ function PublicoView({ user, onLogout }) {
               color:C.white,textTransform:"uppercase"}}>Paysandú FC — Baby</div>
             <div style={{color:C.lilac,fontSize:12}}>Ficha del jugador</div>
           </div>
-          <button onClick={onLogout} style={{background:"rgba(255,255,255,.1)",border:"none",
+          <button onClick={()=>window.location.href=`${window.location.origin}?acceso=jugadores`} style={{background:"rgba(255,255,255,.1)",border:"none",
             borderRadius:8,padding:"7px 12px",color:C.white,fontFamily:"'Barlow Condensed',sans-serif",
-            fontWeight:700,fontSize:12,textTransform:"uppercase"}}>Salir</button>
+            fontWeight:700,fontSize:12,textTransform:"uppercase"}}>← Volver</button>
         </div>
       </div>
 
@@ -892,7 +892,7 @@ function PublicoView({ user, onLogout }) {
             padding:"14px 16px",marginBottom:16,border:"2px solid #3b82f6"}}>
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,
               color:"white",textTransform:"uppercase",marginBottom:10,letterSpacing:".05em"}}>
-              🏦 Datos y procedimiento para realizar los pagos
+              🏦 Instrucciones para el pago por transferencia
             </div>
             {/* Datos en grid */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:8}}>
@@ -5226,7 +5226,7 @@ function AccesoJugadoresDirecto() {
               color:"white",textTransform:"uppercase",marginBottom:14,textAlign:"center"}}>
               Seleccioná tu categoría
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
               {cats.map(c=>(
                 <button key={c.id} onClick={()=>elegirCat(c.id)}
                   style={{padding:"16px 8px",background:"rgba(255,255,255,.12)",
@@ -5237,6 +5237,26 @@ function AccesoJugadoresDirecto() {
                 </button>
               ))}
             </div>
+
+            {/* Instructivo agregar a pantalla */}
+            <div style={{background:"rgba(255,255,255,.06)",borderRadius:12,padding:"12px 14px",
+              border:"1px solid rgba(255,255,255,.12)",marginBottom:12}}>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:12,
+                color:"#e8b84b",textTransform:"uppercase",marginBottom:8}}>
+                📱 Agregá esta página a tu celular
+              </div>
+              <div style={{fontSize:11,color:"rgba(255,255,255,.75)",lineHeight:1.7}}>
+                <div style={{marginBottom:4,fontWeight:600,color:"rgba(255,255,255,.9)"}}>📱 iPhone (Safari):</div>
+                <div>1. Tocá el ícono <strong>Compartir</strong> (cuadrado con flecha ↑)</div>
+                <div>2. Seleccioná <strong>"Agregar a pantalla de inicio"</strong></div>
+                <div>3. Tocá <strong>"Agregar"</strong></div>
+                <div style={{marginTop:8,marginBottom:4,fontWeight:600,color:"rgba(255,255,255,.9)"}}>🤖 Android (Chrome):</div>
+                <div>1. Tocá los <strong>3 puntos</strong> del menú (⋮)</div>
+                <div>2. Seleccioná <strong>"Agregar a pantalla principal"</strong></div>
+                <div>3. Tocá <strong>"Agregar"</strong></div>
+              </div>
+            </div>
+
           </div>
         )}
 
