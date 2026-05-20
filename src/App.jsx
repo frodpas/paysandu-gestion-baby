@@ -1289,13 +1289,13 @@ function FormAltaJugador({ categorias, onSave, onCancel, initialData=null, reado
         )}
 
         {/* NUEVO FICHAJE — solo en alta nueva */}
-        {!initialData&&!readOnly&&(
+        {!initialData?.id&&!readOnly&&(
           <div style={{marginBottom:16,background:"#eff6ff",borderRadius:12,
             padding:"14px 16px",border:"2px solid #bfdbfe"}}>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:nuevoFichaje?12:0}}>
               <input type="checkbox" id="nuevo_fichaje" checked={nuevoFichaje}
                 onChange={e=>setNuevoFichaje(e.target.checked)}
-                style={{width:18,height:18,cursor:"pointer"}}/>
+                style={{width:18,height:18,cursor:"pointer",accentColor:"#1d4ed8"}}/>
               <label htmlFor="nuevo_fichaje"
                 style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:14,
                   color:"#1d4ed8",cursor:"pointer",textTransform:"uppercase"}}>
@@ -1304,29 +1304,38 @@ function FormAltaJugador({ categorias, onSave, onCancel, initialData=null, reado
             </div>
             {nuevoFichaje&&(
               <div>
-                <div style={{fontSize:12,color:"#374151",marginBottom:10,lineHeight:1.5}}>
-                  Seleccioná el mes desde el que comienza a pagar cuotas. Los meses anteriores quedarán como <strong>exentos</strong> automáticamente.
+                <div style={{fontSize:12,color:"#374151",marginBottom:12,lineHeight:1.5}}>
+                  Indicá a partir de qué mes paga la cuota. Los meses anteriores quedarán como <strong>⭕ Exento</strong> automáticamente.
                 </div>
                 <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
                   color:"#1d4ed8",textTransform:"uppercase",marginBottom:8}}>
-                  Paga desde:
+                  Paga a partir de:
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
                   {MESES.map((m,i)=>{
                     const mes=i+1;
                     const sel=mesInicio===mes;
                     return(
-                      <button key={mes} onClick={()=>setMesInicio(mes)}
-                        style={{padding:"8px 4px",borderRadius:8,border:`2px solid ${sel?"#1d4ed8":"#bfdbfe"}`,
-                          background:sel?"#1d4ed8":"white",color:sel?"white":"#1d4ed8",
-                          fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer"}}>
+                      <button key={mes}
+                        onClick={e=>{e.preventDefault();setMesInicio(mes);}}
+                        style={{padding:"10px 4px",borderRadius:8,
+                          border:`2px solid ${sel?"#1d4ed8":"#bfdbfe"}`,
+                          background:sel?"#1d4ed8":"white",
+                          color:sel?"white":"#1d4ed8",
+                          fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
+                          fontSize:13,cursor:"pointer",
+                          boxShadow:sel?"0 2px 8px rgba(29,78,216,.3)":"none"}}>
                         {m.slice(0,3)}
                       </button>
                     );
                   })}
                 </div>
-                <div style={{marginTop:10,fontSize:11,color:"#6b7280",fontStyle:"italic"}}>
-                  Meses anteriores a {MESES[mesInicio-1]} quedarán como ⭕ Exento
+                <div style={{marginTop:10,padding:"8px 12px",background:"#dbeafe",borderRadius:8,
+                  fontSize:12,color:"#1e40af",fontWeight:600}}>
+                  {mesInicio===1
+                    ? "✅ Paga desde el inicio del año (sin exenciones)"
+                    : `⭕ Meses Enero a ${MESES[mesInicio-2]} quedarán como Exento — paga desde ${MESES[mesInicio-1]}`
+                  }
                 </div>
               </div>
             )}
@@ -5016,15 +5025,27 @@ function DelegadoScreen({ user, onLogout }) {
 
   const jugFiltrados = filtCat==="todos"?jugadores:jugadores.filter(j=>j.categoria_id===filtCat);
 
-  const saveJugador = async (data) => {
+  const saveJugador = async (data, mesInicio=null) => {
     if (selJugador) {
       const {pagos:_,...rest}=data;
       await sbFetch(`baby_jugadores?id=eq.${selJugador.id}`,"PATCH",rest);
     } else {
+      const newId = uid();
       await sbFetch("baby_jugadores","POST",{
-        ...data, id:uid(), org_id:"paysandu", estado:"activo",
+        ...data, id:newId, org_id:"paysandu", estado:"activo",
         pendiente_validacion:false, created_at:new Date().toISOString(),
       });
+      // Si es nuevo fichaje, eximir meses anteriores al mes de inicio
+      if (mesInicio && mesInicio > 1) {
+        for (let mes = 1; mes < mesInicio; mes++) {
+          await sbFetch("baby_pagos","POST",{
+            id:uid(), jugador_id:newId, org_id:"paysandu",
+            año:new Date().getFullYear(), mes, monto:0,
+            metodo_pago:"exento", fecha_pago:new Date().toISOString().slice(0,10),
+            pendiente_verificacion:false,
+          });
+        }
+      }
     }
     setModal(null); setSelJug(null);
     const jugs = await sbFetch("baby_jugadores?select=*&order=nombre.asc");
