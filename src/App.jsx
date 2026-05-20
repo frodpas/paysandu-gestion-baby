@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";// v2
+import { useState, useEffect, useRef, useCallback } from "react";
 
 /* ══ CONFIG ═══════════════════════════════════════════════════════════ */
 const SB_URL = "https://ipgvsrmlgavsmickwrst.supabase.co";
@@ -899,7 +899,7 @@ function PublicoView({ user, onLogout }) {
               {(configPago.numero_cuenta||configPago.CBU||configPago.cbu)&&(
                 <div style={{background:"rgba(255,255,255,.15)",borderRadius:8,padding:"8px 10px"}}>
                   <div style={{fontSize:9,color:"rgba(255,255,255,.6)",textTransform:"uppercase",fontWeight:700,marginBottom:2}}>
-                    {configPago.numero_cuenta?"N° Cuenta":"CBU"}
+                    Cuenta Bancaria
                   </div>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
                     color:"white",wordBreak:"break-all"}}>
@@ -910,7 +910,7 @@ function PublicoView({ user, onLogout }) {
               {(configPago.nombre_banco||configPago.alias)&&(
                 <div style={{background:"rgba(255,255,255,.15)",borderRadius:8,padding:"8px 10px"}}>
                   <div style={{fontSize:9,color:"rgba(255,255,255,.6)",textTransform:"uppercase",fontWeight:700,marginBottom:2}}>
-                    {configPago.nombre_banco?"Banco":"Alias"}
+                    Banco
                   </div>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
                     color:"white"}}>
@@ -2606,7 +2606,13 @@ function AdminScreen({ user, onLogout }) {
               <button onClick={async()=>{
                   setSavingConfig(true);
                   // Upsert config
-                  const payload = {...configAcceso, org_id:"paysandu"};
+              const payload = {
+                ...configAcceso,
+                org_id:"paysandu",
+                // guardar en columnas existentes como fallback
+                cbu: configAcceso.numero_cuenta || configAcceso.cbu || "",
+                alias: configAcceso.nombre_banco || configAcceso.alias || "",
+              };
                   let res = await sbFetch("baby_config_acceso?org_id=eq.paysandu","PATCH",payload);
                   if (!res || (Array.isArray(res) && res.length===0)) {
                     res = await sbFetch("baby_config_acceso","POST",{...payload,id:uid()});
