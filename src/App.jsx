@@ -1457,7 +1457,7 @@ function AdminScreen({ user, onLogout }) {
   const [transfMesDesde, setTransfMesDesde] = useState(1);
   const [transfMesHasta, setTransfMesHasta] = useState(new Date().getMonth()+1);
   const [modalLimpieza,  setModalLimpieza]  = useState(false);
-  const [configAcceso,   setConfigAcceso]   = useState({numero_cuenta:"",nombre_banco:"",sucursal:"",instrucciones_pago:"",nombre_club:"Paysandú FC"});
+  const [pendingFichaje, setPendingFichaje] = useState(null); // {pend, mesInicio} — modal mes inicio nuevo fichaje
   const [savingConfig,   setSavingConfig]   = useState(false);
   const [savedConfig,    setSavedConfig]    = useState(false);
   const [claveInput,     setClaveInput]     = useState("");
@@ -1750,8 +1750,15 @@ function AdminScreen({ user, onLogout }) {
     load();
   };
 
-  const validarPendiente = async (pend) => {
+  const validarPendiente = async (pend, mesInicioOverride=null) => {
     const datos = typeof pend.datos_json==="string" ? JSON.parse(pend.datos_json) : pend.datos_json;
+
+    // Si es nuevo fichaje y no se indicó mes, mostrar picker primero
+    if (datos.nuevo_fichaje && mesInicioOverride===null) {
+      setPendingFichaje({pend, mesInicio: new Date().getMonth()+1});
+      return;
+    }
+    const mesInicio = mesInicioOverride;
 
     // Si es formulario de delegado
     if (datos._tipo === "delegado") {
@@ -1800,7 +1807,14 @@ function AdminScreen({ user, onLogout }) {
     };
     const res = await sbFetch("baby_jugadores", "POST", jugador);
     if (res) {
+      // Si es nuevo fichaje, eximir meses anteriores al mes de inicio
+      if (mesInicio && mesInicio > 1) {
+        for (let mes = 1; mes < mesInicio; mes++) {
+          await registrarPago(jugador.id, mes, 0, "exento");
+        }
+      }
       await sbFetch(`baby_formularios_pendientes?id=eq.${pend.id}`, "DELETE");
+      setPendingFichaje(null);
       load();
     } else {
       const detail = window._lastSbError || "Sin detalle";
@@ -4057,6 +4071,61 @@ function AdminScreen({ user, onLogout }) {
         jug={jugadores.find(j=>j.id===qrLink)||null}
         onClose={()=>setModal(null)}
       />}
+
+      {/* MODAL: Nuevo fichaje — elegir mes de inicio */}
+      {pendingFichaje&&(
+        <Modal onClose={()=>setPendingFichaje(null)} maxWidth={420}>
+          <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"16px 20px"}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
+              color:C.white,textTransform:"uppercase"}}>⚽ Nuevo fichaje</div>
+            <div style={{color:C.lilac,fontSize:12,marginTop:3}}>
+              {(typeof pendingFichaje.pend.datos_json==="string"
+                ?JSON.parse(pendingFichaje.pend.datos_json)
+                :pendingFichaje.pend.datos_json).nombre}
+            </div>
+          </div>
+          <div style={{padding:"20px"}}>
+            <div style={{fontSize:13,color:C.navy,marginBottom:14,lineHeight:1.6}}>
+              La familia indicó que es un <strong>nuevo fichaje</strong>. Seleccioná a partir de qué mes paga la cuota. Los meses anteriores quedarán como <strong>⭕ Exento</strong>.
+            </div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
+              color:C.navy,textTransform:"uppercase",marginBottom:8}}>Paga a partir de:</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,marginBottom:14}}>
+              {MESES.map((m,i)=>{
+                const mes=i+1;
+                const sel=pendingFichaje.mesInicio===mes;
+                return(
+                  <button key={mes} onClick={()=>setPendingFichaje(p=>({...p,mesInicio:mes}))}
+                    style={{padding:"10px 4px",borderRadius:8,
+                      border:`2px solid ${sel?"#1d4ed8":"#bfdbfe"}`,
+                      background:sel?"#1d4ed8":"white",color:sel?"white":"#1d4ed8",
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+                    {m.slice(0,3)}
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{background:"#eff6ff",borderRadius:8,padding:"8px 12px",marginBottom:16,
+              fontSize:12,color:"#1e40af",fontWeight:600}}>
+              {pendingFichaje.mesInicio===1
+                ? "✅ Paga desde el inicio del año (sin exenciones)"
+                : `⭕ Enero a ${MESES[pendingFichaje.mesInicio-2]} → Exento | Paga desde ${MESES[pendingFichaje.mesInicio-1]}`}
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>setPendingFichaje(null)}
+                style={{flex:1,padding:"11px",background:"transparent",color:C.navy,
+                  border:`2px solid ${C.navy}`,borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+                  fontWeight:700,fontSize:13,textTransform:"uppercase"}}>Cancelar</button>
+              <button onClick={()=>validarPendiente(pendingFichaje.pend, pendingFichaje.mesInicio)}
+                style={{flex:2,padding:"11px",background:`linear-gradient(135deg,${C.green},#15803d)`,
+                  color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+                  fontWeight:900,fontSize:14,textTransform:"uppercase"}}>
+                ✅ Confirmar alta
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
@@ -4995,6 +5064,7 @@ function DelegadoScreen({ user, onLogout }) {
   const [categorias,  setCat]       = useState([]);
   const [jugadores,   setJug]       = useState([]);
   const [pendientes,  setPend]      = useState([]);
+  const [pendingFichajeDel, setPendingFichajeDel] = useState(null); // modal mes inicio nuevo fichaje
   const [planPagos,   setPlan]      = useState([]);
   const [filtCat,     setFiltCat]   = useState("todos");
   const [modal,       setModal]     = useState(null);
@@ -5052,22 +5122,43 @@ function DelegadoScreen({ user, onLogout }) {
     setJug((jugs||[]).filter(j=>misCategs.length===0||misCategs.includes(j.categoria_id)));
   };
 
-  const validarPend = async (p) => {
+  const validarPend = async (p, mesInicioOverride=null) => {
     const datos = typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
-    const { foto_url, tipo_cuota, ...resto } = datos;
+
+    // Si es nuevo fichaje y no se indicó mes, mostrar picker primero
+    if (datos.nuevo_fichaje && mesInicioOverride===null) {
+      setPendingFichajeDel({pend:p, mesInicio: new Date().getMonth()+1});
+      return;
+    }
+    const mesInicio = mesInicioOverride;
+
+    const { foto_url, tipo_cuota, nuevo_fichaje:_nf, ...resto } = datos;
+    const newId = uid();
     const jugador = {
       ...resto,
-      foto_url: foto_url || "",
+      foto_url: foto_url || p.foto_url || "",
       tipo_cuota: tipo_cuota || "base",
-      id: uid(), org_id:"paysandu", estado:"activo",
+      id: newId, org_id:"paysandu", estado:"activo",
       pendiente_validacion:false, created_at:new Date().toISOString(),
     };
     const res = await sbFetch("baby_jugadores","POST",jugador);
     if (!res) {
       await sbFetch("baby_jugadores","POST",{...jugador, foto_url:""});
     }
+    // Eximir meses anteriores si nuevo fichaje
+    if (mesInicio && mesInicio > 1) {
+      for (let mes = 1; mes < mesInicio; mes++) {
+        await sbFetch("baby_pagos","POST",{
+          id:uid(), jugador_id:newId, org_id:"paysandu",
+          año:new Date().getFullYear(), mes, monto:0,
+          metodo_pago:"exento", fecha_pago:new Date().toISOString().slice(0,10),
+          pendiente_verificacion:false,
+        });
+      }
+    }
     await sbFetch(`baby_formularios_pendientes?id=eq.${p.id}`,"DELETE");
     setPend(prev=>prev.filter(x=>x.id!==p.id));
+    setPendingFichajeDel(null);
     const jugs = await sbFetch("baby_jugadores?select=*&order=nombre.asc");
     setJug((jugs||[]).filter(j=>misCategs.length===0||misCategs.includes(j.categoria_id)));
   };
@@ -5349,6 +5440,61 @@ function DelegadoScreen({ user, onLogout }) {
           <FormAltaJugador categorias={categorias} initialData={selJugador}
             onSave={()=>{}} onCancel={()=>{setModal(null);setSelJug(null);}}
             showTipoCuota={false} readOnly={true}/>
+        </Modal>
+      )}
+
+      {/* MODAL: Nuevo fichaje delegado — elegir mes de inicio */}
+      {pendingFichajeDel&&(
+        <Modal onClose={()=>setPendingFichajeDel(null)} maxWidth={420}>
+          <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"16px 20px"}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
+              color:C.white,textTransform:"uppercase"}}>⚽ Nuevo fichaje</div>
+            <div style={{color:C.lilac,fontSize:12,marginTop:3}}>
+              {(typeof pendingFichajeDel.pend.datos_json==="string"
+                ?JSON.parse(pendingFichajeDel.pend.datos_json)
+                :pendingFichajeDel.pend.datos_json).nombre}
+            </div>
+          </div>
+          <div style={{padding:"20px"}}>
+            <div style={{fontSize:13,color:C.navy,marginBottom:14,lineHeight:1.6}}>
+              La familia indicó que es un <strong>nuevo fichaje</strong>. Seleccioná a partir de qué mes paga la cuota. Los meses anteriores quedarán como <strong>⭕ Exento</strong>.
+            </div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
+              color:C.navy,textTransform:"uppercase",marginBottom:8}}>Paga a partir de:</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,marginBottom:14}}>
+              {MESES.map((m,i)=>{
+                const mes=i+1;
+                const sel=pendingFichajeDel.mesInicio===mes;
+                return(
+                  <button key={mes} onClick={()=>setPendingFichajeDel(p=>({...p,mesInicio:mes}))}
+                    style={{padding:"10px 4px",borderRadius:8,
+                      border:`2px solid ${sel?"#1d4ed8":"#bfdbfe"}`,
+                      background:sel?"#1d4ed8":"white",color:sel?"white":"#1d4ed8",
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+                    {m.slice(0,3)}
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{background:"#eff6ff",borderRadius:8,padding:"8px 12px",marginBottom:16,
+              fontSize:12,color:"#1e40af",fontWeight:600}}>
+              {pendingFichajeDel.mesInicio===1
+                ? "✅ Paga desde el inicio del año (sin exenciones)"
+                : `⭕ Enero a ${MESES[pendingFichajeDel.mesInicio-2]} → Exento | Paga desde ${MESES[pendingFichajeDel.mesInicio-1]}`}
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>setPendingFichajeDel(null)}
+                style={{flex:1,padding:"11px",background:"transparent",color:C.navy,
+                  border:`2px solid ${C.navy}`,borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+                  fontWeight:700,fontSize:13,textTransform:"uppercase"}}>Cancelar</button>
+              <button onClick={()=>validarPend(pendingFichajeDel.pend, pendingFichajeDel.mesInicio)}
+                style={{flex:2,padding:"11px",background:`linear-gradient(135deg,${C.green},#15803d)`,
+                  color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+                  fontWeight:900,fontSize:14,textTransform:"uppercase"}}>
+                ✅ Confirmar alta
+              </button>
+            </div>
+          </div>
         </Modal>
       )}
     </div>
@@ -5951,6 +6097,7 @@ function FormularioPublico({ tipo, org }) {
   const [categorias, setCat]   = useState([]);
   const [sent,       setSent]  = useState(false);
   const [loading,    setLoading]= useState(false);
+  const [nuevoFichaje, setNuevoFichaje] = useState(false);
 
   useEffect(()=>{
     sbFetch("baby_categorias?select=*&order=nombre.asc").then(d=>setCat(d||[]));
@@ -5973,11 +6120,10 @@ function FormularioPublico({ tipo, org }) {
   const enviar = async () => {
     if (!valid) return;
     setLoading(true);
-    // Separar foto del JSON para evitar límite de tamaño
     const { foto_url: fotoJugForm, ...fJugSinFoto } = f;
     await sbFetch("baby_formularios_pendientes","POST",{
       id:uid(), org_id:org,
-      datos_json: JSON.stringify(fJugSinFoto),
+      datos_json: JSON.stringify({...fJugSinFoto, nuevo_fichaje: nuevoFichaje}),
       foto_url: fotoJugForm||"",
       created_at: new Date().toISOString(),
     });
@@ -6089,6 +6235,25 @@ function FormularioPublico({ tipo, org }) {
               <option value="">— Seleccioná —</option>
               {categorias.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}
             </select>
+          </div>
+
+          {/* NUEVO FICHAJE */}
+          <div style={{marginBottom:16,background:"#eff6ff",borderRadius:12,
+            padding:"14px 16px",border:"2px solid #bfdbfe"}}>
+            <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+              <input type="checkbox" id="pub_fichaje" checked={nuevoFichaje}
+                onChange={e=>setNuevoFichaje(e.target.checked)}
+                style={{width:20,height:20,marginTop:2,cursor:"pointer",accentColor:"#1d4ed8",flexShrink:0}}/>
+              <label htmlFor="pub_fichaje" style={{cursor:"pointer"}}>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:14,
+                  color:"#1d4ed8",textTransform:"uppercase"}}>
+                  ⚽ Soy nuevo en el club
+                </div>
+                <div style={{fontSize:12,color:"#374151",marginTop:3,lineHeight:1.5}}>
+                  Marcá esta opción si el jugador se incorpora durante el año. El delegado o admin indicará a partir de qué mes paga cuota.
+                </div>
+              </label>
+            </div>
           </div>
 
           <button onClick={enviar} disabled={!valid||loading}
