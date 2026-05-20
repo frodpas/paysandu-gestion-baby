@@ -979,8 +979,10 @@ function PublicoView({ user, onLogout }) {
                   fontSize:11,color:C.green}}>{m}</div>
                 <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
                   fontSize:13,color:C.green}}>{fmt(monto)}</div>
-                <div style={{fontSize:9,marginTop:2,color:"#16a34a",fontWeight:700,textTransform:"uppercase"}}>
-                  {pago.metodo_pago==="exento"?"Exento":"✓ Pagado"}
+                <div style={{fontSize:9,marginTop:2,
+                  color:pago.metodo_pago==="exento"?"#92400e":"#16a34a",
+                  fontWeight:700,textTransform:"uppercase"}}>
+                  {pago.metodo_pago==="exento"?"⭕ Exento":"✓ Pagado"}
                 </div>
               </div>
             );
@@ -1143,6 +1145,8 @@ function FormAltaJugador({ categorias, onSave, onCancel, initialData=null, reado
     fecha_nacimiento:"", ci:"", numero_camiseta:"", direccion:"",
     foto_url:"", tipo_cuota:"base", pin_familia:"",
   });
+  const [nuevoFichaje, setNuevoFichaje] = useState(false);
+  const [mesInicio, setMesInicio] = useState(new Date().getMonth()+1);
 
   const set = (k,v) => setF(p=>({...p,[k]:v}));
 
@@ -1284,13 +1288,58 @@ function FormAltaJugador({ categorias, onSave, onCancel, initialData=null, reado
           </div>
         )}
 
+        {/* NUEVO FICHAJE — solo en alta nueva */}
+        {!initialData&&!readOnly&&(
+          <div style={{marginBottom:16,background:"#eff6ff",borderRadius:12,
+            padding:"14px 16px",border:"2px solid #bfdbfe"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:nuevoFichaje?12:0}}>
+              <input type="checkbox" id="nuevo_fichaje" checked={nuevoFichaje}
+                onChange={e=>setNuevoFichaje(e.target.checked)}
+                style={{width:18,height:18,cursor:"pointer"}}/>
+              <label htmlFor="nuevo_fichaje"
+                style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:14,
+                  color:"#1d4ed8",cursor:"pointer",textTransform:"uppercase"}}>
+                ⚽ Es un nuevo fichaje (se incorpora durante el año)
+              </label>
+            </div>
+            {nuevoFichaje&&(
+              <div>
+                <div style={{fontSize:12,color:"#374151",marginBottom:10,lineHeight:1.5}}>
+                  Seleccioná el mes desde el que comienza a pagar cuotas. Los meses anteriores quedarán como <strong>exentos</strong> automáticamente.
+                </div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
+                  color:"#1d4ed8",textTransform:"uppercase",marginBottom:8}}>
+                  Paga desde:
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
+                  {MESES.map((m,i)=>{
+                    const mes=i+1;
+                    const sel=mesInicio===mes;
+                    return(
+                      <button key={mes} onClick={()=>setMesInicio(mes)}
+                        style={{padding:"8px 4px",borderRadius:8,border:`2px solid ${sel?"#1d4ed8":"#bfdbfe"}`,
+                          background:sel?"#1d4ed8":"white",color:sel?"white":"#1d4ed8",
+                          fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer"}}>
+                        {m.slice(0,3)}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div style={{marginTop:10,fontSize:11,color:"#6b7280",fontStyle:"italic"}}>
+                  Meses anteriores a {MESES[mesInicio-1]} quedarán como ⭕ Exento
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         <div style={{display:"flex",gap:10}}>
           <button onClick={onCancel}
             style={{flex:1,padding:"11px",background:"transparent",color:C.navy,
               border:`2px solid ${C.navy}`,borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
               fontWeight:700,fontSize:14,textTransform:"uppercase"}}>{readOnly?"Cerrar":"Cancelar"}</button>
           {!readOnly&&(
-            <button onClick={()=>valid&&onSave(f)} disabled={!valid}
+            <button onClick={()=>valid&&onSave(f, nuevoFichaje?mesInicio:null)} disabled={!valid}
               style={{flex:2,padding:"11px",background:valid?`linear-gradient(135deg,${C.navy},${C.navyLight})`:"#e2e2da",
                 color:valid?C.white:C.grayMid,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
                 fontWeight:900,fontSize:15,textTransform:"uppercase"}}>Guardar</button>
@@ -1608,7 +1657,7 @@ function AdminScreen({ user, onLogout }) {
 
   const pagoJugMes = (jugId, mes) => pagos.find(p=>p.jugador_id===jugId&&p.mes===mes);
 
-  const saveJugador = async (data) => {
+  const saveJugador = async (data, mesInicio=null) => {
     // Si foto es base64 muy grande (>200KB), no la guardamos en este campo
     const fotoOk = data.foto_url && data.foto_url.length < 500000 ? data.foto_url : (data.foto_url?.startsWith("http") ? data.foto_url : "");
     const payload = {
@@ -1639,6 +1688,12 @@ function AdminScreen({ user, onLogout }) {
         const detail = window._lastSbError || "Sin detalle";
         alert("❌ Error al crear jugador:\n\n" + detail + "\n\n¿Ya ejecutaste el SQL para deshabilitar RLS en Supabase?");
         return;
+      }
+      // Si es nuevo fichaje, eximir meses anteriores al mes de inicio
+      if (mesInicio && mesInicio > 1) {
+        for (let mes = 1; mes < mesInicio; mes++) {
+          await registrarPago(newId, mes, 0, "exento");
+        }
       }
     }
     setModal(null); setSelJugador(null);
@@ -2692,9 +2747,13 @@ function AdminScreen({ user, onLogout }) {
               {id:"delegados",titulo:"🏃 Acceso Delegados",desc:"Para que los delegados ingresen al sistema",color:"#0369a1",bg:"#f0f9ff",border:"#93c5fd"},
             ].map(({id,titulo,desc,color,bg,border})=>{
               const link = `${window.location.origin}/?acceso=${id}`;
+              const cuenta = configAcceso.numero_cuenta||configAcceso.CBU||configAcceso.cbu||"";
+              const banco  = configAcceso.nombre_banco||configAcceso.alias||"";
+              const instruc = configAcceso.instrucciones_pago||"";
+              const nombreClub = configAcceso.nombre_club||"Paysandú FC Baby";
               const msgWA = id==="jugadores"
-                ? `*${configAcceso.nombre_club||"Paysandú FC Baby"}*\n\n⚽ Acceso para pago de cuotas:\n${link}\n\n📋 Para pagar:\n1. Seleccioná tu categoría\n2. Buscá tu nombre\n3. Elegí los meses y el método de pago`
-                : `*${configAcceso.nombre_club||"Paysandú FC Baby"}*\n\n🏃 Acceso Delegados:\n${link}`;
+                ? `*${nombreClub}*\n\n⚽ Acceso para pago de cuotas:\n${link}\n\n🏦 *Datos para la transferencia:*\n${cuenta?`• Cuenta: ${cuenta}\n`:""}${banco?`• Banco: ${banco}\n`:""}${configAcceso.sucursal?`• Sucursal: ${configAcceso.sucursal}\n`:""}• A nombre de: ${nombreClub}\n${instruc?`\n📝 ${instruc}\n`:""}\n📋 *Para pagar:*\n1. Entrá al link\n2. Seleccioná tu categoría\n3. Buscá tu nombre\n4. Elegí los meses y adjuntá el comprobante`
+                : `*${nombreClub}*\n\n🏃 Acceso Delegados:\n${link}`;
               return(
                 <div key={id} style={{background:bg,borderRadius:14,padding:"16px 18px",
                   border:`2px solid ${border}`,marginBottom:12}}>
@@ -3860,9 +3919,11 @@ function AdminScreen({ user, onLogout }) {
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:10}}>
                     <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,color:C.navy}}>{fmt(monto)}</div>
-                    <span style={{background:pago?"#dcfce7":"#fee2e2",color:pago?"#16a34a":"#dc2626",
+                    <span style={{
+                      background:pago?(pago.metodo_pago==="exento"?"#fef3c7":"#dcfce7"):"#fee2e2",
+                      color:pago?(pago.metodo_pago==="exento"?"#92400e":"#16a34a"):"#dc2626",
                       borderRadius:16,padding:"2px 10px",fontSize:11,fontWeight:700}}>
-                      {pago?(pago.metodo_pago==="exento"?"Exento":"✓ Pagado"):"Pendiente"}
+                      {pago?(pago.metodo_pago==="exento"?"⭕ Exento":"✓ Pagado"):"Pendiente"}
                     </span>
                   </div>
                 </div>
@@ -3891,11 +3952,14 @@ function AdminScreen({ user, onLogout }) {
                       const monto=cuotaMesLocal(mes);
                       const pago=pagos.find(p=>p.jugador_id===jugPagosVer.id&&p.mes===mes);
                       if(pago) return(
-                        <div key={mes} style={{padding:"8px 4px",borderRadius:8,background:"#dcfce7",
-                          border:"1px solid #86efac",textAlign:"center",
-                          fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:11,color:"#16a34a"}}>
+                        <div key={mes} style={{padding:"8px 4px",borderRadius:8,
+                          background:pago.metodo_pago==="exento"?"#fef3c7":"#dcfce7",
+                          border:`1px solid ${pago.metodo_pago==="exento"?"#fde68a":"#86efac"}`,
+                          textAlign:"center",
+                          fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:11,
+                          color:pago.metodo_pago==="exento"?"#92400e":"#16a34a"}}>
                           <div>{MESES[i].slice(0,3)}</div>
-                          <div style={{fontSize:10}}>{pago.metodo_pago==="exento"?"Exento":"✓ Pago"}</div>
+                          <div style={{fontSize:10}}>{pago.metodo_pago==="exento"?"⭕ Exento":"✓ Pago"}</div>
                         </div>
                       );
                       if(monto===0) return null;
