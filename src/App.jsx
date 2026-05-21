@@ -108,32 +108,13 @@ function GlobalStyle() {
       @keyframes pop{0%{transform:scale(.92)}100%{transform:scale(1)}}
       .pop{animation:pop .18s ease;}
 
-      /* ── ROTATE OVERLAY ── */
-      #rotate-overlay{
-        display:none;position:fixed;inset:0;z-index:9999;
-        background:linear-gradient(160deg,#141c4e,#1e2a6e);
-        flex-direction:column;align-items:center;justify-content:center;
-        gap:20px;color:white;text-align:center;padding:30px;
-      }
-      @keyframes tilt{0%{transform:rotate(-10deg);}100%{transform:rotate(10deg);}}
-      #rotate-overlay .ri{font-size:72px;animation:tilt 1.2s ease-in-out infinite alternate;}
-      #rotate-overlay .rm{font-family:'Barlow Condensed',sans-serif;font-weight:900;
-        font-size:24px;text-transform:uppercase;letter-spacing:.04em;margin-top:8px;}
-      #rotate-overlay .rs{font-size:15px;color:rgba(255,255,255,.65);margin-top:6px;}
-
-      /* Mostrar overlay en portrait en pantallas chicas — SOLO para admin/delegado */
-      @media (orientation:portrait) and (max-width:1024px){
-        body.needs-landscape #rotate-overlay{display:flex !important;}
-        body.needs-landscape #app-root{display:none !important;}
-      }
-
-      /* ── MOBILE LANDSCAPE: sidebar horizontal en la parte inferior ── */
-      @media (max-width:1024px) and (orientation:landscape){
-        /* Ocultar sidebar lateral */
+      /* ── MOBILE RESPONSIVE (portrait + landscape) ── */
+      @media (max-width:1024px){
+        /* Ocultar sidebar lateral siempre en mobile */
         .admin-sidebar{display:none !important;}
-        /* El layout pasa a columna: contenido arriba, nav abajo */
+        /* Layout en columna */
         .admin-layout{flex-direction:column !important;}
-        /* Nav bar horizontal pegada abajo */
+        /* Nav bar horizontal pegada abajo — siempre visible en mobile */
         .mobile-bottom-nav{
           display:flex !important;
           position:fixed;bottom:0;left:0;right:0;z-index:200;
@@ -163,15 +144,23 @@ function GlobalStyle() {
         }
         /* Contenido tiene padding bottom para no quedar tapado por la nav */
         .admin-content{padding-bottom:70px !important;}
-        /* Tablas con scroll horizontal en mobile */
+        /* Tablas con scroll horizontal */
         .tw-scroll{overflow-x:auto !important;}
-        /* Botones toolbar más chicos */
-        .toolbar-bq{width:80px !important;height:60px !important;font-size:10px !important;}
-        /* Botones de acción en tabla — más chicos para caber */
+        /* Botones toolbar más chicos en portrait */
+        .toolbar-bq{width:72px !important;height:56px !important;font-size:9px !important;}
+        /* Botones de acción en tabla más chicos */
         .acts-row{gap:3px !important;}
         .acts-row button{width:26px !important;height:26px !important;font-size:12px !important;}
-        /* Ocultar columnas menos importantes en mobile landscape */
+        /* Ocultar columnas menos importantes */
         .col-hide-mobile{display:none !important;}
+        /* En portrait ocultar más columnas para que entre bien */
+        .col-hide-portrait{display:none !important;}
+      }
+
+      /* En landscape recuperar columnas que se esconden solo en portrait */
+      @media (max-width:1024px) and (orientation:landscape){
+        .col-hide-portrait{display:table-cell !important;}
+        .toolbar-bq{width:80px !important;height:60px !important;font-size:10px !important;}
       }
     `}</style>
   );
@@ -1919,8 +1908,6 @@ function AdminScreen({ user, onLogout }) {
   ];
 
   useEffect(()=>{
-    document.body.classList.add("needs-landscape");
-    return ()=>document.body.classList.remove("needs-landscape");
   },[]);
 
   return (
@@ -2043,6 +2030,8 @@ function AdminScreen({ user, onLogout }) {
             {/* Tabla — ancho máximo = suma columnas */}
             <div className="tw-scroll" style={{maxWidth:920,overflowX:"auto"}}>
             {/* Encabezado tabla */}
+            <div className="tw-scroll">
+            <div style={{minWidth:680}}>
             <div style={{display:"grid",gridTemplateColumns:"280px 95px 65px 75px 100px 180px",gap:0,
               padding:"9px 14px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
               {["Nombre","Nacimiento","Cat.","Código","Estado","Acciones"].map((h,i)=>(
@@ -2170,6 +2159,8 @@ function AdminScreen({ user, onLogout }) {
             {jugadoresFilt.length===0&&(
               <div style={{textAlign:"center",padding:"40px 0",color:C.grayMid}}>Sin jugadores en esta categoría</div>
             )}
+            </div>{/* fin minWidth */}
+            </div>{/* fin tw-scroll */}
             </div>{/* fin contenedor tabla */}
           </div>
         )}
@@ -5162,8 +5153,6 @@ function DelegadoScreen({ user, onLogout }) {
   };
 
   useEffect(()=>{
-    document.body.classList.add("needs-landscape");
-    return ()=>document.body.classList.remove("needs-landscape");
   },[]);
 
   return (
@@ -5809,17 +5798,8 @@ function AccesoDelegadosDirecto() {
   );
 }
 
-/* ══ ROTATE OVERLAY COMPONENT ════════════════════════════════════════ */
-function RotateOverlay() {
-  return (
-    <div id="rotate-overlay">
-      <div className="ri">📱</div>
-      <div className="rm">Girá la pantalla</div>
-      <div className="rs">Este sistema funciona mejor en modo horizontal</div>
-    </div>
-  );
-}
 
+/* ══ APP ROOT ════════════════════════════════════════════════════════ */
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [autoLoading, setAutoLoading] = useState(false);
@@ -5868,7 +5848,6 @@ export default function App() {
     return (
       <>
         <GlobalStyle/>
-        <RotateOverlay/>
         <FormularioPublico tipo={formType} org={params.get("org")||"paysandu"}/>
       </>
     );
@@ -5877,7 +5856,6 @@ export default function App() {
     return (
       <>
         <GlobalStyle/>
-        <RotateOverlay/>
         <FormularioDelegado org={params.get("org")||"paysandu"}/>
       </>
     );
@@ -5887,7 +5865,6 @@ export default function App() {
     return (
       <>
         <GlobalStyle/>
-        <RotateOverlay/>
         <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${C.navyDark},${C.navy})`,
           display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}>
           <ClubLogo size={64}/>
@@ -5902,7 +5879,6 @@ export default function App() {
     return (
       <>
         <GlobalStyle/>
-        <RotateOverlay/>
         <LoginScreen onLogin={setCurrentUser}/>
       </>
     );
@@ -5911,7 +5887,6 @@ export default function App() {
   return (
     <>
       <GlobalStyle/>
-      <RotateOverlay/>
       <div id="app-root">
       {currentUser.role==="admin"    && <AdminScreen    user={currentUser} onLogout={()=>setCurrentUser(null)}/>}
       {currentUser.role==="delegado" && <DelegadoScreen user={currentUser} onLogout={()=>setCurrentUser(null)}/>}
