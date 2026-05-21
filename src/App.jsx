@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react"; // build
+import { useState, useEffect, useRef, useCallback } from "react";
 
 /* ══ CONFIG ═══════════════════════════════════════════════════════════ */
 const SB_URL = "https://ipgvsrmlgavsmickwrst.supabase.co";
@@ -837,8 +837,20 @@ function PublicoView({ user, onLogout }) {
           <button onClick={()=>window.location.href=`${window.location.origin}?acceso=jugadores`} style={{background:"rgba(255,255,255,.1)",border:"none",
             borderRadius:8,padding:"7px 12px",color:C.white,fontFamily:"'Barlow Condensed',sans-serif",
             fontWeight:700,fontSize:12,textTransform:"uppercase"}}>← Volver</button>
+          <button onClick={()=>setModal("manual")} style={{background:"rgba(255,255,255,.1)",border:"none",
+            borderRadius:8,padding:"7px 10px",color:C.white,fontFamily:"'Barlow Condensed',sans-serif",
+            fontWeight:700,fontSize:12,textTransform:"uppercase"}}>📖</button>
         </div>
       </div>
+
+      {/* Modal manual jugadores */}
+      {modal==="manual"&&(
+        <Modal onClose={()=>setModal(null)} maxWidth={520}>
+          <div style={{padding:20,maxHeight:"80dvh",overflowY:"auto"}}>
+            <ManualTab seccionesVisibles={["jugador"]}/>
+          </div>
+        </Modal>
+      )}
 
       <div style={{padding:16,maxWidth:520,margin:"0 auto"}}>
         {/* Ficha jugador */}
@@ -1429,8 +1441,14 @@ function ModalQRJugador({ jugId, jug, onClose }) {
 
 /* ══ ADMIN SCREEN ═════════════════════════════════════════════════════ */
 /* ══ MANUAL TAB ════════════════════════════════════════════════════════ */
-function ManualTab() {
-  const [seccion, setSeccion] = useState("admin");
+function ManualTab({ seccionesVisibles=["admin","delegado","jugador"] }) {
+  const allTabs = [
+    {id:"admin",    label:"Admin",    icon:"🔒"},
+    {id:"delegado", label:"Delegado", icon:"🏃"},
+    {id:"jugador",  label:"Jugadores",icon:"⚽"},
+  ];
+  const tabs = allTabs.filter(t=>seccionesVisibles.includes(t.id));
+  const [seccion, setSeccion] = useState(seccionesVisibles[0]);
 
   const Sec = ({title, icon, children}) => (
     <div style={{background:"white",borderRadius:16,padding:"20px 22px",
@@ -1471,12 +1489,6 @@ function ManualTab() {
       💡 {children}
     </div>
   );
-
-  const tabs = [
-    {id:"admin",   label:"Admin",    icon:"🔒"},
-    {id:"delegado",label:"Delegado", icon:"🏃"},
-    {id:"jugador", label:"Jugadores",icon:"⚽"},
-  ];
 
   return (
     <div style={{maxWidth:680}}>
@@ -5568,7 +5580,7 @@ function DelegadoScreen({ user, onLogout }) {
         <div className="admin-sidebar" style={{width:200,background:C.white,borderRight:`2px solid ${C.gray}`,
           padding:"20px 14px",flexShrink:0,overflowY:"auto"}}>
           <div className="sidebar-grid-admin" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
-            {[["planteles","⚽","Planteles"],["pendientes","⏳","Pendientes"]].map(([id,icon,lbl])=>{
+            {[["planteles","⚽","Planteles"],["pendientes","⏳","Pendientes"],["manual","📖","Manual"]].map(([id,icon,lbl])=>{
               const active=tab===id;
               const hasBadge=id==="pendientes"&&pendientes.length>0;
               const badgeCount=pendientes.length;
@@ -5787,12 +5799,17 @@ function DelegadoScreen({ user, onLogout }) {
             )}
           </div>
         )}
+
+        {tab==="manual"&&(
+          <ManualTab seccionesVisibles={["delegado","jugador"]}/>
+        )}
+
         </div>{/* fin contenido delegado */}
       </div>{/* fin layout sidebar+contenido delegado */}
 
       {/* MOBILE BOTTOM NAV DELEGADO */}
       <div className="mobile-bottom-nav" style={{display:"none"}}>
-        {[["planteles","⚽","Planteles"],["pendientes","⏳","Pendientes"]].map(([id,icon,lbl])=>{
+        {[["planteles","⚽","Planteles"],["pendientes","⏳","Pendientes"],["manual","📖","Manual"]].map(([id,icon,lbl])=>{
           const active=tab===id;
           const hasBadge=id==="pendientes"&&pendientes.length>0;
           return(
@@ -6201,9 +6218,38 @@ export default function App() {
   const [autoLoading, setAutoLoading] = useState(false);
 
   const params = new URLSearchParams(window.location.search);
-  const formType   = params.get("form");
-  const directId   = params.get("id");    // link directo ?id=XXXXXX
-  const accesoTipo = params.get("acceso"); // ?acceso=jugadores | delegados
+  const formType    = params.get("form");
+  const directId    = params.get("id");
+  const accesoTipo  = params.get("acceso");
+  const delegadoId  = params.get("_delegado"); // desde AccesoDelegadosDirecto
+
+  // Acceso delegado via link con _delegado param
+  useEffect(()=>{
+    if (delegadoId && !currentUser) {
+      setAutoLoading(true);
+      // Primero intentar desde sessionStorage (guardado por AccesoDelegadosDirecto)
+      const stored = sessionStorage.getItem("delegado_directo");
+      if (stored) {
+        try {
+          const d = JSON.parse(stored);
+          if (d.id === delegadoId) {
+            setCurrentUser({role:"delegado", ...d});
+            setAutoLoading(false);
+            window.history.replaceState({}, "", window.location.origin + "?acceso=delegados");
+            return;
+          }
+        } catch(e){}
+      }
+      // Fallback: buscar en BD
+      sbFetch(`baby_delegados?id=eq.${delegadoId}&select=*`).then(data=>{
+        setAutoLoading(false);
+        if (data && data.length > 0) {
+          setCurrentUser({role:"delegado", ...data[0]});
+          window.history.replaceState({}, "", window.location.origin + "?acceso=delegados");
+        }
+      });
+    }
+  },[delegadoId]);
 
   // Acceso directo con link de jugador
   useEffect(()=>{
@@ -6213,7 +6259,6 @@ export default function App() {
         setAutoLoading(false);
         if (data && data.length > 0) {
           setCurrentUser({role:"publico", jugador:data[0]});
-          // Limpiar URL para no recargar
           window.history.replaceState({}, "", window.location.pathname);
         }
       });
@@ -6221,23 +6266,13 @@ export default function App() {
   },[directId]);
 
   // Acceso directo jugadores via link
-  if (accesoTipo === "jugadores") {
-    return (
-      <>
-        <GlobalStyle/>
-        <AccesoJugadoresDirecto/>
-      </>
-    );
+  if (!delegadoId && accesoTipo === "jugadores") {
+    return (<><GlobalStyle/><AccesoJugadoresDirecto/></>);
   }
 
-  // Acceso directo delegados via link
-  if (accesoTipo === "delegados") {
-    return (
-      <>
-        <GlobalStyle/>
-        <AccesoDelegadosDirecto/>
-      </>
-    );
+  // Acceso directo delegados via link — solo si no hay _delegado en proceso
+  if (!delegadoId && accesoTipo === "delegados") {
+    return (<><GlobalStyle/><AccesoDelegadosDirecto/></>);
   }
 
   if (formType === "jugador") {
@@ -6285,7 +6320,7 @@ export default function App() {
       <GlobalStyle/>
       <div id="app-root">
       {currentUser.role==="admin"    && <AdminScreen    user={currentUser} onLogout={()=>setCurrentUser(null)}/>}
-      {currentUser.role==="delegado" && <DelegadoScreen user={currentUser} onLogout={()=>setCurrentUser(null)}/>}
+      {currentUser.role==="delegado" && <DelegadoScreen user={currentUser} onLogout={()=>{ sessionStorage.removeItem("delegado_directo"); window.location.href=window.location.origin+"?acceso=delegados"; }}/>}
       {currentUser.role==="publico"  && <PublicoView    user={currentUser} onLogout={()=>setCurrentUser(null)}/>}
       </div>
     </>
