@@ -920,11 +920,11 @@ function PublicoView({ user, onLogout }) {
                   </div>
                 </div>
               )}
-              {configPago.nombre_club&&(
+              {(configPago.titular||configPago.nombre_club)&&(
                 <div style={{background:"rgba(255,255,255,.15)",borderRadius:8,padding:"8px 10px",gridColumn:"span 2"}}>
-                  <div style={{fontSize:9,color:"rgba(255,255,255,.6)",textTransform:"uppercase",fontWeight:700,marginBottom:2}}>A nombre de</div>
+                  <div style={{fontSize:9,color:"rgba(255,255,255,.6)",textTransform:"uppercase",fontWeight:700,marginBottom:2}}>Titular</div>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,color:"white"}}>
-                    {configPago.nombre_club}
+                    {configPago.titular||configPago.nombre_club}
                   </div>
                 </div>
               )}
@@ -1829,7 +1829,7 @@ function AdminScreen({ user, onLogout }) {
   const [transfMesHasta, setTransfMesHasta] = useState(new Date().getMonth()+1);
   const [modalLimpieza,  setModalLimpieza]  = useState(false);
   const [pendingFichaje, setPendingFichaje] = useState(null); // {pend, mesInicio} — modal mes inicio nuevo fichaje
-  const [configAcceso,   setConfigAcceso]   = useState({numero_cuenta:"",nombre_banco:"",sucursal:"",instrucciones_pago:"",nombre_club:"Paysandú FC"});
+  const [configAcceso,   setConfigAcceso]   = useState({numero_cuenta:"",nombre_banco:"",sucursal:"",titular:"",instrucciones_pago:"",nombre_club:"Paysandú FC"});
   const [savingConfig,   setSavingConfig]   = useState(false);
   const [savedConfig,    setSavedConfig]    = useState(false);
   const [claveInput,     setClaveInput]     = useState("");
@@ -3036,6 +3036,7 @@ function AdminScreen({ user, onLogout }) {
                 ["numero_cuenta","Número de cuenta","Ej: 037-0014628-00001"],
                 ["nombre_banco","Nombre del banco","Ej: Banco República (BROU)"],
                 ["sucursal","Sucursal (si corresponde)","Ej: Paysandú Centro"],
+                ["titular","Titular de la cuenta","Ej: Asociación Baby Fútbol Paysandú"],
                 ["nombre_club","Nombre del club","Paysandú FC — Baby Fútbol"],
               ].map(([k,lbl,ph])=>(
                 <div key={k} style={{marginBottom:12}}>
@@ -3069,9 +3070,9 @@ function AdminScreen({ user, onLogout }) {
               const payload = {
                 ...configAcceso,
                 org_id:"paysandu",
-                // guardar en columnas existentes como fallback
                 cbu: configAcceso.numero_cuenta || configAcceso.cbu || "",
                 alias: configAcceso.nombre_banco || configAcceso.alias || "",
+                titular: configAcceso.titular || "",
               };
                   let res = await sbFetch("baby_config_acceso?org_id=eq.paysandu","PATCH",payload);
                   if (!res || (Array.isArray(res) && res.length===0)) {
@@ -3145,9 +3146,10 @@ function AdminScreen({ user, onLogout }) {
               const cuenta = configAcceso.numero_cuenta||configAcceso.CBU||configAcceso.cbu||"";
               const banco  = configAcceso.nombre_banco||configAcceso.alias||"";
               const instruc = configAcceso.instrucciones_pago||"";
+              const titular = configAcceso.titular||"";
               const nombreClub = configAcceso.nombre_club||"Paysandú FC Baby";
               const msgWA = id==="jugadores"
-                ? `*${nombreClub}*\n\n⚽ Acceso para pago de cuotas:\n${link}\n\n🏦 *Datos para la transferencia:*\n${cuenta?`• Cuenta: ${cuenta}\n`:""}${banco?`• Banco: ${banco}\n`:""}${configAcceso.sucursal?`• Sucursal: ${configAcceso.sucursal}\n`:""}• A nombre de: ${nombreClub}\n${instruc?`\n📝 ${instruc}\n`:""}\n📋 *Para pagar:*\n1. Entrá al link\n2. Seleccioná tu categoría\n3. Buscá tu nombre\n4. Elegí los meses y adjuntá el comprobante`
+                ? `*${nombreClub}*\n\n⚽ Acceso para pago de cuotas:\n${link}\n\n🏦 *Datos para la transferencia:*\n${cuenta?`• Cuenta: ${cuenta}\n`:""}${banco?`• Banco: ${banco}\n`:""}${configAcceso.sucursal?`• Sucursal: ${configAcceso.sucursal}\n`:""}${(titular||nombreClub)?`• Titular: ${titular||nombreClub}\n`:""}\n📋 *Para pagar:*\n1. Entrá al link\n2. Seleccioná tu categoría\n3. Buscá tu nombre\n4. Elegí los meses y adjuntá el comprobante`
                 : `*${nombreClub}*\n\n🏃 Acceso Delegados:\n${link}`;
               return(
                 <div key={id} style={{background:bg,borderRadius:14,padding:"16px 18px",
@@ -5569,6 +5571,7 @@ function DelegadoScreen({ user, onLogout }) {
             {[["planteles","⚽","Planteles"],["pendientes","⏳","Pendientes"]].map(([id,icon,lbl])=>{
               const active=tab===id;
               const hasBadge=id==="pendientes"&&pendientes.length>0;
+              const badgeCount=pendientes.length;
               return(
                 <button key={id} onClick={()=>setTab(id)}
                   style={{
@@ -5925,6 +5928,7 @@ function AccesoJugadoresDirecto() {
   const numeroCuenta = configAcceso.numero_cuenta || configAcceso.CBU || configAcceso.cbu || "";
   const nombreBanco  = configAcceso.nombre_banco  || configAcceso.alias || "";
   const sucursal     = configAcceso.sucursal       || "";
+  const titular      = configAcceso.titular        || "";
   const instrucciones = configAcceso.instrucciones_pago || "";
   const nombreClub = configAcceso.nombre_club || "Paysandú FC — Baby Fútbol";
 
@@ -5978,6 +5982,11 @@ function AccesoJugadoresDirecto() {
                   <div style={{fontSize:9,color:"rgba(255,255,255,.5)",textTransform:"uppercase",fontWeight:600}}>Sucursal</div>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
                     color:"white"}}>{sucursal}</div>
+                </div>}
+                {(titular||nombreClub)&&<div style={{background:"rgba(255,255,255,.1)",borderRadius:8,padding:"8px 10px",gridColumn:"span 2"}}>
+                  <div style={{fontSize:9,color:"rgba(255,255,255,.5)",textTransform:"uppercase",fontWeight:600}}>Titular</div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
+                    color:"white"}}>{titular||nombreClub}</div>
                 </div>}
               </div>
             )}
