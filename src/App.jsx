@@ -2385,9 +2385,9 @@ function AdminScreen({ user, onLogout }) {
               <button onClick={()=>{
                   const base=window.location.origin;
                   const link=`${base}?form=jugador&org=paysandu`;
-                  const msg = "Acceso a Alta de Jugadores - Paysandú FC - Baby Fútbol\n" + link;
+                  const msg = `⚽ *PAYSANDÚ FC — BABY FÚTBOL*\n📝 *Formulario de inscripción de jugador*\n\nCompletá este formulario para inscribir a tu hijo/a en el club.\n👉 ${link}\n\n_Una vez enviado, el delegado o admin lo aprobará y el jugador quedará registrado en el sistema._`;
                   navigator.clipboard?.writeText(msg).then(()=>{
-                    alert("✅ Enlace de alta copiado. Incluye el título y el link. Pegalo en WhatsApp o email.");
+                    alert("✅ Mensaje copiado. Pegalo en WhatsApp.");
                   });
                 }}
                 style={{width:110,height:80,background:C.offWhite,color:C.navy,
@@ -2701,9 +2701,9 @@ function AdminScreen({ user, onLogout }) {
               <button onClick={()=>{
                   const base=window.location.origin;
                   const link=`${base}?form=delegado&org=paysandu`;
-                  const msg="Registro de Delegado - Paysandú FC - Baby Fútbol\n"+link;
+                  const msg=`🏃 *PAYSANDÚ FC — BABY FÚTBOL*\n📋 *Formulario de registro de delegado*\n\nCompletá este formulario para registrarte como delegado del club.\n👉 ${link}`;
                   navigator.clipboard?.writeText(msg).then(()=>{
-                    alert("✅ Link de registro de delegado copiado. Pegalo en WhatsApp o email.");
+                    alert("✅ Mensaje copiado. Pegalo en WhatsApp.");
                   });
                 }}
                 style={{width:110,height:80,background:C.offWhite,color:C.navy,
@@ -2970,7 +2970,7 @@ function AdminScreen({ user, onLogout }) {
                         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                           <button onClick={()=>{
                               const link=window.location.origin+"?id="+j.id;
-                              const msg=j.nombre+" (Cat."+j.categoria_id+") - Deuda pendiente $"+total.toLocaleString("es-UY")+" - Link de pago: "+link;
+                              const msg=`⚽ *PAYSANDÚ FC — BABY FÚTBOL*\n💳 *Link de pago de cuotas*\n\nHola, te compartimos el link para ver y pagar las cuotas de *${j.nombre}* (Cat. ${j.categoria_id}).\n\n💰 Deuda pendiente: $${total.toLocaleString("es-UY")}\n\n👉 ${link}\n\n_Ingresá al link, seleccioná los meses a pagar y adjuntá el comprobante de transferencia._`;
                               navigator.clipboard?.writeText(msg).then(()=>{
                                 alert("✅ Link de cobro copiado para "+j.nombre);
                               });
@@ -4439,8 +4439,8 @@ function AdminScreen({ user, onLogout }) {
             <div style={{display:"flex",gap:8,marginTop:14}}>
               <button onClick={()=>{
                   const link=window.location.origin+"?id="+jugPagosVer.id;
-                  const msg=jugPagosVer.nombre+" (Cat."+jugPagosVer.categoria_id+") - Link de pago: "+link;
-                  navigator.clipboard?.writeText(msg).then(()=>alert("✅ Link copiado para "+jugPagosVer.nombre));
+                  const msg=`⚽ *PAYSANDÚ FC — BABY FÚTBOL*\n💳 *Link de pago de cuotas*\n\nHola, te compartimos el link para ver y pagar las cuotas de *${jugPagosVer.nombre}* (Cat. ${jugPagosVer.categoria_id}).\n\n👉 ${link}\n\n_Ingresá al link, seleccioná los meses a pagar y adjuntá el comprobante de transferencia._`;
+                  navigator.clipboard?.writeText(msg).then(()=>alert("✅ Mensaje copiado para "+jugPagosVer.nombre));
                 }}
                 style={{flex:1,padding:"10px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
                   color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
@@ -5628,9 +5628,9 @@ function DelegadoScreen({ user, onLogout }) {
               <button onClick={()=>{
                   const base=window.location.origin;
                   const link=`${base}?form=jugador&org=paysandu`;
-                  const msg = "Acceso a Alta de Jugadores - Paysandú FC - Baby Fútbol\n" + link;
+                  const msg = `⚽ *PAYSANDÚ FC — BABY FÚTBOL*\n📝 *Formulario de inscripción de jugador*\n\nCompletá este formulario para inscribir a tu hijo/a en el club.\n👉 ${link}\n\n_Una vez enviado, el delegado o admin lo aprobará y el jugador quedará registrado en el sistema._`;
                   navigator.clipboard?.writeText(msg).then(()=>{
-                    alert("✅ Enlace de alta copiado. Incluye el título y el link. Pegalo en WhatsApp o email.");
+                    alert("✅ Mensaje copiado. Pegalo en WhatsApp.");
                   });
                 }}
                 style={{width:110,height:80,background:C.offWhite,color:C.navy,
@@ -5907,6 +5907,7 @@ function AccesoJugadoresDirecto() {
   const [err, setErr] = useState("");
   const [step, setStep] = useState("cats"); // cats | jugs | pin | pagos
   const [configAcceso, setConfigAcceso] = useState({});
+  const [showManual, setShowManual] = useState(false);
 
   useEffect(()=>{
     sbFetch("baby_categorias?select=*&order=nombre.asc").then(d=>setCats(d||[]));
@@ -5953,17 +5954,34 @@ function AccesoJugadoresDirecto() {
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,#0f1535,#1e2a6e,#2d3d9a)`,
       display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"24px 16px"}}>
       <div style={{maxWidth:440,width:"100%"}}>
+
+      {/* Modal manual */}
+      {showManual&&(
+        <Modal onClose={()=>setShowManual(false)} maxWidth={520}>
+          <div style={{padding:20,maxHeight:"85dvh",overflowY:"auto"}}>
+            <ManualTab seccionesVisibles={["jugador"]}/>
+          </div>
+        </Modal>
+      )}
         {/* Header */}
         <div style={{textAlign:"center",marginBottom:24,position:"relative"}}>
-          {/* Botón salir arriba a la derecha */}
-          <button onClick={()=>window.location.href=`${window.location.origin}?acceso=jugadores`}
-            style={{position:"absolute",top:0,right:0,
-              background:"rgba(255,255,255,.12)",border:"1px solid rgba(255,255,255,.2)",
-              borderRadius:8,padding:"6px 12px",color:"white",cursor:"pointer",
-              fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
-              textTransform:"uppercase"}}>
-            ↩ Salir
-          </button>
+          {/* Botones arriba a la derecha */}
+          <div style={{position:"absolute",top:0,right:0,display:"flex",gap:6}}>
+            <button onClick={()=>setShowManual(true)}
+              style={{background:"rgba(255,255,255,.12)",border:"1px solid rgba(255,255,255,.2)",
+                borderRadius:8,padding:"6px 12px",color:"white",cursor:"pointer",
+                fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
+                textTransform:"uppercase"}}>
+              📖 Ayuda
+            </button>
+            <button onClick={()=>window.location.href=`${window.location.origin}?acceso=jugadores`}
+              style={{background:"rgba(255,255,255,.12)",border:"1px solid rgba(255,255,255,.2)",
+                borderRadius:8,padding:"6px 12px",color:"white",cursor:"pointer",
+                fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
+                textTransform:"uppercase"}}>
+              ↩ Salir
+            </button>
+          </div>
           <ClubLogo size={90}/>
           <h1 style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:30,
             color:"white",textTransform:"uppercase",letterSpacing:".04em",marginTop:14,lineHeight:1}}>
