@@ -6251,9 +6251,11 @@ export default function App() {
         try {
           const d = JSON.parse(stored);
           if (d.id === delegadoId) {
+            // Limpiar URL ANTES de setCurrentUser para evitar loop
+            window.history.replaceState({}, "", window.location.origin + "/");
+            sessionStorage.removeItem("delegado_directo");
             setCurrentUser({role:"delegado", ...d});
             setAutoLoading(false);
-            window.history.replaceState({}, "", window.location.origin + "?acceso=delegados");
             return;
           }
         } catch(e){}
@@ -6262,8 +6264,11 @@ export default function App() {
       sbFetch(`baby_delegados?id=eq.${delegadoId}&select=*`).then(data=>{
         setAutoLoading(false);
         if (data && data.length > 0) {
+          window.history.replaceState({}, "", window.location.origin + "/");
           setCurrentUser({role:"delegado", ...data[0]});
-          window.history.replaceState({}, "", window.location.origin + "?acceso=delegados");
+        } else {
+          // Si no se encontró, volver a la pantalla de delegados
+          window.location.href = window.location.origin + "?acceso=delegados";
         }
       });
     }
@@ -6288,8 +6293,8 @@ export default function App() {
     return (<><GlobalStyle/><AccesoJugadoresDirecto/></>);
   }
 
-  // Acceso directo delegados via link — solo si no hay _delegado en proceso
-  if (!delegadoId && accesoTipo === "delegados") {
+  // Acceso directo delegados via link — solo si no hay _delegado en proceso ni autoLoading
+  if (!delegadoId && !autoLoading && accesoTipo === "delegados") {
     return (<><GlobalStyle/><AccesoDelegadosDirecto/></>);
   }
 
