@@ -3161,8 +3161,8 @@ function AdminScreen({ user, onLogout }) {
               const titular = configAcceso.titular||"";
               const nombreClub = configAcceso.nombre_club||"Paysandú FC Baby";
               const msgWA = id==="jugadores"
-                ? `*${nombreClub}*\n\n⚽ Acceso para pago de cuotas:\n${link}\n\n🏦 *Datos para la transferencia:*\n${cuenta?`• Cuenta: ${cuenta}\n`:""}${banco?`• Banco: ${banco}\n`:""}${configAcceso.sucursal?`• Sucursal: ${configAcceso.sucursal}\n`:""}${(titular||nombreClub)?`• Titular: ${titular||nombreClub}\n`:""}\n📋 *Para pagar:*\n1. Entrá al link\n2. Seleccioná tu categoría\n3. Buscá tu nombre\n4. Elegí los meses y adjuntá el comprobante`
-                : `*${nombreClub}*\n\n🏃 Acceso Delegados:\n${link}`;
+                ? `⚽ *${nombreClub.toUpperCase()}*\n💳 *PAGO DE CUOTAS — ACCESO FAMILIAS*\n\nDesde este link podés ver el estado de cuotas de tu hijo/a y registrar el pago por transferencia.\n\n👉 ${link}\n\n🏦 *Datos para transferir:*\n${cuenta?`• Cuenta: ${cuenta}\n`:""}${banco?`• Banco: ${banco}\n`:""}${configAcceso.sucursal?`• Sucursal: ${configAcceso.sucursal}\n`:""}${(titular||nombreClub)?`• Titular: ${titular||nombreClub}\n`:""}\n📋 *Cómo pagar:*\n1. Abrí el link\n2. Elegí tu categoría y buscá tu nombre\n3. Seleccioná los meses a pagar\n4. Adjuntá el comprobante de transferencia`
+                : `🏃 *${nombreClub.toUpperCase()}*\n🔐 *ACCESO DELEGADOS — PANEL DE GESTIÓN*\n\nDesde este link podés ingresar al panel de delegados para gestionar tu categoría.\n\n👉 ${link}\n\n_Este link es exclusivo para delegados del club. No compartir con familias._`;
               return(
                 <div key={id} style={{background:bg,borderRadius:14,padding:"16px 18px",
                   border:`2px solid ${border}`,marginBottom:12}}>
@@ -3180,11 +3180,11 @@ function AdminScreen({ user, onLogout }) {
                     {link}
                   </div>
                   <div style={{display:"flex",gap:8}}>
-                    <button onClick={()=>navigator.clipboard?.writeText(link).then(()=>alert("✅ Link copiado"))}
+                    <button onClick={()=>navigator.clipboard?.writeText(msgWA).then(()=>alert("✅ Mensaje copiado — pegalo en WhatsApp"))}
                       style={{flex:1,padding:"9px",background:color,color:"white",border:"none",
                         borderRadius:8,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
                         fontSize:12,cursor:"pointer",textTransform:"uppercase"}}>
-                      📋 Copiar link
+                      📋 Copiar mensaje
                     </button>
                     <button onClick={()=>{
                         const url = `https://wa.me/?text=${encodeURIComponent(msgWA)}`;
