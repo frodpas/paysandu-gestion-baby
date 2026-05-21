@@ -1428,6 +1428,388 @@ function ModalQRJugador({ jugId, jug, onClose }) {
 }
 
 /* ══ ADMIN SCREEN ═════════════════════════════════════════════════════ */
+/* ══ MANUAL TAB ════════════════════════════════════════════════════════ */
+function ManualTab() {
+  const [seccion, setSeccion] = useState("admin");
+
+  const Sec = ({title, icon, children}) => (
+    <div style={{background:"white",borderRadius:16,padding:"20px 22px",
+      marginBottom:16,border:`2px solid #e2e8f0`,
+      boxShadow:"0 2px 8px rgba(0,0,0,.06)"}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,
+        paddingBottom:12,borderBottom:"2px solid #f1f5f9"}}>
+        <span style={{fontSize:26}}>{icon}</span>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+          fontSize:18,color:C.navy,textTransform:"uppercase"}}>{title}</div>
+      </div>
+      {children}
+    </div>
+  );
+
+  const Step = ({n, text}) => (
+    <div style={{display:"flex",gap:12,marginBottom:10,alignItems:"flex-start"}}>
+      <div style={{minWidth:26,height:26,borderRadius:"50%",
+        background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+        color:"white",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+        fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+        {n}
+      </div>
+      <div style={{fontSize:13,color:"#374151",lineHeight:1.6,paddingTop:3}}>{text}</div>
+    </div>
+  );
+
+  const Badge = ({color="#1e3a8a", bg="#eff6ff", text}) => (
+    <span style={{background:bg,color,borderRadius:20,padding:"2px 10px",
+      fontSize:11,fontWeight:700,fontFamily:"'Barlow Condensed',sans-serif",
+      textTransform:"uppercase",display:"inline-block",marginRight:4}}>{text}</span>
+  );
+
+  const Note = ({children}) => (
+    <div style={{background:"#fef9c3",borderRadius:10,padding:"10px 14px",
+      marginTop:10,fontSize:12,color:"#713f12",lineHeight:1.6,
+      border:"1px solid #fde68a"}}>
+      💡 {children}
+    </div>
+  );
+
+  const tabs = [
+    {id:"admin",   label:"Admin",    icon:"🔒"},
+    {id:"delegado",label:"Delegado", icon:"🏃"},
+    {id:"jugador", label:"Jugadores",icon:"⚽"},
+  ];
+
+  return (
+    <div style={{maxWidth:680}}>
+      {/* Header */}
+      <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,
+        borderRadius:16,padding:"20px 24px",marginBottom:20,
+        display:"flex",alignItems:"center",gap:14}}>
+        <ClubLogo size={52}/>
+        <div>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+            fontSize:22,color:"white",textTransform:"uppercase",letterSpacing:".04em"}}>
+            Paysandú FC — Baby Fútbol
+          </div>
+          <div style={{color:"#e8b84b",fontFamily:"'Barlow Condensed',sans-serif",
+            fontWeight:700,fontSize:15,textTransform:"uppercase",letterSpacing:".08em",marginTop:2}}>
+            📖 Manual del sistema
+          </div>
+        </div>
+      </div>
+
+      {/* Selector de sección */}
+      <div style={{display:"flex",gap:8,marginBottom:20,background:"#f1f5f9",
+        borderRadius:14,padding:6}}>
+        {tabs.map(t=>(
+          <button key={t.id} onClick={()=>setSeccion(t.id)}
+            style={{flex:1,padding:"10px 6px",borderRadius:10,border:"none",cursor:"pointer",
+              fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,
+              textTransform:"uppercase",
+              background:seccion===t.id?`linear-gradient(135deg,${C.navy},${C.navyLight})`:"transparent",
+              color:seccion===t.id?"white":C.grayMid}}>
+            {t.icon} {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ════ SECCIÓN ADMIN ════ */}
+      {seccion==="admin"&&(<>
+
+        <Sec icon="🔒" title="Rol: Administrador">
+          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
+            El administrador tiene acceso total al sistema. Puede gestionar jugadores, cuotas, pagos, delegados y configurar el acceso público. Es el responsable principal de la operación del club.
+          </p>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            <Badge text="Gestión completa de jugadores"/>
+            <Badge text="Control de pagos"/>
+            <Badge text="Alta/baja delegados"/>
+            <Badge text="Configuración del sistema"/>
+            <Badge text="Respaldo de datos"/>
+          </div>
+        </Sec>
+
+        <Sec icon="⚽" title="Planteles">
+          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
+            Vista principal de todos los jugadores. Permite gestionar el plantel completo del club con filtros por categoría.
+          </p>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
+            color:C.navy,textTransform:"uppercase",marginBottom:8}}>Dar de alta un jugador:</div>
+          <Step n="1" text='Hacé click en "Nuevo jugador" (botón verde arriba a la derecha)'/>
+          <Step n="2" text="Completá los datos: nombre, fecha de nacimiento, categoría, número de camiseta, contacto y PIN de acceso familiar"/>
+          <Step n="3" text="Si el jugador se incorpora durante el año, marcá la casilla '⚽ Es un nuevo fichaje' y seleccioná el mes desde el que paga cuota"/>
+          <Step n="4" text='Hacé click en "Guardar". El jugador aparece inmediatamente en el plantel'/>
+          <Note>El PIN familiar (3 dígitos) permite que la familia acceda a la ficha de pago desde el link público sin necesidad de contraseña de admin.</Note>
+
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
+            color:C.navy,textTransform:"uppercase",marginBottom:8,marginTop:16}}>Dar de baja un jugador:</div>
+          <Step n="1" text="Buscá el jugador en el plantel y hacé click en el ícono 🗑"/>
+          <Step n="2" text="Si tiene deuda pendiente, pasa automáticamente a la sección Deudores"/>
+          <Step n="3" text="Si no tiene deuda, se elimina definitivamente"/>
+          <Note>Los jugadores dados de baja con deuda permanecen en Deudores hasta que se pague o se elimine manualmente.</Note>
+
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
+            color:C.navy,textTransform:"uppercase",marginBottom:8,marginTop:16}}>Otros botones del plantel:</div>
+          <div style={{fontSize:13,color:"#374151",lineHeight:1.8}}>
+            <div>✏️ <strong>Editar</strong> — modificar datos del jugador</div>
+            <div>💳 <strong>Historial de pagos</strong> — ver, registrar o eximir cuotas desde el plantel</div>
+            <div>🔗 <strong>Link QR</strong> — generar link directo a la ficha del jugador</div>
+            <div>📊 <strong>Reporte jugadores</strong> — exportar listado en HTML/Excel/CSV</div>
+            <div>🪪 <strong>Crear acceso alta</strong> — generar link para que la familia complete el formulario de inscripción</div>
+          </div>
+        </Sec>
+
+        <Sec icon="💳" title="Pagos">
+          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
+            Vista centralizada de todos los pagos del año. Muestra el estado de cada jugador con semáforo de colores y permite registrar pagos manualmente o aprobar comprobantes de transferencia.
+          </p>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
+            color:C.navy,textTransform:"uppercase",marginBottom:8}}>Registrar un pago manual:</div>
+          <Step n="1" text="Hacé click en el botón 💳 del jugador en la fila de pagos"/>
+          <Step n="2" text='Seleccioná la pestaña "💳 Registrar pago"'/>
+          <Step n="3" text="Elegí los meses a pagar (podés seleccionar varios a la vez)"/>
+          <Step n="4" text="Seleccioná el medio de pago: Débito, Crédito o MP/QR"/>
+          <Step n="5" text='Hacé click en "✅ Confirmar"'/>
+
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
+            color:C.navy,textTransform:"uppercase",marginBottom:8,marginTop:16}}>Eximir meses a un jugador nuevo:</div>
+          <Step n="1" text="Hacé click en el botón 💳 del jugador"/>
+          <Step n="2" text='Seleccioná la pestaña "🚫 Eximir meses"'/>
+          <Step n="3" text="Seleccioná los meses anteriores al ingreso del jugador"/>
+          <Step n="4" text='Hacé click en "🚫 Eximir". Esos meses quedan marcados como ⭕ Exento'/>
+
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
+            color:C.navy,textTransform:"uppercase",marginBottom:8,marginTop:16}}>Aprobar comprobante de transferencia:</div>
+          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 8px"}}>
+            Cuando una familia envía un comprobante desde el link público, aparece en la parte superior de la pestaña Pagos con una miniatura de la foto.
+          </p>
+          <Step n="1" text="Verificá el comprobante haciendo click en la miniatura para agrandarlo"/>
+          <Step n="2" text='Hacé click en "✅ Aprobar" para registrar el pago o "❌ Rechazar" si el comprobante no es válido'/>
+          <Note>El semáforo de colores indica: 🟢 al día, 🟡 debe 1-2 meses, 🔴 debe 3+ meses.</Note>
+        </Sec>
+
+        <Sec icon="📋" title="Plan de Pagos">
+          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
+            Define el monto de cuota mensual para cada mes del año. Es la base que usa el sistema para calcular deudas y totales.
+          </p>
+          <Step n="1" text="Para cada mes, ingresá el monto base de la cuota"/>
+          <Step n="2" text="Si un mes no tiene cuota (ej: enero, febrero, marzo), dejalo en $0"/>
+          <Step n="3" text='Hacé click en "Guardar plan"'/>
+          <Note>Los jugadores con tipo de cuota "reducida" o "becado" pagan un porcentaje del monto base. Esto se configura en la sección Categorías.</Note>
+        </Sec>
+
+        <Sec icon="🏃" title="Delegados">
+          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
+            Gestión del equipo de delegados del club. Cada delegado tiene acceso a las categorías asignadas.
+          </p>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
+            color:C.navy,textTransform:"uppercase",marginBottom:8}}>Dar de alta un delegado:</div>
+          <Step n="1" text='Hacé click en "Nuevo delegado"'/>
+          <Step n="2" text="Completá nombre, usuario, contraseña y categorías asignadas"/>
+          <Step n="3" text='Hacé click en "Guardar"'/>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
+            color:C.navy,textTransform:"uppercase",marginBottom:8,marginTop:16}}>Dar de baja un delegado:</div>
+          <Step n="1" text="Buscá el delegado en la lista y hacé click en 🗑"/>
+          <Step n="2" text="Confirmá la eliminación"/>
+        </Sec>
+
+        <Sec icon="⏳" title="Pendientes">
+          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
+            Muestra los formularios de inscripción enviados por las familias que están esperando aprobación para dar de alta al jugador.
+          </p>
+          <Step n="1" text="Revisá los datos del formulario: nombre, nacimiento, categoría, foto"/>
+          <Step n="2" text='Si la familia marcó "⚽ Soy nuevo en el club", se abre un selector de mes de inicio al aprobar'/>
+          <Step n="3" text='Hacé click en "✅ Aprobar" para crear el jugador automáticamente, o "❌ Rechazar" para descartar'/>
+          <Note>Al aprobar un nuevo fichaje, seleccioná desde qué mes paga. Los meses anteriores quedan como Exento automáticamente.</Note>
+        </Sec>
+
+        <Sec icon="📛" title="Deudores">
+          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
+            Lista de jugadores dados de baja que aún tienen deuda pendiente. Permite gestionar el cobro o la eliminación definitiva.
+          </p>
+          <div style={{fontSize:13,color:"#374151",lineHeight:1.8}}>
+            <div>🔗 <strong>Enviar link de pago</strong> — copia un mensaje con el link para enviar por WhatsApp</div>
+            <div>💳 <strong>Registrar pago</strong> — abre el historial de pagos del jugador para registrar manualmente o eximir</div>
+            <div>🔄 <strong>Reactivar</strong> — vuelve al jugador al estado activo en el plantel</div>
+            <div>🗑 <strong>Eliminar definitivamente</strong> — borra el jugador y todos sus registros (irreversible)</div>
+          </div>
+        </Sec>
+
+        <Sec icon="🏷" title="Categorías">
+          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
+            Gestión de las categorías del club (por año de nacimiento) y los tipos de cuota con sus porcentajes.
+          </p>
+          <div style={{fontSize:13,color:"#374151",lineHeight:1.8}}>
+            <div><strong>Categorías</strong>: agregar o eliminar años (ej: 2013, 2014...2022)</div>
+            <div><strong>Tipos de cuota</strong>: definir porcentajes (ej: base 100%, reducida 50%, becado 0%)</div>
+          </div>
+          <Note>El tipo de cuota se asigna a cada jugador individualmente al momento del alta o editando su ficha.</Note>
+        </Sec>
+
+        <Sec icon="🔗" title="Accesos">
+          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
+            Configura los datos bancarios para transferencias y gestiona los links de acceso público.
+          </p>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
+            color:C.navy,textTransform:"uppercase",marginBottom:8}}>Configurar datos bancarios:</div>
+          <Step n="1" text="Completá número de cuenta, banco, sucursal y nombre del club"/>
+          <Step n="2" text="Opcionalmente agregá instrucciones adicionales para las familias"/>
+          <Step n="3" text='Hacé click en "💾 Guardar configuración"'/>
+          <Step n="4" text='La sección "👁 Así se ve en la pantalla del jugador" muestra una vista previa'/>
+
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
+            color:C.navy,textTransform:"uppercase",marginBottom:8,marginTop:16}}>Links de acceso:</div>
+          <div style={{fontSize:13,color:"#374151",lineHeight:1.8}}>
+            <div>⚽ <strong>Acceso Jugadores</strong> — link para compartir con las familias para ver y pagar cuotas</div>
+            <div>🏃 <strong>Acceso Delegados</strong> — link para que los delegados inicien sesión</div>
+          </div>
+          <Note>Usá el botón 📱 WhatsApp para compartir el link con todos los datos bancarios incluidos directamente en el mensaje.</Note>
+        </Sec>
+
+        <Sec icon="💾" title="Respaldo">
+          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
+            Permite exportar e importar todos los datos del sistema, y realizar la limpieza anual.
+          </p>
+          <div style={{fontSize:13,color:"#374151",lineHeight:1.8}}>
+            <div>📥 <strong>Exportar respaldo</strong> — descarga todos los datos en formato Excel</div>
+            <div>📤 <strong>Importar respaldo</strong> — restaura datos desde un archivo de respaldo anterior</div>
+            <div>🗑 <strong>Limpieza anual</strong> — elimina comprobantes de transferencia para liberar espacio (requiere clave)</div>
+          </div>
+          <Note>Se recomienda exportar el respaldo al inicio y final de cada temporada, y antes de realizar cualquier limpieza.</Note>
+        </Sec>
+
+      </>)}
+
+      {/* ════ SECCIÓN DELEGADO ════ */}
+      {seccion==="delegado"&&(<>
+
+        <Sec icon="🏃" title="Rol: Delegado">
+          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
+            El delegado tiene acceso a las categorías que le fueron asignadas por el administrador. Puede gestionar jugadores, registrar pagos y aprobar inscripciones dentro de su área. No tiene acceso a configuraciones generales del sistema.
+          </p>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            <Badge text="Gestión de su categoría"/>
+            <Badge text="Alta de jugadores"/>
+            <Badge text="Registro de pagos"/>
+            <Badge text="Aprobación de inscripciones"/>
+          </div>
+        </Sec>
+
+        <Sec icon="🔐" title="Cómo ingresar">
+          <Step n="1" text="Abrí el link de Acceso Delegados que te compartió el administrador"/>
+          <Step n="2" text="Ingresá tu usuario y contraseña"/>
+          <Step n="3" text="Accedés al panel con las secciones Planteles y Pendientes de tus categorías asignadas"/>
+          <Note>El link de Acceso Delegados tiene el formato: paysandu-gestion-baby.vercel.app/?acceso=delegados</Note>
+        </Sec>
+
+        <Sec icon="⚽" title="Planteles (vista delegado)">
+          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
+            Ves solo los jugadores de las categorías que tenés asignadas. Podés dar de alta nuevos jugadores, ver fichas y registrar o eximir pagos.
+          </p>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
+            color:C.navy,textTransform:"uppercase",marginBottom:8}}>Dar de alta un jugador:</div>
+          <Step n="1" text='Hacé click en "Nuevo jugador"'/>
+          <Step n="2" text="Completá los datos del jugador"/>
+          <Step n="3" text="Si se incorpora durante el año, marcá la casilla de nuevo fichaje y elegí el mes de inicio"/>
+          <Step n="4" text='Hacé click en "Guardar"'/>
+
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
+            color:C.navy,textTransform:"uppercase",marginBottom:8,marginTop:16}}>Registrar o eximir pagos:</div>
+          <Step n="1" text="Hacé click en el ícono 💳 del jugador"/>
+          <Step n="2" text='Usá las pestañas "📋 Historial", "💳 Registrar pago" o "🚫 Eximir meses"'/>
+          <Step n="3" text="Confirmá la operación"/>
+        </Sec>
+
+        <Sec icon="⏳" title="Pendientes (vista delegado)">
+          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
+            Mostrás las inscripciones enviadas por las familias de tus categorías que esperan aprobación.
+          </p>
+          <Step n="1" text="Revisá los datos del formulario enviado por la familia"/>
+          <Step n="2" text='Si es un nuevo fichaje, al aprobar se te pedirá que indiques desde qué mes paga'/>
+          <Step n="3" text='Hacé click en "✅ Aprobar" o "❌ Rechazar"'/>
+          <Note>Los jugadores aprobados aparecen inmediatamente en el plantel de la categoría correspondiente.</Note>
+        </Sec>
+
+      </>)}
+
+      {/* ════ SECCIÓN JUGADORES ════ */}
+      {seccion==="jugador"&&(<>
+
+        <Sec icon="⚽" title="Acceso para familias">
+          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
+            Las familias acceden al sistema desde un link público para ver el estado de cuotas y registrar pagos por transferencia. No necesitan usuario ni contraseña de administrador.
+          </p>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            <Badge bg="#f0fdf4" color="#16a34a" text="Sin instalación"/>
+            <Badge bg="#f0fdf4" color="#16a34a" text="Desde el celular"/>
+            <Badge bg="#f0fdf4" color="#16a34a" text="Pago por transferencia"/>
+          </div>
+        </Sec>
+
+        <Sec icon="📱" title="Cómo agregar a la pantalla del celular">
+          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
+            Se puede agregar el acceso como un ícono en la pantalla principal del celular, igual que una app, para entrar con un solo toque.
+          </p>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
+            color:C.navy,textTransform:"uppercase",marginBottom:8}}>En iPhone (Safari):</div>
+          <Step n="1" text="Abrí el link en Safari"/>
+          <Step n="2" text="Tocá el ícono Compartir (cuadrado con flecha ↑ en la parte inferior)"/>
+          <Step n="3" text='Seleccioná "Agregar a pantalla de inicio"'/>
+          <Step n="4" text='Tocá "Agregar". Aparece el ícono del club en tu pantalla'/>
+
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
+            color:C.navy,textTransform:"uppercase",marginBottom:8,marginTop:16}}>En Android (Chrome):</div>
+          <Step n="1" text="Abrí el link en Chrome"/>
+          <Step n="2" text="Tocá los 3 puntos del menú (⋮) arriba a la derecha"/>
+          <Step n="3" text='Seleccioná "Agregar a pantalla principal"'/>
+          <Step n="4" text='Tocá "Agregar"'/>
+        </Sec>
+
+        <Sec icon="👀" title="Ver estado de cuotas">
+          <Step n="1" text="Abrí el link que te compartió el club"/>
+          <Step n="2" text="Seleccioná la categoría de tu hijo/a"/>
+          <Step n="3" text="Buscá el nombre en la lista"/>
+          <Step n="4" text="Si tiene PIN configurado, ingresalo (3 dígitos)"/>
+          <Step n="5" text="Ves la ficha con todos los meses del año, montos y estado de cada cuota"/>
+          <Note>Los meses en verde están pagados. Los meses en naranja/rojo están pendientes de pago. Los meses en amarillo están eximidos (no corresponden).</Note>
+        </Sec>
+
+        <Sec icon="💳" title="Registrar un pago por transferencia">
+          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
+            Una vez dentro de la ficha del jugador, podés registrar un pago adjuntando el comprobante de transferencia.
+          </p>
+          <Step n="1" text="En la ficha del jugador, ves los datos bancarios del club arriba (número de cuenta, banco, instrucciones)"/>
+          <Step n="2" text="Realizá la transferencia bancaria al número de cuenta indicado"/>
+          <Step n="3" text="En la ficha, tocá los meses que querés pagar (se marcan en verde con ✓)"/>
+          <Step n="4" text='Una vez seleccionados los meses, hacé click en "💳 Registrar Pago"'/>
+          <Step n="5" text="Tomá una foto del comprobante o adjuntá el archivo desde la galería"/>
+          <Step n="6" text='Hacé click en "📤 Enviar comprobante"'/>
+          <Note>El pago queda como "Pendiente de verificación" hasta que el administrador o delegado lo apruebe. No es necesario esperar — el comprobante queda registrado.</Note>
+        </Sec>
+
+        <Sec icon="📝" title="Inscribir un jugador nuevo">
+          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
+            Si querés inscribir a un jugador, el club te puede compartir un link de formulario de alta. También podés acceder desde el link de acceso jugadores.
+          </p>
+          <Step n="1" text="Completá el formulario con los datos del jugador: nombre, fecha de nacimiento, categoría, número de camiseta y contacto"/>
+          <Step n="2" text="Subí una foto del jugador (opcional pero recomendado)"/>
+          <Step n="3" text='Si el jugador se incorpora durante el año (no desde el inicio), marcá la casilla "⚽ Soy nuevo en el club"'/>
+          <Step n="4" text='Hacé click en "✅ Enviar formulario"'/>
+          <Step n="5" text="El administrador o delegado recibirá el formulario y lo aprobará. Una vez aprobado, el jugador aparece en el sistema"/>
+          <Note>Al marcar que es nuevo en el club, el administrador o delegado indicará desde qué mes corresponde pagar la cuota, y los meses anteriores quedarán automáticamente como Exento.</Note>
+        </Sec>
+
+      </>)}
+
+      {/* Footer */}
+      <div style={{textAlign:"center",padding:"20px 0",
+        fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,
+        color:C.grayMid,textTransform:"uppercase",letterSpacing:".05em"}}>
+        Paysandú FC — Baby Fútbol · Sistema de gestión
+      </div>
+    </div>
+  );
+}
+
 function AdminScreen({ user, onLogout }) {
   const [tab,          setTab]         = useState("planteles");
   const [categorias,   setCategorias]  = useState([]);
@@ -1905,6 +2287,7 @@ function AdminScreen({ user, onLogout }) {
     ["categorias", "🏷 Categorías"],
     ["accesos",    "🔗 Accesos"],
     ["respaldo",   "💾 Respaldo"],
+    ["manual",     "📖 Manual"],
   ];
 
   useEffect(()=>{
@@ -2946,6 +3329,10 @@ function AdminScreen({ user, onLogout }) {
               </button>
             </div>
           </div>
+        )}
+
+        {tab==="manual"&&(
+          <ManualTab/>
         )}
       </div>{/* fin contenido principal */}
       </div>{/* fin layout sidebar+contenido */}
