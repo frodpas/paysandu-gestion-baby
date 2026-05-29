@@ -1827,6 +1827,7 @@ function AdminScreen({ user, onLogout }) {
   const [categorias,   setCategorias]  = useState([]);
   const [jugadores,    setJugadores]   = useState([]);
   const [pendientes,   setPendientes]  = useState([]);
+  const [comprobantes, setComprobantes] = useState([]); // transferencias pendientes de verificación
   const [delegados,    setDelegados]   = useState([]);
   const [planPagos,    setPlanPagos]   = useState([]);
   const [pagos,        setPagos]       = useState([]);
@@ -2013,7 +2014,8 @@ function AdminScreen({ user, onLogout }) {
     ]);
     setCategorias(cats||[]);
     setJugadores(jugs||[]);
-    setPendientes(pends||[]);
+    setPendientes((pends||[]).filter(p=>{try{const d=JSON.parse(p.datos_json||'{}');return d._tipo!=="comprobante";}catch(e){return true;}}));
+    setComprobantes((pends||[]).filter(p=>{try{const d=JSON.parse(p.datos_json||'{}');return d._tipo==="comprobante";}catch(e){return false;}}));
     setDelegados(dels||[]);
     setPlanPagos(plan||[]);
     setPagos(pags||[]);
@@ -2025,7 +2027,7 @@ function AdminScreen({ user, onLogout }) {
     const pags = await sbFetch(`baby_pagos?año=eq.${añoActual}&select=*`);
     if (pags) setPagos(pags);
     const pends = await sbFetch("baby_formularios_pendientes?select=*&order=created_at.desc");
-    if (pends) setPendientes(pends);
+    if (pends) { setPendientes((pends||[]).filter(p=>{try{const d=JSON.parse(p.datos_json||'{}');return d._tipo!=="comprobante";}catch(e){return true;}})); setComprobantes((pends||[]).filter(p=>{try{const d=JSON.parse(p.datos_json||'{}');return d._tipo==="comprobante";}catch(e){return false;}})); }
   },[añoActual]);
 
   useEffect(()=>{ load(); },[load]);
@@ -2333,8 +2335,8 @@ function AdminScreen({ user, onLogout }) {
               const parts = label.split(" ");
               const icon = parts[0];
               const text = parts.slice(1).join(" ");
-              const compsPend = pendientes.filter(p=>{try{const d=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;return d._tipo==="comprobante";}catch(e){return false;}}).length;
-              const altasPend = pendientes.filter(p=>{try{const d=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;return d._tipo!=="comprobante";}catch(e){return true;}}).length;
+              const compsPend = comprobantes.length;
+              const altasPend = pendientes.length;
               const hasBadge = (id==="pendientes" && altasPend>0) || (id==="pagos" && compsPend>0);
               const badgeCount = id==="pendientes" ? altasPend : id==="pagos" ? compsPend : 0;
               return(
@@ -2565,13 +2567,6 @@ function AdminScreen({ user, onLogout }) {
           <div>
             {/* COMPROBANTES PENDIENTES */}
             {(()=>{
-              // Comprobantes de transferencia: vienen de formularios_pendientes con _tipo="comprobante"
-              const comprobantes = pendientes.filter(p=>{
-                try {
-                  const d = typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
-                  return d._tipo==="comprobante";
-                } catch(e){ return false; }
-              });
               if (comprobantes.length===0) return null;
               return(
                 <div style={{marginBottom:20}}>
@@ -2819,7 +2814,9 @@ function AdminScreen({ user, onLogout }) {
                       textAlign:i===5?"center":"left",padding:"0 6px"}}>{h}</div>
                   ))}
                 </div>
-                {pendientes.map((p,idx)=>{
+                {pendientes.filter(p=>{
+                  try{const d=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;return d._tipo!=="comprobante";}catch(e){return true;}
+                }).map((p,idx,arr)=>{
                   const datos = typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
                   return(
                     <div key={p.id} style={{display:"grid",
@@ -2828,7 +2825,7 @@ function AdminScreen({ user, onLogout }) {
                       background:idx%2===0?"#fffbeb":"#fff8e1",
                       borderLeft:`2px solid ${C.gold}`,borderRight:`2px solid ${C.gold}`,
                       borderBottom:`1px solid #fde68a`,
-                      borderRadius:idx===pendientes.length-1?"0 0 12px 12px":"0"}}>
+                      borderRadius:idx===arr.length-1?"0 0 12px 12px":"0"}}>
                       <div style={{paddingRight:8,display:"flex",alignItems:"center",gap:8}}>
                         {datos.foto_url&&(
                           <img src={datos.foto_url} style={{width:32,height:32,borderRadius:"50%",
@@ -3436,7 +3433,7 @@ function AdminScreen({ user, onLogout }) {
                           tablas: {
                             jugadores:             jugs  || [],
                             pagos:                 pags  || [],
-                            formularios_pendientes: pends || [],
+                            formularios_pendientes: (pends||[]).filter(p=>{try{const d=JSON.parse(p.datos_json||'{}');return d._tipo!=="comprobante";}catch(e){return true;}}),
                             delegados:             dels  || [],
                             categorias:            cats  || [],
                             plan_pagos:            plan  || [],
@@ -5476,7 +5473,7 @@ function DelegadoScreen({ user, onLogout }) {
       setCat(catsFilt);
       const jugFilt = (jugs||[]).filter(j=>misCategs.length===0||misCategs.includes(j.categoria_id));
       setJug(jugFilt);
-      setPend(pends||[]);
+      setPend((pends||[]).filter(p=>{try{const d=JSON.parse(p.datos_json||'{}');return d._tipo!=="comprobante";}catch(e){return true;}}));
       setPlan(plan||[]);
       setLoading(false);
     };
@@ -5762,8 +5759,11 @@ function DelegadoScreen({ user, onLogout }) {
               ))}
             </div>
             {pendientes.filter(p=>{
-              const datos=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
-              return misCategs.length===0||misCategs.includes(datos.categoria_id);
+              try {
+                const datos=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
+                if (datos._tipo==="comprobante") return false;
+                return misCategs.length===0||misCategs.includes(datos.categoria_id);
+              } catch(e) { return true; }
             }).map((p,idx,arr)=>{
               const datos=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
               return(
