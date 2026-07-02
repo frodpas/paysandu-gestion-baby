@@ -773,8 +773,14 @@ function PublicoView({ user, onLogout }) {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = async ev => {
-      const compressed = await comprimirImagen(ev.target.result, 900, 0.75);
-      setComprobante(compressed);
+      if (file.type === "application/pdf") {
+        // PDF: guardar directamente sin comprimir
+        setComprobante(ev.target.result);
+      } else {
+        // Imagen: comprimir
+        const compressed = await comprimirImagen(ev.target.result, 900, 0.75);
+        setComprobante(compressed);
+      }
     };
     reader.readAsDataURL(file);
   };
@@ -1050,12 +1056,20 @@ function PublicoView({ user, onLogout }) {
             {/* Foto */}
             {comprobante?(
               <div style={{textAlign:"center",marginBottom:12}}>
-                <img src={comprobante} style={{maxWidth:"100%",maxHeight:200,borderRadius:10,
-                  border:"2px solid #0ea5e9"}}/>
+                {comprobante.startsWith("data:application/pdf") ? (
+                  <div style={{padding:"16px",background:"#f0f9ff",borderRadius:10,
+                    border:"2px solid #0ea5e9",display:"inline-block"}}>
+                    <div style={{fontSize:40,marginBottom:4}}>📄</div>
+                    <div style={{fontSize:12,color:"#0284c7",fontWeight:700}}>PDF adjuntado</div>
+                  </div>
+                ) : (
+                  <img src={comprobante} style={{maxWidth:"100%",maxHeight:200,borderRadius:10,
+                    border:"2px solid #0ea5e9"}}/>
+                )}
                 <button onClick={()=>setComprobante(null)}
                   style={{display:"block",margin:"6px auto 0",background:"none",border:"none",
                     color:"#dc2626",fontSize:12,cursor:"pointer",fontWeight:600}}>
-                  ✕ Cambiar foto
+                  ✕ Cambiar archivo
                 </button>
               </div>
             ):(
@@ -1077,7 +1091,7 @@ function PublicoView({ user, onLogout }) {
                   <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
                     fontSize:12,color:C.navy,textTransform:"uppercase"}}>Adjuntar</span>
                   <span style={{fontSize:10,color:C.grayMid}}>Galería / archivo</span>
-                  <input type="file" accept="image/*"
+                  <input type="file" accept="image/*,application/pdf"
                     style={{display:"none"}} onChange={handleComprobante}/>
                 </label>
               </div>
@@ -1276,7 +1290,7 @@ function FormAltaJugador({ categorias, onSave, onCancel, initialData=null, reado
             <select value={f.tipo_cuota||"base"} onChange={e=>set("tipo_cuota",e.target.value)}
               style={{width:"100%",padding:"9px 12px",border:`1px solid ${C.gray}`,borderRadius:8,fontSize:14}}>
               {TIPOS_CUOTA_DEFAULT.map(t=>(
-                <option key={t.id} value={t.id}>{t.nombre}{t.monto_fijo>0?` ($${t.monto_fijo} fijo)`:t.id!=="base"?` (${t.porcentaje}%)`:" (base)"}</option>
+                <option key={t.id} value={t.id}>{t.nombre}</option>
               ))}
             </select>
           </div>
@@ -2117,16 +2131,26 @@ function AdminScreen({ user, onLogout }) {
                       return(
                         <div key={p.id} style={{background:"white",borderRadius:14,
                           border:"2px solid #fca5a5",overflow:"hidden"}}>
-                          {/* Miniatura comprobante si hay foto */}
+                          {/* Miniatura comprobante si hay foto/archivo */}
                           {p.foto_url&&(
                             <div style={{background:"#f0f9ff",padding:"8px 14px 0",
                               display:"flex",justifyContent:"center"}}>
-                              <img src={p.foto_url}
-                                style={{maxHeight:120,maxWidth:"100%",borderRadius:8,
-                                  objectFit:"contain",cursor:"pointer",
-                                  border:"1px solid #bae6fd"}}
-                                onClick={()=>setVerComprobante(p.foto_url)}
-                                title="Click para ampliar"/>
+                              {p.foto_url.startsWith("data:application/pdf")||p.foto_url.includes(".pdf") ? (
+                                <div onClick={()=>setVerComprobante(p.foto_url)}
+                                  style={{display:"flex",flexDirection:"column",alignItems:"center",
+                                    gap:4,padding:"12px 24px",cursor:"pointer",
+                                    border:"1px solid #bae6fd",borderRadius:8,background:"white"}}>
+                                  <span style={{fontSize:36}}>📄</span>
+                                  <span style={{fontSize:11,color:"#0284c7",fontWeight:700}}>PDF — Click para ver</span>
+                                </div>
+                              ) : (
+                                <img src={p.foto_url}
+                                  style={{maxHeight:120,maxWidth:"100%",borderRadius:8,
+                                    objectFit:"contain",cursor:"pointer",
+                                    border:"1px solid #bae6fd"}}
+                                  onClick={()=>setVerComprobante(p.foto_url)}
+                                  title="Click para ampliar"/>
+                              )}
                             </div>
                           )}
                           <div style={{padding:"10px 14px"}}>
@@ -3642,9 +3666,24 @@ function AdminScreen({ user, onLogout }) {
               background:"#dc2626",border:"2px solid white",color:"white",fontSize:22,
               cursor:"pointer",fontWeight:900,display:"flex",alignItems:"center",
               justifyContent:"center",zIndex:10000}}>✕</button>
-          <img src={verComprobante}
-            style={{maxWidth:"90vw",maxHeight:"82dvh",borderRadius:10,objectFit:"contain",
-              boxShadow:"0 8px 40px rgba(0,0,0,.7)"}}/>
+          {verComprobante.startsWith("data:application/pdf") || verComprobante.includes(".pdf") ? (
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:16}}>
+              <div style={{fontSize:60}}>📄</div>
+              <div style={{color:"white",fontSize:16,fontWeight:700}}>Comprobante PDF</div>
+              <a href={verComprobante} download="comprobante.pdf" target="_blank" rel="noreferrer"
+                style={{padding:"12px 24px",background:"#0ea5e9",color:"white",
+                  borderRadius:10,textDecoration:"none",fontWeight:700,fontSize:14}}>
+                ⬇ Descargar PDF
+              </a>
+              <iframe src={verComprobante}
+                style={{width:"min(90vw,700px)",height:"70dvh",borderRadius:10,border:"none"}}
+                title="Comprobante"/>
+            </div>
+          ) : (
+            <img src={verComprobante}
+              style={{maxWidth:"90vw",maxHeight:"82dvh",borderRadius:10,objectFit:"contain",
+                boxShadow:"0 8px 40px rgba(0,0,0,.7)"}}/>
+          )}
           <div style={{color:"rgba(255,255,255,.5)",fontSize:12,marginTop:12}}>
             Presioná ✕ para cerrar
           </div>
