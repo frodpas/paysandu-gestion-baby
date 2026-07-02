@@ -3899,8 +3899,6 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
       setSelMeses(prev => prev.filter(m=>m!==mes));
     }
   };
-  const totalSeleccionado = selJug
-    ? selMeses.reduce((acc,mes)=>acc+cuotaMes(selJug,mes),0) : 0;
 
   const cuotaMes = (jug, mes) => {
     const planMes = planPagos.find(p=>p.mes===mes);
@@ -3909,6 +3907,9 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
     if (tipo.monto_fijo > 0) return tipo.monto_fijo;
     return Math.round(planMes.monto * (tipo.porcentaje||100) / 100);
   };
+
+  const totalSeleccionado = selJug
+    ? selMeses.reduce((acc,mes)=>acc+cuotaMes(selJug,mes),0) : 0;
 
   const pagoJugMes = (jugId, mes) => pagos.find(p=>p.jugador_id===jugId&&p.mes===mes);
 
@@ -4073,70 +4074,148 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
         <Modal onClose={()=>setVerHistorial(null)} maxWidth={500}>
           <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"16px 20px"}}>
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
-              color:C.white,textTransform:"uppercase"}}>📋 Historial de pagos</div>
+              color:C.white,textTransform:"uppercase"}}>💳 Pagos</div>
             <div style={{color:C.lilac,fontSize:13}}>{verHistorial.nombre} · {verHistorial.categoria_id}</div>
           </div>
-          <div style={{padding:"18px 20px",maxHeight:"60dvh",overflowY:"auto"}}>
-            {MESES.map((m,i)=>{
-              const mes=i+1;
-              const monto=cuotaMes(verHistorial,mes);
-              const pago=pagoJugMes(verHistorial.id,mes);
-              if(monto===0) return null;
-              return(
-                <div key={mes} style={{display:"flex",justifyContent:"space-between",alignItems:"center",
-                  padding:"8px 0",borderBottom:`1px solid ${C.gray}`}}>
-                  <div>
-                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,
-                      color:C.navy}}>{m}</div>
-                    {pago&&<div style={{fontSize:11,color:C.grayMid}}>{pago.fecha_pago} · {pago.metodo_pago}</div>}
+          <div style={{padding:"18px 20px",maxHeight:"70dvh",overflowY:"auto"}}>
+            {/* Tabs */}
+            {(()=>{
+              const [tabHist, setTabHist] = [verHistorial._tab||"historial",
+                (v)=>setVerHistorial(prev=>({...prev,_tab:v}))];
+              const cuotaLocal = (mes) => cuotaMes(verHistorial, mes);
+              return (
+                <>
+                  <div style={{display:"flex",gap:6,marginBottom:14,background:"#f1f5f9",
+                    borderRadius:10,padding:4}}>
+                    {[["historial","📋 Historial"],["pagar","💳 Registrar"],["eximir","🚫 Eximir"]].map(([t,lbl])=>(
+                      <button key={t} onClick={()=>setTabHist(t)}
+                        style={{flex:1,padding:"7px 4px",borderRadius:8,border:"none",cursor:"pointer",
+                          fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:11,
+                          textTransform:"uppercase",
+                          background:tabHist===t?(t==="eximir"?"#dc2626":t==="pagar"?C.navy:"#475569"):"transparent",
+                          color:tabHist===t?"white":C.grayMid}}>
+                        {lbl}
+                      </button>
+                    ))}
                   </div>
-                  <div style={{display:"flex",alignItems:"center",gap:10}}>
-                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,
-                      color:C.navy}}>{fmt(monto)}</div>
-                    <span style={{background:pago?"#dcfce7":"#fee2e2",color:pago?"#16a34a":"#dc2626",
-                      borderRadius:16,padding:"2px 10px",fontSize:11,fontWeight:700}}>
-                      {pago?"✓ Pagado":"Pendiente"}
-                    </span>
+
+                  {tabHist==="historial"&&MESES.map((m,i)=>{
+                    const mes=i+1; const monto=cuotaLocal(mes);
+                    const pago=pagoJugMes(verHistorial.id,mes);
+                    if(monto===0) return null;
+                    return(
+                      <div key={mes} style={{display:"flex",justifyContent:"space-between",alignItems:"center",
+                        padding:"8px 0",borderBottom:`1px solid ${C.gray}`}}>
+                        <div>
+                          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:C.navy}}>{m}</div>
+                          {pago&&<div style={{fontSize:11,color:C.grayMid}}>{pago.fecha_pago} · {pago.metodo_pago}</div>}
+                        </div>
+                        <div style={{display:"flex",alignItems:"center",gap:10}}>
+                          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,color:C.navy}}>{fmt(monto)}</div>
+                          <span style={{
+                            background:pago?(pago.metodo_pago==="exento"?"#fef3c7":"#dcfce7"):"#fee2e2",
+                            color:pago?(pago.metodo_pago==="exento"?"#92400e":"#16a34a"):"#dc2626",
+                            borderRadius:16,padding:"2px 10px",fontSize:11,fontWeight:700}}>
+                            {pago?(pago.metodo_pago==="exento"?"⭕ Exento":"✓ Pagado"):"Pendiente"}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {(tabHist==="pagar"||tabHist==="eximir")&&(()=>{
+                    const mesesDisp = MESES.map((_,i)=>i+1).filter(mes=>cuotaLocal(mes)>0&&!pagoJugMes(verHistorial.id,mes));
+                    const selH = verHistorial._sel||[];
+                    const setSelH = (fn) => setVerHistorial(prev=>({...prev,_sel:fn(prev._sel||[])}));
+                    return (
+                      <>
+                        {tabHist==="eximir"&&(
+                          <div style={{background:"#fef2f2",borderRadius:10,padding:"8px 12px",
+                            marginBottom:12,border:"1px solid #fecaca",fontSize:12,color:"#7f1d1d"}}>
+                            Marcá los meses anteriores al ingreso del jugador para que no aparezcan como deuda.
+                          </div>
+                        )}
+                        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:14}}>
+                          {mesesDisp.length===0&&(
+                            <div style={{gridColumn:"span 3",textAlign:"center",padding:20,color:C.grayMid}}>
+                              No hay meses pendientes
+                            </div>
+                          )}
+                          {mesesDisp.map(mes=>{
+                            const sel=selH.includes(mes);
+                            return(
+                              <button key={mes} onClick={()=>setSelH(prev=>prev.includes(mes)?prev.filter(m=>m!==mes):[...prev,mes])}
+                                style={{padding:"8px 4px",borderRadius:8,position:"relative",
+                                  border:`2px solid ${sel?(tabHist==="eximir"?"#dc2626":"#16a34a"):C.gray}`,
+                                  background:sel?(tabHist==="eximir"?"#fee2e2":"#dcfce7"):C.white,
+                                  cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:11,
+                                  color:sel?(tabHist==="eximir"?"#dc2626":"#16a34a"):C.navy}}>
+                                {sel&&<span style={{position:"absolute",top:2,right:4,fontSize:9}}>✓</span>}
+                                <div>{MESES[mes-1].slice(0,3)}</div>
+                                <div style={{fontWeight:900,fontSize:13}}>{fmt(cuotaLocal(mes))}</div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {tabHist==="pagar"&&(
+                          <>
+                            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
+                              color:C.navy,textTransform:"uppercase",marginBottom:8}}>Medio de pago</div>
+                            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:14}}>
+                              {PAY_METHODS.map(pm=>(
+                                <button key={pm.id} onClick={()=>setVerHistorial(prev=>({...prev,_metodo:pm.id}))}
+                                  style={{padding:"8px 4px",borderRadius:10,
+                                    border:`2px solid ${verHistorial._metodo===pm.id?pm.color:C.gray}`,
+                                    background:verHistorial._metodo===pm.id?pm.color+"18":C.white,cursor:"pointer",
+                                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:11,
+                                    color:verHistorial._metodo===pm.id?pm.color:C.navy,
+                                    display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+                                  <span style={{fontSize:16}}>{pm.icon}</span>{pm.label}
+                                </button>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                        <button
+                          disabled={(tabHist==="pagar"&&(selH.length===0||!verHistorial._metodo))||(tabHist==="eximir"&&selH.length===0)}
+                          onClick={async()=>{
+                            if(tabHist==="pagar"){
+                              for(const mes of selH) await onRegistrarPago(verHistorial.id,mes,cuotaLocal(mes),verHistorial._metodo);
+                            } else {
+                              for(const mes of selH) await onRegistrarPago(verHistorial.id,mes,0,"exento");
+                            }
+                            setVerHistorial(null);
+                          }}
+                          style={{width:"100%",padding:"11px",border:"none",borderRadius:10,
+                            background:(tabHist==="pagar"&&selH.length>0&&verHistorial._metodo)||(tabHist==="eximir"&&selH.length>0)
+                              ?(tabHist==="eximir"?"linear-gradient(135deg,#dc2626,#b91c1c)":`linear-gradient(135deg,${C.green},#15803d)`):"#e2e2da",
+                            color:(tabHist==="pagar"&&selH.length>0&&verHistorial._metodo)||(tabHist==="eximir"&&selH.length>0)?C.white:C.grayMid,
+                            fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,textTransform:"uppercase"}}>
+                          {tabHist==="eximir"?`🚫 Eximir (${selH.length})`:`✅ Confirmar (${selH.length})`}
+                        </button>
+                      </>
+                    );
+                  })()}
+
+                  <div style={{marginTop:14,display:"flex",gap:8}}>
+                    <button onClick={()=>{
+                        const link=window.location.origin+"?id="+verHistorial.id;
+                        const msg=`⚽ *PAYSANDÚ FC — BABY FÚTBOL*\n💳 *Link de pago de cuotas*\n\nHola, te compartimos el link para ver y pagar las cuotas de *${verHistorial.nombre}* (Cat. ${verHistorial.categoria_id}).\n\n👉 ${link}\n\n_Ingresá al link, seleccioná los meses a pagar y adjuntá el comprobante de transferencia._`;
+                        navigator.clipboard?.writeText(msg).then(()=>alert("✅ Mensaje copiado para "+verHistorial.nombre));
+                      }}
+                      style={{flex:1,padding:"9px",background:`linear-gradient(135deg,${C.green},#15803d)`,
+                        color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+                        fontWeight:700,fontSize:12,cursor:"pointer",textTransform:"uppercase"}}>
+                      🔗 Link de pago
+                    </button>
+                    <button onClick={()=>setVerHistorial(null)}
+                      style={{padding:"9px 14px",background:C.offWhite,color:C.navy,
+                        border:`1px solid ${C.gray}`,borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+                        fontWeight:700,fontSize:13,cursor:"pointer"}}>Cerrar</button>
                   </div>
-                </div>
+                </>
               );
-            })}
-            <div style={{marginTop:14,display:"flex",flexDirection:"column",gap:8}}>
-              {(()=>{
-                const deudaMeses=MESES.map((_,i)=>i+1).filter(mes=>{
-                  const monto=cuotaMes(verHistorial,mes);
-                  return monto>0&&!pagoJugMes(verHistorial.id,mes)&&mes<=(new Date().getDate()>10 ? new Date().getMonth()+1 : new Date().getMonth());
-                });
-                return deudaMeses.length>0 ? (
-                  <button onClick={()=>{setSelJug(verHistorial);setVerHistorial(null);setSelMeses([]);setMetodo(null);}}
-                    style={{padding:"10px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
-                      color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
-                      fontWeight:800,fontSize:14,textTransform:"uppercase",cursor:"pointer"}}>
-                    ✏ Registrar pago
-                  </button>
-                ) : (
-                  <div style={{padding:"10px",background:"#dcfce7",borderRadius:10,
-                    textAlign:"center",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
-                    fontSize:14,color:"#16a34a"}}>✅ Al día con los pagos</div>
-                );
-              })()}
-              <button onClick={()=>{
-                  const link=window.location.origin+"?id="+verHistorial.id;
-                  const msg=verHistorial.nombre+" (Cat."+verHistorial.categoria_id+") - Link de pago: "+link;
-                  navigator.clipboard?.writeText(msg).then(()=>{
-                    alert("✅ Link de pago copiado para "+verHistorial.nombre+" (Cat."+verHistorial.categoria_id+")");
-                  });
-                }}
-                style={{padding:"10px",background:`linear-gradient(135deg,${C.green},#15803d)`,
-                  color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
-                  fontWeight:800,fontSize:14,cursor:"pointer",textTransform:"uppercase"}}>
-                🔗 Enviar link de pago
-              </button>
-              <button onClick={()=>setVerHistorial(null)}
-                style={{padding:"9px",background:C.offWhite,color:C.navy,
-                  border:`1px solid ${C.gray}`,borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
-                  fontWeight:700,fontSize:13,cursor:"pointer"}}>Cerrar</button>
-            </div>
+            })()}
           </div>
         </Modal>
       )}
