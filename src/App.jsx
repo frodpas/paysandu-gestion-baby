@@ -1563,7 +1563,11 @@ function AdminScreen({ user, onLogout }) {
   const [selJugador,   setSelJugador]  = useState(null);
   const [loading,      setLoading]     = useState(true);
   const [qrLink,       setQrLink]      = useState(null);
-  const [jugPagosVer,  setJugPagosVer] = useState(null); // jugador para ver historial desde planteles
+  const [jugPagosVer,     setJugPagosVer]     = useState(null);
+  const [jugPagosModo,    setJugPagosModo]    = useState("historial"); // historial | pagar | eximir
+  const [jugPagosMeses,   setJugPagosMeses]   = useState([]);
+  const [jugPagosExim,    setJugPagosExim]    = useState([]);
+  const [jugPagosSaving,  setJugPagosSaving]  = useState(false);
   const añoActual = new Date().getFullYear();
 
   const load = useCallback(async () => {
@@ -3901,43 +3905,32 @@ function AdminScreen({ user, onLogout }) {
                   })}
                 </div>
                 {jugPagosModo==="pagar"&&(<>
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
-                    color:C.navy,textTransform:"uppercase",marginBottom:8}}>Medio de pago</div>
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:14}}>
-                    {PAY_METHODS.map(pm=>(
-                      <button key={pm.id} onClick={()=>setJugPagosMetodo(pm.id)}
-                        style={{padding:"8px 4px",borderRadius:10,
-                          border:`2px solid ${jugPagosMetodo===pm.id?pm.color:C.gray}`,
-                          background:jugPagosMetodo===pm.id?pm.color+"18":C.white,cursor:"pointer",
-                          fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:11,
-                          color:jugPagosMetodo===pm.id?pm.color:C.navy,
-                          display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-                        <span style={{fontSize:16}}>{pm.icon}</span>{pm.label}
-                      </button>
-                    ))}
+                  <div style={{background:"#eff6ff",borderRadius:8,padding:"8px 12px",marginBottom:12,
+                    border:"1px solid #bfdbfe",fontSize:12,color:"#1e40af"}}>
+                    💡 Se registrará como <strong>pago manual</strong>. Seleccioná los meses a confirmar.
                   </div>
                 </>)}
                 <button
-                  disabled={(jugPagosModo==="pagar"&&(jugPagosMeses.length===0||!jugPagosMetodo))||(jugPagosModo==="eximir"&&jugPagosExim.length===0)||jugPagosSaving}
+                  disabled={(jugPagosModo==="pagar"&&jugPagosMeses.length===0)||(jugPagosModo==="eximir"&&jugPagosExim.length===0)||jugPagosSaving}
                   onClick={async()=>{
                     setJugPagosSaving(true);
                     for(const mes of jugPagosMeses){
                       const plan=planPagos.find(p=>p.mes===mes);
                       const tipo=tiposCuota.find(t=>t.id===jugPagosVer.tipo_cuota)||tiposCuota[0];
                       const monto=tipo.monto_fijo>0?tipo.monto_fijo:Math.round((plan?.monto||0)*(tipo.porcentaje||100)/100);
-                      await registrarPago(jugPagosVer.id,mes,monto,jugPagosMetodo);
+                      await registrarPago(jugPagosVer.id,mes,monto,"manual");
                     }
                     for(const mes of jugPagosExim) await registrarPago(jugPagosVer.id,mes,0,"exento");
                     setJugPagosSaving(false);
-                    setJugPagosMeses([]); setJugPagosExim([]); setJugPagosMetodo(null);
+                    setJugPagosMeses([]); setJugPagosExim([]);
                     setJugPagosModo("historial");
                   }}
                   style={{width:"100%",padding:"11px",border:"none",borderRadius:10,
-                    background:(jugPagosModo==="pagar"&&jugPagosMeses.length>0&&jugPagosMetodo)||(jugPagosModo==="eximir"&&jugPagosExim.length>0)
+                    background:(jugPagosModo==="pagar"&&jugPagosMeses.length>0)||(jugPagosModo==="eximir"&&jugPagosExim.length>0)
                       ?(jugPagosModo==="eximir"?"linear-gradient(135deg,#dc2626,#b91c1c)":`linear-gradient(135deg,${C.green},#15803d)`):"#e2e2da",
-                    color:(jugPagosModo==="pagar"&&jugPagosMeses.length>0&&jugPagosMetodo)||(jugPagosModo==="eximir"&&jugPagosExim.length>0)?C.white:C.grayMid,
+                    color:(jugPagosModo==="pagar"&&jugPagosMeses.length>0)||(jugPagosModo==="eximir"&&jugPagosExim.length>0)?C.white:C.grayMid,
                     fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,textTransform:"uppercase"}}>
-                  {jugPagosSaving?"⏳ Guardando...":jugPagosModo==="eximir"?`🚫 Eximir (${jugPagosExim.length} meses)`:`✅ Confirmar (${jugPagosMeses.length} meses)`}
+                  {jugPagosSaving?"⏳ Guardando...":jugPagosModo==="eximir"?`🚫 Eximir (${jugPagosExim.length} meses)`:`✅ Confirmar pago (${jugPagosMeses.length} meses)`}
                 </button>
               </>);
             })()}
@@ -4025,19 +4018,17 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
 
   const confirmar = async () => {
     if (!selJug) return;
-    if (modoAccion==="pagar" && (selMeses.length===0||!metodo)) return;
+    if (modoAccion==="pagar" && selMeses.length===0) return;
     if (modoAccion==="eximir" && exemMeses.length===0) return;
     setSaving(true);
-    // Registrar pagos normales
     for (const mes of selMeses) {
-      await onRegistrarPago(selJug.id, mes, cuotaMes(selJug,mes), metodo);
+      await onRegistrarPago(selJug.id, mes, cuotaMes(selJug,mes), "manual");
     }
-    // Registrar meses eximidos (monto 0, metodo "exento")
     for (const mes of exemMeses) {
       await onRegistrarPago(selJug.id, mes, 0, "exento");
     }
     setSaving(false); setDone(true);
-    setTimeout(()=>{setDone(false);setSelJug(null);setSelMeses([]);setExemMeses([]);setMetodo(null);setModoAccion("pagar");setMostrarTodos(false);},2500);
+    setTimeout(()=>{setDone(false);setSelJug(null);setSelMeses([]);setExemMeses([]);setModoAccion("pagar");setMostrarTodos(false);},2500);
   };
 
   // Ordenar jugadores: por categoría luego alfabético
@@ -4255,38 +4246,25 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
                           })}
                         </div>
                         {tabHist==="pagar"&&(
-                          <>
-                            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
-                              color:C.navy,textTransform:"uppercase",marginBottom:8}}>Medio de pago</div>
-                            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:14}}>
-                              {PAY_METHODS.map(pm=>(
-                                <button key={pm.id} onClick={()=>setVerHistorial(prev=>({...prev,_metodo:pm.id}))}
-                                  style={{padding:"8px 4px",borderRadius:10,
-                                    border:`2px solid ${verHistorial._metodo===pm.id?pm.color:C.gray}`,
-                                    background:verHistorial._metodo===pm.id?pm.color+"18":C.white,cursor:"pointer",
-                                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:11,
-                                    color:verHistorial._metodo===pm.id?pm.color:C.navy,
-                                    display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-                                  <span style={{fontSize:16}}>{pm.icon}</span>{pm.label}
-                                </button>
-                              ))}
-                            </div>
-                          </>
+                          <div style={{background:"#eff6ff",borderRadius:8,padding:"8px 12px",marginBottom:12,
+                            border:"1px solid #bfdbfe",fontSize:12,color:"#1e40af"}}>
+                            💡 Se registrará como <strong>pago manual</strong>.
+                          </div>
                         )}
                         <button
-                          disabled={(tabHist==="pagar"&&(selH.length===0||!verHistorial._metodo))||(tabHist==="eximir"&&selH.length===0)}
+                          disabled={(tabHist==="pagar"&&selH.length===0)||(tabHist==="eximir"&&selH.length===0)}
                           onClick={async()=>{
                             if(tabHist==="pagar"){
-                              for(const mes of selH) await onRegistrarPago(verHistorial.id,mes,cuotaLocal(mes),verHistorial._metodo);
+                              for(const mes of selH) await onRegistrarPago(verHistorial.id,mes,cuotaLocal(mes),"manual");
                             } else {
                               for(const mes of selH) await onRegistrarPago(verHistorial.id,mes,0,"exento");
                             }
                             setVerHistorial(null);
                           }}
                           style={{width:"100%",padding:"11px",border:"none",borderRadius:10,
-                            background:(tabHist==="pagar"&&selH.length>0&&verHistorial._metodo)||(tabHist==="eximir"&&selH.length>0)
+                            background:(tabHist==="pagar"&&selH.length>0)||(tabHist==="eximir"&&selH.length>0)
                               ?(tabHist==="eximir"?"linear-gradient(135deg,#dc2626,#b91c1c)":`linear-gradient(135deg,${C.green},#15803d)`):"#e2e2da",
-                            color:(tabHist==="pagar"&&selH.length>0&&verHistorial._metodo)||(tabHist==="eximir"&&selH.length>0)?C.white:C.grayMid,
+                            color:(tabHist==="pagar"&&selH.length>0)||(tabHist==="eximir"&&selH.length>0)?C.white:C.grayMid,
                             fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,textTransform:"uppercase"}}>
                           {tabHist==="eximir"?`🚫 Eximir (${selH.length})`:`✅ Confirmar (${selH.length})`}
                         </button>
@@ -4411,24 +4389,11 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
                   })}
                 </div>
 
-                {/* Método de pago — solo en modo pagar */}
                 {modoAccion==="pagar"&&(
-                  <>
-                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
-                      color:C.navy,textTransform:"uppercase",marginBottom:8}}>Medio de pago</div>
-                    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:16}}>
-                      {PAY_METHODS.map(pm=>(
-                        <button key={pm.id} onClick={()=>setMetodo(pm.id)}
-                          style={{padding:"10px 6px",borderRadius:10,border:`2px solid ${metodo===pm.id?pm.color:C.gray}`,
-                            background:metodo===pm.id?pm.color+"18":C.white,cursor:"pointer",
-                            fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
-                            color:metodo===pm.id?pm.color:C.navy,display:"flex",flexDirection:"column",
-                            alignItems:"center",gap:3}}>
-                          <span style={{fontSize:18}}>{pm.icon}</span>{pm.label}
-                        </button>
-                      ))}
-                    </div>
-                  </>
+                  <div style={{background:"#eff6ff",borderRadius:8,padding:"8px 12px",marginBottom:14,
+                    border:"1px solid #bfdbfe",fontSize:12,color:"#1e40af"}}>
+                    💡 Se registrará como <strong>pago manual</strong>. Seleccioná los meses a confirmar.
+                  </div>
                 )}
 
                 <div style={{display:"flex",gap:8}}>
@@ -4437,11 +4402,11 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
                       border:`2px solid ${C.navy}`,borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
                       fontWeight:700,fontSize:13,textTransform:"uppercase"}}>Cancelar</button>
                   <button onClick={confirmar}
-                    disabled={(modoAccion==="pagar"&&(selMeses.length===0||!metodo))||(modoAccion==="eximir"&&exemMeses.length===0)||saving}
+                    disabled={(modoAccion==="pagar"&&selMeses.length===0)||(modoAccion==="eximir"&&exemMeses.length===0)||saving}
                     style={{flex:2,padding:"10px",
-                      background:(modoAccion==="pagar"&&selMeses.length>0&&metodo)||(modoAccion==="eximir"&&exemMeses.length>0)
+                      background:(modoAccion==="pagar"&&selMeses.length>0)||(modoAccion==="eximir"&&exemMeses.length>0)
                         ?(modoAccion==="eximir"?"linear-gradient(135deg,#dc2626,#b91c1c)":`linear-gradient(135deg,${C.green},#15803d)`):"#e2e2da",
-                      color:(modoAccion==="pagar"&&selMeses.length>0&&metodo)||(modoAccion==="eximir"&&exemMeses.length>0)?C.white:C.grayMid,
+                      color:(modoAccion==="pagar"&&selMeses.length>0)||(modoAccion==="eximir"&&exemMeses.length>0)?C.white:C.grayMid,
                       border:"none",borderRadius:10,
                       fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,
                       textTransform:"uppercase"}}>
