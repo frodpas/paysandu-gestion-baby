@@ -108,13 +108,32 @@ function GlobalStyle() {
       @keyframes pop{0%{transform:scale(.92)}100%{transform:scale(1)}}
       .pop{animation:pop .18s ease;}
 
-      /* ── MOBILE RESPONSIVE (portrait + landscape) ── */
-      @media (max-width:1024px){
-        /* Ocultar sidebar lateral siempre en mobile */
+      /* ── ROTATE OVERLAY ── */
+      #rotate-overlay{
+        display:none;position:fixed;inset:0;z-index:9999;
+        background:linear-gradient(160deg,#141c4e,#1e2a6e);
+        flex-direction:column;align-items:center;justify-content:center;
+        gap:20px;color:white;text-align:center;padding:30px;
+      }
+      @keyframes tilt{0%{transform:rotate(-10deg);}100%{transform:rotate(10deg);}}
+      #rotate-overlay .ri{font-size:72px;animation:tilt 1.2s ease-in-out infinite alternate;}
+      #rotate-overlay .rm{font-family:'Barlow Condensed',sans-serif;font-weight:900;
+        font-size:24px;text-transform:uppercase;letter-spacing:.04em;margin-top:8px;}
+      #rotate-overlay .rs{font-size:15px;color:rgba(255,255,255,.65);margin-top:6px;}
+
+      /* Mostrar overlay en portrait en pantallas chicas — SOLO para admin/delegado */
+      @media (orientation:portrait) and (max-width:1024px){
+        body.needs-landscape #rotate-overlay{display:flex !important;}
+        body.needs-landscape #app-root{display:none !important;}
+      }
+
+      /* ── MOBILE LANDSCAPE: sidebar horizontal en la parte inferior ── */
+      @media (max-width:1024px) and (orientation:landscape){
+        /* Ocultar sidebar lateral */
         .admin-sidebar{display:none !important;}
-        /* Layout en columna */
+        /* El layout pasa a columna: contenido arriba, nav abajo */
         .admin-layout{flex-direction:column !important;}
-        /* Nav bar horizontal pegada abajo — siempre visible en mobile */
+        /* Nav bar horizontal pegada abajo */
         .mobile-bottom-nav{
           display:flex !important;
           position:fixed;bottom:0;left:0;right:0;z-index:200;
@@ -144,23 +163,15 @@ function GlobalStyle() {
         }
         /* Contenido tiene padding bottom para no quedar tapado por la nav */
         .admin-content{padding-bottom:70px !important;}
-        /* Tablas con scroll horizontal */
+        /* Tablas con scroll horizontal en mobile */
         .tw-scroll{overflow-x:auto !important;}
-        /* Botones toolbar más chicos en portrait */
-        .toolbar-bq{width:72px !important;height:56px !important;font-size:9px !important;}
-        /* Botones de acción en tabla más chicos */
+        /* Botones toolbar más chicos */
+        .toolbar-bq{width:80px !important;height:60px !important;font-size:10px !important;}
+        /* Botones de acción en tabla — más chicos para caber */
         .acts-row{gap:3px !important;}
         .acts-row button{width:26px !important;height:26px !important;font-size:12px !important;}
-        /* Ocultar columnas menos importantes */
+        /* Ocultar columnas menos importantes en mobile landscape */
         .col-hide-mobile{display:none !important;}
-        /* En portrait ocultar más columnas para que entre bien */
-        .col-hide-portrait{display:none !important;}
-      }
-
-      /* En landscape recuperar columnas que se esconden solo en portrait */
-      @media (max-width:1024px) and (orientation:landscape){
-        .col-hide-portrait{display:table-cell !important;}
-        .toolbar-bq{width:80px !important;height:60px !important;font-size:10px !important;}
       }
     `}</style>
   );
@@ -296,46 +307,41 @@ function LoginScreen({ onLogin }) {
         {mode==="home"&&(
           <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:16}}>
 
-            {/* ADMIN — camiseta blanca, letra azul */}
+            {/* ADMIN — grande, blanco, candado */}
             <button onClick={()=>{setMode("admin");setErr("");}}
               style={{width:150,height:150,borderRadius:"50%",cursor:"pointer",
-                backgroundImage:`url('data:image/png;base64,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')`,
-                backgroundSize:"130%",backgroundPosition:"center 10%",
-                backgroundColor:"white",
+                background:"white",
                 border:`4px solid ${C.gold}`,
-                overflow:"hidden",position:"relative",
-                padding:0,
-                boxShadow:`0 6px 20px rgba(0,0,0,.5), 0 0 0 6px rgba(232,184,75,.2)`}}>
-              <div style={{position:"absolute",bottom:0,left:0,right:0,
-                background:"linear-gradient(transparent,rgba(255,255,255,.9))",
-                padding:"20px 0 10px",textAlign:"center"}}>
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
-                  fontSize:14,color:"#1e2a6e",letterSpacing:"2px",textTransform:"uppercase"}}>
-                  Admin
-                </div>
-              </div>
+                display:"flex",flexDirection:"column",alignItems:"center",
+                justifyContent:"center",gap:8,
+                boxShadow:`0 0 0 6px rgba(255,255,255,.12), 0 10px 30px rgba(0,0,0,.35), 0 2px 8px rgba(232,184,75,.2)`,
+                fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,
+                textTransform:"uppercase",color:C.navy}}>
+              <svg viewBox="0 0 64 64" width="48" height="48" fill="none">
+                <rect x="14" y="28" width="36" height="28" rx="5" fill="#1e2a6e"/>
+                <path d="M22 28 V21 A10 10 0 0 1 42 21 V28" stroke="#1e2a6e" strokeWidth="5"
+                  strokeLinecap="round" fill="none"/>
+                <circle cx="32" cy="42" r="5" fill="white"/>
+                <rect x="29.5" y="42" width="5" height="7" rx="2.5" fill="white"/>
+              </svg>
+              Admin
             </button>
 
-            {/* DELEGADO — opción B: camiseta como fondo del círculo */}
+            {/* DELEGADO — fondo blanco, camiseta real */}
             <button onClick={abrirDelegado}
               style={{width:150,height:150,borderRadius:"50%",cursor:"pointer",
-                backgroundImage:`url('data:image/png;base64,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')`,
-                backgroundSize:"130%",
-                backgroundPosition:"center 10%",
-                backgroundColor:"#1e3a8a",
+                background:"white",
                 border:`4px solid ${C.gold}`,
-                overflow:"hidden",
-                position:"relative",
-                boxShadow:`0 6px 20px rgba(0,0,0,.5), 0 0 0 6px rgba(232,184,75,.2)`,
-                padding:0}}>
-              <div style={{position:"absolute",bottom:0,left:0,right:0,
-                background:"linear-gradient(transparent,rgba(14,25,80,.85))",
-                padding:"20px 0 10px",textAlign:"center"}}>
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
-                  fontSize:14,color:"white",letterSpacing:"2px",textTransform:"uppercase"}}>
-                  Delegado
-                </div>
-              </div>
+                display:"flex",flexDirection:"column",alignItems:"center",
+                justifyContent:"center",gap:4,
+                boxShadow:`0 0 0 6px rgba(255,255,255,.12), 0 10px 30px rgba(0,0,0,.35)`,
+                fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,
+                textTransform:"uppercase",color:C.navy}}>
+              {/* Camiseta real del equipo */}
+              <img src="data:image/png;base64,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" alt="Camiseta"
+                style={{width:72,height:80,objectFit:"contain",
+                  filter:"drop-shadow(0 3px 8px rgba(0,0,0,.5))"}}/>
+              Delegado
             </button>
 
           </div>
@@ -716,32 +722,35 @@ function PublicoView({ user, onLogout }) {
   const [tipoMetodo, setTipoMetodo] = useState(null); // "transferencia"
   const [comprobante, setComprobante] = useState(null); // base64
   const [notaTransf, setNotaTransf] = useState("");
-  const [configPago, setConfigPago] = useState(null); // null = cargando, {} = sin datos
+  const [configPago, setConfigPago] = useState(null);
+  const [tiposCuotaPub, setTiposCuotaPub] = useState(TIPOS_CUOTA_DEFAULT);
 
   const añoActual = new Date().getFullYear();
 
   useEffect(()=>{
     const load = async () => {
-      const [p, pl, cfg] = await Promise.all([
+      const [p, pl, cfg, tcs] = await Promise.all([
         sbFetch(`baby_pagos?jugador_id=eq.${jug.id}&año=eq.${añoActual}&select=*`),
         sbFetch(`baby_plan_pagos?año=eq.${añoActual}&select=*&order=mes.asc`),
         sbFetch("baby_config_acceso?org_id=eq.paysandu&select=*"),
+        sbFetch("baby_tipos_cuota?select=*").catch(()=>null),
       ]);
       setPagos(p||[]);
       setPlan(pl||[]);
-      // cfg puede tener las columnas viejas (cbu, alias) o las nuevas (numero_cuenta, nombre_banco)
       setConfigPago(cfg&&cfg.length>0 ? cfg[0] : {});
+      if (tcs&&tcs.length>0) setTiposCuotaPub(tcs);
     };
     load();
   },[jug.id]);
 
-  const tipos = TIPOS_CUOTA_DEFAULT;
-  const tipoCuota = tipos.find(t=>t.id===jug.tipo_cuota)||tipos[0];
+  const tipoCuota = tiposCuotaPub.find(t=>t.id===jug.tipo_cuota)||tiposCuotaPub[0];
 
   const cuotaMes = (mes) => {
     const planMes = plan.find(p=>p.mes===mes);
     if (!planMes || planMes.monto===0) return 0;
-    return Math.round(planMes.monto * tipoCuota.porcentaje / 100);
+    // Si el tipo tiene monto fijo, usarlo directamente
+    if (tipoCuota.monto_fijo > 0) return tipoCuota.monto_fijo;
+    return Math.round(planMes.monto * (tipoCuota.porcentaje||100) / 100);
   };
 
   const toggleMesPub = (mes) => setSelectedMeses(prev =>
@@ -834,23 +843,11 @@ function PublicoView({ user, onLogout }) {
               color:C.white,textTransform:"uppercase"}}>Paysandú FC — Baby</div>
             <div style={{color:C.lilac,fontSize:12}}>Ficha del jugador</div>
           </div>
-          <button onClick={()=>window.location.href=`${window.location.origin}?acceso=jugadores`} style={{background:"rgba(255,255,255,.1)",border:"none",
+          <button onClick={onLogout} style={{background:"rgba(255,255,255,.1)",border:"none",
             borderRadius:8,padding:"7px 12px",color:C.white,fontFamily:"'Barlow Condensed',sans-serif",
-            fontWeight:700,fontSize:12,textTransform:"uppercase"}}>← Volver</button>
-          <button onClick={()=>setModal("manual")} style={{background:"rgba(255,255,255,.1)",border:"none",
-            borderRadius:8,padding:"7px 10px",color:C.white,fontFamily:"'Barlow Condensed',sans-serif",
-            fontWeight:700,fontSize:12,textTransform:"uppercase"}}>📖</button>
+            fontWeight:700,fontSize:12,textTransform:"uppercase"}}>Salir</button>
         </div>
       </div>
-
-      {/* Modal manual jugadores */}
-      {modal==="manual"&&(
-        <Modal onClose={()=>setModal(null)} maxWidth={520}>
-          <div style={{padding:20,maxHeight:"80dvh",overflowY:"auto"}}>
-            <ManualTab seccionesVisibles={["jugador"]}/>
-          </div>
-        </Modal>
-      )}
 
       <div style={{padding:16,maxWidth:520,margin:"0 auto"}}>
         {/* Ficha jugador */}
@@ -893,30 +890,30 @@ function PublicoView({ user, onLogout }) {
             marginBottom:16,border:"2px solid #bfdbfe",textAlign:"center",color:"#64748b",fontSize:13}}>
             ⏳ Cargando datos bancarios...
           </div>
-        ) : (configPago.numero_cuenta||configPago.CBU||configPago.cbu||configPago.nombre_banco||configPago.alias||configPago.nombre_club||configPago.instrucciones_pago) ? (
+        ) : (configPago.numero_cuenta||configPago.cbu||configPago.nombre_banco||configPago.alias||configPago.nombre_club||configPago.instrucciones_pago) ? (
           <div style={{background:"linear-gradient(135deg,#1e3a8a,#1e40af)",borderRadius:14,
             padding:"14px 16px",marginBottom:16,border:"2px solid #3b82f6"}}>
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,
               color:"white",textTransform:"uppercase",marginBottom:10,letterSpacing:".05em"}}>
-              🏦 Instrucciones para el pago por transferencia
+              🏦 Datos y procedimiento para realizar los pagos
             </div>
             {/* Datos en grid */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:8}}>
-              {(configPago.numero_cuenta||configPago.CBU||configPago.cbu)&&(
+              {(configPago.numero_cuenta||configPago.cbu)&&(
                 <div style={{background:"rgba(255,255,255,.15)",borderRadius:8,padding:"8px 10px"}}>
                   <div style={{fontSize:9,color:"rgba(255,255,255,.6)",textTransform:"uppercase",fontWeight:700,marginBottom:2}}>
-                    Cuenta Bancaria
+                    {configPago.numero_cuenta?"N° Cuenta":"CBU"}
                   </div>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
                     color:"white",wordBreak:"break-all"}}>
-                    {configPago.numero_cuenta||configPago.CBU||configPago.cbu}
+                    {configPago.numero_cuenta||configPago.cbu}
                   </div>
                 </div>
               )}
               {(configPago.nombre_banco||configPago.alias)&&(
                 <div style={{background:"rgba(255,255,255,.15)",borderRadius:8,padding:"8px 10px"}}>
                   <div style={{fontSize:9,color:"rgba(255,255,255,.6)",textTransform:"uppercase",fontWeight:700,marginBottom:2}}>
-                    Banco
+                    {configPago.nombre_banco?"Banco":"Alias"}
                   </div>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
                     color:"white"}}>
@@ -932,11 +929,11 @@ function PublicoView({ user, onLogout }) {
                   </div>
                 </div>
               )}
-              {(configPago.titular||configPago.nombre_club)&&(
+              {configPago.nombre_club&&(
                 <div style={{background:"rgba(255,255,255,.15)",borderRadius:8,padding:"8px 10px",gridColumn:"span 2"}}>
-                  <div style={{fontSize:9,color:"rgba(255,255,255,.6)",textTransform:"uppercase",fontWeight:700,marginBottom:2}}>Titular</div>
+                  <div style={{fontSize:9,color:"rgba(255,255,255,.6)",textTransform:"uppercase",fontWeight:700,marginBottom:2}}>A nombre de</div>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,color:"white"}}>
-                    {configPago.titular||configPago.nombre_club}
+                    {configPago.nombre_club}
                   </div>
                 </div>
               )}
@@ -980,10 +977,8 @@ function PublicoView({ user, onLogout }) {
                   fontSize:11,color:C.green}}>{m}</div>
                 <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
                   fontSize:13,color:C.green}}>{fmt(monto)}</div>
-                <div style={{fontSize:9,marginTop:2,
-                  color:pago.metodo_pago==="exento"?"#92400e":"#16a34a",
-                  fontWeight:700,textTransform:"uppercase"}}>
-                  {pago.metodo_pago==="exento"?"⭕ Exento":"✓ Pagado"}
+                <div style={{fontSize:9,marginTop:2,color:"#16a34a",fontWeight:700,textTransform:"uppercase"}}>
+                  {pago.metodo_pago==="exento"?"Exento":"✓ Pagado"}
                 </div>
               </div>
             );
@@ -1146,8 +1141,6 @@ function FormAltaJugador({ categorias, onSave, onCancel, initialData=null, reado
     fecha_nacimiento:"", ci:"", numero_camiseta:"", direccion:"",
     foto_url:"", tipo_cuota:"base", pin_familia:"",
   });
-  const [nuevoFichaje, setNuevoFichaje] = useState(false);
-  const [mesInicio, setMesInicio] = useState(new Date().getMonth()+1);
 
   const set = (k,v) => setF(p=>({...p,[k]:v}));
 
@@ -1283,63 +1276,9 @@ function FormAltaJugador({ categorias, onSave, onCancel, initialData=null, reado
             <select value={f.tipo_cuota||"base"} onChange={e=>set("tipo_cuota",e.target.value)}
               style={{width:"100%",padding:"9px 12px",border:`1px solid ${C.gray}`,borderRadius:8,fontSize:14}}>
               {TIPOS_CUOTA_DEFAULT.map(t=>(
-                <option key={t.id} value={t.id}>{t.nombre} ({t.porcentaje}%)</option>
+                <option key={t.id} value={t.id}>{t.nombre}{t.monto_fijo>0?` ($${t.monto_fijo} fijo)`:t.id!=="base"?` (${t.porcentaje}%)`:" (base)"}</option>
               ))}
             </select>
-          </div>
-        )}
-
-        {/* NUEVO FICHAJE — solo en alta nueva */}
-        {!initialData?.id&&!readOnly&&(
-          <div style={{marginBottom:16,background:"#eff6ff",borderRadius:12,
-            padding:"14px 16px",border:"2px solid #bfdbfe"}}>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:nuevoFichaje?12:0}}>
-              <input type="checkbox" id="nuevo_fichaje" checked={nuevoFichaje}
-                onChange={e=>setNuevoFichaje(e.target.checked)}
-                style={{width:18,height:18,cursor:"pointer",accentColor:"#1d4ed8"}}/>
-              <label htmlFor="nuevo_fichaje"
-                style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:14,
-                  color:"#1d4ed8",cursor:"pointer",textTransform:"uppercase"}}>
-                ⚽ Es un nuevo fichaje (se incorpora durante el año)
-              </label>
-            </div>
-            {nuevoFichaje&&(
-              <div>
-                <div style={{fontSize:12,color:"#374151",marginBottom:12,lineHeight:1.5}}>
-                  Indicá a partir de qué mes paga la cuota. Los meses anteriores quedarán como <strong>⭕ Exento</strong> automáticamente.
-                </div>
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
-                  color:"#1d4ed8",textTransform:"uppercase",marginBottom:8}}>
-                  Paga a partir de:
-                </div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
-                  {MESES.map((m,i)=>{
-                    const mes=i+1;
-                    const sel=mesInicio===mes;
-                    return(
-                      <button key={mes}
-                        onClick={e=>{e.preventDefault();setMesInicio(mes);}}
-                        style={{padding:"10px 4px",borderRadius:8,
-                          border:`2px solid ${sel?"#1d4ed8":"#bfdbfe"}`,
-                          background:sel?"#1d4ed8":"white",
-                          color:sel?"white":"#1d4ed8",
-                          fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
-                          fontSize:13,cursor:"pointer",
-                          boxShadow:sel?"0 2px 8px rgba(29,78,216,.3)":"none"}}>
-                        {m.slice(0,3)}
-                      </button>
-                    );
-                  })}
-                </div>
-                <div style={{marginTop:10,padding:"8px 12px",background:"#dbeafe",borderRadius:8,
-                  fontSize:12,color:"#1e40af",fontWeight:600}}>
-                  {mesInicio===1
-                    ? "✅ Paga desde el inicio del año (sin exenciones)"
-                    : `⭕ Meses Enero a ${MESES[mesInicio-2]} quedarán como Exento — paga desde ${MESES[mesInicio-1]}`
-                  }
-                </div>
-              </div>
-            )}
           </div>
         )}
 
@@ -1349,7 +1288,7 @@ function FormAltaJugador({ categorias, onSave, onCancel, initialData=null, reado
               border:`2px solid ${C.navy}`,borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
               fontWeight:700,fontSize:14,textTransform:"uppercase"}}>{readOnly?"Cerrar":"Cancelar"}</button>
           {!readOnly&&(
-            <button onClick={()=>valid&&onSave(f, nuevoFichaje?mesInicio:null)} disabled={!valid}
+            <button onClick={()=>valid&&onSave(f)} disabled={!valid}
               style={{flex:2,padding:"11px",background:valid?`linear-gradient(135deg,${C.navy},${C.navyLight})`:"#e2e2da",
                 color:valid?C.white:C.grayMid,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
                 fontWeight:900,fontSize:15,textTransform:"uppercase"}}>Guardar</button>
@@ -1440,394 +1379,11 @@ function ModalQRJugador({ jugId, jug, onClose }) {
 }
 
 /* ══ ADMIN SCREEN ═════════════════════════════════════════════════════ */
-/* ══ MANUAL TAB ════════════════════════════════════════════════════════ */
-function ManualTab({ seccionesVisibles=["admin","delegado","jugador"] }) {
-  const allTabs = [
-    {id:"admin",    label:"Admin",    icon:"🔒"},
-    {id:"delegado", label:"Delegado", icon:"🏃"},
-    {id:"jugador",  label:"Jugadores",icon:"⚽"},
-  ];
-  const tabs = allTabs.filter(t=>seccionesVisibles.includes(t.id));
-  const [seccion, setSeccion] = useState(seccionesVisibles[0]);
-
-  const Sec = ({title, icon, children}) => (
-    <div style={{background:"white",borderRadius:16,padding:"20px 22px",
-      marginBottom:16,border:`2px solid #e2e8f0`,
-      boxShadow:"0 2px 8px rgba(0,0,0,.06)"}}>
-      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,
-        paddingBottom:12,borderBottom:"2px solid #f1f5f9"}}>
-        <span style={{fontSize:26}}>{icon}</span>
-        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
-          fontSize:18,color:C.navy,textTransform:"uppercase"}}>{title}</div>
-      </div>
-      {children}
-    </div>
-  );
-
-  const Step = ({n, text}) => (
-    <div style={{display:"flex",gap:12,marginBottom:10,alignItems:"flex-start"}}>
-      <div style={{minWidth:26,height:26,borderRadius:"50%",
-        background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
-        color:"white",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
-        fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-        {n}
-      </div>
-      <div style={{fontSize:13,color:"#374151",lineHeight:1.6,paddingTop:3}}>{text}</div>
-    </div>
-  );
-
-  const Badge = ({color="#1e3a8a", bg="#eff6ff", text}) => (
-    <span style={{background:bg,color,borderRadius:20,padding:"2px 10px",
-      fontSize:11,fontWeight:700,fontFamily:"'Barlow Condensed',sans-serif",
-      textTransform:"uppercase",display:"inline-block",marginRight:4}}>{text}</span>
-  );
-
-  const Note = ({children}) => (
-    <div style={{background:"#fef9c3",borderRadius:10,padding:"10px 14px",
-      marginTop:10,fontSize:12,color:"#713f12",lineHeight:1.6,
-      border:"1px solid #fde68a"}}>
-      💡 {children}
-    </div>
-  );
-
-  return (
-    <div style={{maxWidth:680}}>
-      {/* Header */}
-      <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,
-        borderRadius:16,padding:"20px 24px",marginBottom:20,
-        display:"flex",alignItems:"center",gap:14}}>
-        <ClubLogo size={52}/>
-        <div>
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
-            fontSize:22,color:"white",textTransform:"uppercase",letterSpacing:".04em"}}>
-            Paysandú FC — Baby Fútbol
-          </div>
-          <div style={{color:"#e8b84b",fontFamily:"'Barlow Condensed',sans-serif",
-            fontWeight:700,fontSize:15,textTransform:"uppercase",letterSpacing:".08em",marginTop:2}}>
-            📖 Manual del sistema
-          </div>
-        </div>
-      </div>
-
-      {/* Selector de sección */}
-      <div style={{display:"flex",gap:8,marginBottom:20,background:"#f1f5f9",
-        borderRadius:14,padding:6}}>
-        {tabs.map(t=>(
-          <button key={t.id} onClick={()=>setSeccion(t.id)}
-            style={{flex:1,padding:"10px 6px",borderRadius:10,border:"none",cursor:"pointer",
-              fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,
-              textTransform:"uppercase",
-              background:seccion===t.id?`linear-gradient(135deg,${C.navy},${C.navyLight})`:"transparent",
-              color:seccion===t.id?"white":C.grayMid}}>
-            {t.icon} {t.label}
-          </button>
-        ))}
-      </div>
-
-      {/* ════ SECCIÓN ADMIN ════ */}
-      {seccion==="admin"&&(<>
-
-        <Sec icon="🔒" title="Rol: Administrador">
-          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
-            El administrador tiene acceso total al sistema. Puede gestionar jugadores, cuotas, pagos, delegados y configurar el acceso público. Es el responsable principal de la operación del club.
-          </p>
-          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-            <Badge text="Gestión completa de jugadores"/>
-            <Badge text="Control de pagos"/>
-            <Badge text="Alta/baja delegados"/>
-            <Badge text="Configuración del sistema"/>
-            <Badge text="Respaldo de datos"/>
-          </div>
-        </Sec>
-
-        <Sec icon="⚽" title="Planteles">
-          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
-            Vista principal de todos los jugadores. Permite gestionar el plantel completo del club con filtros por categoría.
-          </p>
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
-            color:C.navy,textTransform:"uppercase",marginBottom:8}}>Dar de alta un jugador:</div>
-          <Step n="1" text='Hacé click en "Nuevo jugador" (botón verde arriba a la derecha)'/>
-          <Step n="2" text="Completá los datos: nombre, fecha de nacimiento, categoría, número de camiseta, contacto y PIN de acceso familiar"/>
-          <Step n="3" text="Si el jugador se incorpora durante el año, marcá la casilla '⚽ Es un nuevo fichaje' y seleccioná el mes desde el que paga cuota"/>
-          <Step n="4" text='Hacé click en "Guardar". El jugador aparece inmediatamente en el plantel'/>
-          <Note>El PIN familiar (3 dígitos) permite que la familia acceda a la ficha de pago desde el link público sin necesidad de contraseña de admin.</Note>
-
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
-            color:C.navy,textTransform:"uppercase",marginBottom:8,marginTop:16}}>Dar de baja un jugador:</div>
-          <Step n="1" text="Buscá el jugador en el plantel y hacé click en el ícono 🗑"/>
-          <Step n="2" text="Si tiene deuda pendiente, pasa automáticamente a la sección Deudores"/>
-          <Step n="3" text="Si no tiene deuda, se elimina definitivamente"/>
-          <Note>Los jugadores dados de baja con deuda permanecen en Deudores hasta que se pague o se elimine manualmente.</Note>
-
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
-            color:C.navy,textTransform:"uppercase",marginBottom:8,marginTop:16}}>Otros botones del plantel:</div>
-          <div style={{fontSize:13,color:"#374151",lineHeight:1.8}}>
-            <div>✏️ <strong>Editar</strong> — modificar datos del jugador</div>
-            <div>💳 <strong>Historial de pagos</strong> — ver, registrar o eximir cuotas desde el plantel</div>
-            <div>🔗 <strong>Link QR</strong> — generar link directo a la ficha del jugador</div>
-            <div>📊 <strong>Reporte jugadores</strong> — exportar listado en HTML/Excel/CSV</div>
-            <div>🪪 <strong>Crear acceso alta</strong> — generar link para que la familia complete el formulario de inscripción</div>
-          </div>
-        </Sec>
-
-        <Sec icon="💳" title="Pagos">
-          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
-            Vista centralizada de todos los pagos del año. Muestra el estado de cada jugador con semáforo de colores y permite registrar pagos manualmente o aprobar comprobantes de transferencia.
-          </p>
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
-            color:C.navy,textTransform:"uppercase",marginBottom:8}}>Registrar un pago manual:</div>
-          <Step n="1" text="Hacé click en el botón 💳 del jugador en la fila de pagos"/>
-          <Step n="2" text='Seleccioná la pestaña "💳 Registrar pago"'/>
-          <Step n="3" text="Elegí los meses a pagar (podés seleccionar varios a la vez)"/>
-          <Step n="4" text="Seleccioná el medio de pago: Débito, Crédito o MP/QR"/>
-          <Step n="5" text='Hacé click en "✅ Confirmar"'/>
-
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
-            color:C.navy,textTransform:"uppercase",marginBottom:8,marginTop:16}}>Eximir meses a un jugador nuevo:</div>
-          <Step n="1" text="Hacé click en el botón 💳 del jugador"/>
-          <Step n="2" text='Seleccioná la pestaña "🚫 Eximir meses"'/>
-          <Step n="3" text="Seleccioná los meses anteriores al ingreso del jugador"/>
-          <Step n="4" text='Hacé click en "🚫 Eximir". Esos meses quedan marcados como ⭕ Exento'/>
-
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
-            color:C.navy,textTransform:"uppercase",marginBottom:8,marginTop:16}}>Aprobar comprobante de transferencia:</div>
-          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 8px"}}>
-            Cuando una familia envía un comprobante desde el link público, aparece en la parte superior de la pestaña Pagos con una miniatura de la foto.
-          </p>
-          <Step n="1" text="Verificá el comprobante haciendo click en la miniatura para agrandarlo"/>
-          <Step n="2" text='Hacé click en "✅ Aprobar" para registrar el pago o "❌ Rechazar" si el comprobante no es válido'/>
-          <Note>El semáforo de colores indica: 🟢 al día, 🟡 debe 1-2 meses, 🔴 debe 3+ meses.</Note>
-        </Sec>
-
-        <Sec icon="📋" title="Plan de Pagos">
-          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
-            Define el monto de cuota mensual para cada mes del año. Es la base que usa el sistema para calcular deudas y totales.
-          </p>
-          <Step n="1" text="Para cada mes, ingresá el monto base de la cuota"/>
-          <Step n="2" text="Si un mes no tiene cuota (ej: enero, febrero, marzo), dejalo en $0"/>
-          <Step n="3" text='Hacé click en "Guardar plan"'/>
-          <Note>Los jugadores con tipo de cuota "reducida" o "becado" pagan un porcentaje del monto base. Esto se configura en la sección Categorías.</Note>
-        </Sec>
-
-        <Sec icon="🏃" title="Delegados">
-          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
-            Gestión del equipo de delegados del club. Cada delegado tiene acceso a las categorías asignadas.
-          </p>
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
-            color:C.navy,textTransform:"uppercase",marginBottom:8}}>Dar de alta un delegado:</div>
-          <Step n="1" text='Hacé click en "Nuevo delegado"'/>
-          <Step n="2" text="Completá nombre, usuario, contraseña y categorías asignadas"/>
-          <Step n="3" text='Hacé click en "Guardar"'/>
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
-            color:C.navy,textTransform:"uppercase",marginBottom:8,marginTop:16}}>Dar de baja un delegado:</div>
-          <Step n="1" text="Buscá el delegado en la lista y hacé click en 🗑"/>
-          <Step n="2" text="Confirmá la eliminación"/>
-        </Sec>
-
-        <Sec icon="⏳" title="Pendientes">
-          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
-            Muestra los formularios de inscripción enviados por las familias que están esperando aprobación para dar de alta al jugador.
-          </p>
-          <Step n="1" text="Revisá los datos del formulario: nombre, nacimiento, categoría, foto"/>
-          <Step n="2" text='Si la familia marcó "⚽ Soy nuevo en el club", se abre un selector de mes de inicio al aprobar'/>
-          <Step n="3" text='Hacé click en "✅ Aprobar" para crear el jugador automáticamente, o "❌ Rechazar" para descartar'/>
-          <Note>Al aprobar un nuevo fichaje, seleccioná desde qué mes paga. Los meses anteriores quedan como Exento automáticamente.</Note>
-        </Sec>
-
-        <Sec icon="📛" title="Deudores">
-          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
-            Lista de jugadores dados de baja que aún tienen deuda pendiente. Permite gestionar el cobro o la eliminación definitiva.
-          </p>
-          <div style={{fontSize:13,color:"#374151",lineHeight:1.8}}>
-            <div>🔗 <strong>Enviar link de pago</strong> — copia un mensaje con el link para enviar por WhatsApp</div>
-            <div>💳 <strong>Registrar pago</strong> — abre el historial de pagos del jugador para registrar manualmente o eximir</div>
-            <div>🔄 <strong>Reactivar</strong> — vuelve al jugador al estado activo en el plantel</div>
-            <div>🗑 <strong>Eliminar definitivamente</strong> — borra el jugador y todos sus registros (irreversible)</div>
-          </div>
-        </Sec>
-
-        <Sec icon="🏷" title="Categorías">
-          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
-            Gestión de las categorías del club (por año de nacimiento) y los tipos de cuota con sus porcentajes.
-          </p>
-          <div style={{fontSize:13,color:"#374151",lineHeight:1.8}}>
-            <div><strong>Categorías</strong>: agregar o eliminar años (ej: 2013, 2014...2022)</div>
-            <div><strong>Tipos de cuota</strong>: definir porcentajes (ej: base 100%, reducida 50%, becado 0%)</div>
-          </div>
-          <Note>El tipo de cuota se asigna a cada jugador individualmente al momento del alta o editando su ficha.</Note>
-        </Sec>
-
-        <Sec icon="🔗" title="Accesos">
-          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
-            Configura los datos bancarios para transferencias y gestiona los links de acceso público.
-          </p>
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
-            color:C.navy,textTransform:"uppercase",marginBottom:8}}>Configurar datos bancarios:</div>
-          <Step n="1" text="Completá número de cuenta, banco, sucursal y nombre del club"/>
-          <Step n="2" text="Opcionalmente agregá instrucciones adicionales para las familias"/>
-          <Step n="3" text='Hacé click en "💾 Guardar configuración"'/>
-          <Step n="4" text='La sección "👁 Así se ve en la pantalla del jugador" muestra una vista previa'/>
-
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
-            color:C.navy,textTransform:"uppercase",marginBottom:8,marginTop:16}}>Links de acceso:</div>
-          <div style={{fontSize:13,color:"#374151",lineHeight:1.8}}>
-            <div>⚽ <strong>Acceso Jugadores</strong> — link para compartir con las familias para ver y pagar cuotas</div>
-            <div>🏃 <strong>Acceso Delegados</strong> — link para que los delegados inicien sesión</div>
-          </div>
-          <Note>Usá el botón 📱 WhatsApp para compartir el link con todos los datos bancarios incluidos directamente en el mensaje.</Note>
-        </Sec>
-
-        <Sec icon="💾" title="Respaldo">
-          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
-            Permite exportar e importar todos los datos del sistema, y realizar la limpieza anual.
-          </p>
-          <div style={{fontSize:13,color:"#374151",lineHeight:1.8}}>
-            <div>📥 <strong>Exportar respaldo</strong> — descarga todos los datos en formato Excel</div>
-            <div>📤 <strong>Importar respaldo</strong> — restaura datos desde un archivo de respaldo anterior</div>
-            <div>🗑 <strong>Limpieza anual</strong> — elimina comprobantes de transferencia para liberar espacio (requiere clave)</div>
-          </div>
-          <Note>Se recomienda exportar el respaldo al inicio y final de cada temporada, y antes de realizar cualquier limpieza.</Note>
-        </Sec>
-
-      </>)}
-
-      {/* ════ SECCIÓN DELEGADO ════ */}
-      {seccion==="delegado"&&(<>
-
-        <Sec icon="🏃" title="Rol: Delegado">
-          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
-            El delegado tiene acceso a las categorías que le fueron asignadas por el administrador. Puede gestionar jugadores, registrar pagos y aprobar inscripciones dentro de su área. No tiene acceso a configuraciones generales del sistema.
-          </p>
-          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-            <Badge text="Gestión de su categoría"/>
-            <Badge text="Alta de jugadores"/>
-            <Badge text="Registro de pagos"/>
-            <Badge text="Aprobación de inscripciones"/>
-          </div>
-        </Sec>
-
-        <Sec icon="🔐" title="Cómo ingresar">
-          <Step n="1" text="Abrí el link de Acceso Delegados que te compartió el administrador"/>
-          <Step n="2" text="Ingresá tu usuario y contraseña"/>
-          <Step n="3" text="Accedés al panel con las secciones Planteles y Pendientes de tus categorías asignadas"/>
-          <Note>El link de Acceso Delegados tiene el formato: paysandu-gestion-baby.vercel.app/?acceso=delegados</Note>
-        </Sec>
-
-        <Sec icon="⚽" title="Planteles (vista delegado)">
-          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
-            Ves solo los jugadores de las categorías que tenés asignadas. Podés dar de alta nuevos jugadores, ver fichas y registrar o eximir pagos.
-          </p>
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
-            color:C.navy,textTransform:"uppercase",marginBottom:8}}>Dar de alta un jugador:</div>
-          <Step n="1" text='Hacé click en "Nuevo jugador"'/>
-          <Step n="2" text="Completá los datos del jugador"/>
-          <Step n="3" text="Si se incorpora durante el año, marcá la casilla de nuevo fichaje y elegí el mes de inicio"/>
-          <Step n="4" text='Hacé click en "Guardar"'/>
-
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
-            color:C.navy,textTransform:"uppercase",marginBottom:8,marginTop:16}}>Registrar o eximir pagos:</div>
-          <Step n="1" text="Hacé click en el ícono 💳 del jugador"/>
-          <Step n="2" text='Usá las pestañas "📋 Historial", "💳 Registrar pago" o "🚫 Eximir meses"'/>
-          <Step n="3" text="Confirmá la operación"/>
-        </Sec>
-
-        <Sec icon="⏳" title="Pendientes (vista delegado)">
-          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
-            Mostrás las inscripciones enviadas por las familias de tus categorías que esperan aprobación.
-          </p>
-          <Step n="1" text="Revisá los datos del formulario enviado por la familia"/>
-          <Step n="2" text='Si es un nuevo fichaje, al aprobar se te pedirá que indiques desde qué mes paga'/>
-          <Step n="3" text='Hacé click en "✅ Aprobar" o "❌ Rechazar"'/>
-          <Note>Los jugadores aprobados aparecen inmediatamente en el plantel de la categoría correspondiente.</Note>
-        </Sec>
-
-      </>)}
-
-      {/* ════ SECCIÓN JUGADORES ════ */}
-      {seccion==="jugador"&&(<>
-
-        <Sec icon="⚽" title="Acceso para familias">
-          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
-            Las familias acceden al sistema desde un link público para ver el estado de cuotas y registrar pagos por transferencia. No necesitan usuario ni contraseña de administrador.
-          </p>
-          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-            <Badge bg="#f0fdf4" color="#16a34a" text="Sin instalación"/>
-            <Badge bg="#f0fdf4" color="#16a34a" text="Desde el celular"/>
-            <Badge bg="#f0fdf4" color="#16a34a" text="Pago por transferencia"/>
-          </div>
-        </Sec>
-
-        <Sec icon="📱" title="Cómo agregar a la pantalla del celular">
-          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
-            Se puede agregar el acceso como un ícono en la pantalla principal del celular, igual que una app, para entrar con un solo toque.
-          </p>
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
-            color:C.navy,textTransform:"uppercase",marginBottom:8}}>En iPhone (Safari):</div>
-          <Step n="1" text="Abrí el link en Safari"/>
-          <Step n="2" text="Tocá el ícono Compartir (cuadrado con flecha ↑ en la parte inferior)"/>
-          <Step n="3" text='Seleccioná "Agregar a pantalla de inicio"'/>
-          <Step n="4" text='Tocá "Agregar". Aparece el ícono del club en tu pantalla'/>
-
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:13,
-            color:C.navy,textTransform:"uppercase",marginBottom:8,marginTop:16}}>En Android (Chrome):</div>
-          <Step n="1" text="Abrí el link en Chrome"/>
-          <Step n="2" text="Tocá los 3 puntos del menú (⋮) arriba a la derecha"/>
-          <Step n="3" text='Seleccioná "Agregar a pantalla principal"'/>
-          <Step n="4" text='Tocá "Agregar"'/>
-        </Sec>
-
-        <Sec icon="👀" title="Ver estado de cuotas">
-          <Step n="1" text="Abrí el link que te compartió el club"/>
-          <Step n="2" text="Seleccioná la categoría de tu hijo/a"/>
-          <Step n="3" text="Buscá el nombre en la lista"/>
-          <Step n="4" text="Si tiene PIN configurado, ingresalo (3 dígitos)"/>
-          <Step n="5" text="Ves la ficha con todos los meses del año, montos y estado de cada cuota"/>
-          <Note>Los meses en verde están pagados. Los meses en naranja/rojo están pendientes de pago. Los meses en amarillo están eximidos (no corresponden).</Note>
-        </Sec>
-
-        <Sec icon="💳" title="Registrar un pago por transferencia">
-          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
-            Una vez dentro de la ficha del jugador, podés registrar un pago adjuntando el comprobante de transferencia.
-          </p>
-          <Step n="1" text="En la ficha del jugador, ves los datos bancarios del club arriba (número de cuenta, banco, instrucciones)"/>
-          <Step n="2" text="Realizá la transferencia bancaria al número de cuenta indicado"/>
-          <Step n="3" text="En la ficha, tocá los meses que querés pagar (se marcan en verde con ✓)"/>
-          <Step n="4" text='Una vez seleccionados los meses, hacé click en "💳 Registrar Pago"'/>
-          <Step n="5" text="Tomá una foto del comprobante o adjuntá el archivo desde la galería"/>
-          <Step n="6" text='Hacé click en "📤 Enviar comprobante"'/>
-          <Note>El pago queda como "Pendiente de verificación" hasta que el administrador o delegado lo apruebe. No es necesario esperar — el comprobante queda registrado.</Note>
-        </Sec>
-
-        <Sec icon="📝" title="Inscribir un jugador nuevo">
-          <p style={{fontSize:13,color:"#374151",lineHeight:1.7,margin:"0 0 12px"}}>
-            Si querés inscribir a un jugador, el club te puede compartir un link de formulario de alta. También podés acceder desde el link de acceso jugadores.
-          </p>
-          <Step n="1" text="Completá el formulario con los datos del jugador: nombre, fecha de nacimiento, categoría, número de camiseta y contacto"/>
-          <Step n="2" text="Subí una foto del jugador (opcional pero recomendado)"/>
-          <Step n="3" text='Si el jugador se incorpora durante el año (no desde el inicio), marcá la casilla "⚽ Soy nuevo en el club"'/>
-          <Step n="4" text='Hacé click en "✅ Enviar formulario"'/>
-          <Step n="5" text="El administrador o delegado recibirá el formulario y lo aprobará. Una vez aprobado, el jugador aparece en el sistema"/>
-          <Note>Al marcar que es nuevo en el club, el administrador o delegado indicará desde qué mes corresponde pagar la cuota, y los meses anteriores quedarán automáticamente como Exento.</Note>
-        </Sec>
-
-      </>)}
-
-      {/* Footer */}
-      <div style={{textAlign:"center",padding:"20px 0",
-        fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,
-        color:C.grayMid,textTransform:"uppercase",letterSpacing:".05em"}}>
-        Paysandú FC — Baby Fútbol · Sistema de gestión
-      </div>
-    </div>
-  );
-}
-
 function AdminScreen({ user, onLogout }) {
   const [tab,          setTab]         = useState("planteles");
   const [categorias,   setCategorias]  = useState([]);
   const [jugadores,    setJugadores]   = useState([]);
   const [pendientes,   setPendientes]  = useState([]);
-  const [comprobantes, setComprobantes] = useState([]); // transferencias pendientes de verificación
   const [delegados,    setDelegados]   = useState([]);
   const [planPagos,    setPlanPagos]   = useState([]);
   const [pagos,        setPagos]       = useState([]);
@@ -1841,8 +1397,7 @@ function AdminScreen({ user, onLogout }) {
   const [transfMesDesde, setTransfMesDesde] = useState(1);
   const [transfMesHasta, setTransfMesHasta] = useState(new Date().getMonth()+1);
   const [modalLimpieza,  setModalLimpieza]  = useState(false);
-  const [pendingFichaje, setPendingFichaje] = useState(null); // {pend, mesInicio} — modal mes inicio nuevo fichaje
-  const [configAcceso,   setConfigAcceso]   = useState({numero_cuenta:"",nombre_banco:"",sucursal:"",titular:"",instrucciones_pago:"",nombre_club:"Paysandú FC"});
+  const [configAcceso,   setConfigAcceso]   = useState({numero_cuenta:"",nombre_banco:"",sucursal:"",instrucciones_pago:"",nombre_club:"Paysandú FC"});
   const [savingConfig,   setSavingConfig]   = useState(false);
   const [savedConfig,    setSavedConfig]    = useState(false);
   const [claveInput,     setClaveInput]     = useState("");
@@ -1861,7 +1416,7 @@ function AdminScreen({ user, onLogout }) {
       const d = planPagos.filter(pl => {
         if (!pl.monto || pl.mes > mesLim) return false;
         const tc = tiposCuota.find(t => t.id === j.tipo_cuota) || tiposCuota[0];
-        return Math.round(pl.monto * tc.porcentaje / 100) > 0 &&
+        return (tc.monto_fijo>0?tc.monto_fijo:Math.round(pl.monto*(tc.porcentaje||100)/100)) > 0 &&
           !pagos.find(p => p.jugador_id === j.id && p.mes === pl.mes);
       });
       return d.length === 0
@@ -1952,7 +1507,7 @@ function AdminScreen({ user, onLogout }) {
       const d = planPagos.filter(pl => {
         if (!pl.monto || pl.mes > mesLim) return false;
         const tc = tiposCuota.find(t => t.id === j.tipo_cuota) || tiposCuota[0];
-        return Math.round(pl.monto * tc.porcentaje / 100) > 0 &&
+        return (tc.monto_fijo>0?tc.monto_fijo:Math.round(pl.monto*(tc.porcentaje||100)/100)) > 0 &&
           !pagos.find(p => p.jugador_id === j.id && p.mes === pl.mes);
       });
       return d.length === 0 ? "Al día" : d.length + " mes" + (d.length > 1 ? "es" : "") + " adeudado" + (d.length > 1 ? "s" : "");
@@ -1995,11 +1550,6 @@ function AdminScreen({ user, onLogout }) {
   const [loading,      setLoading]     = useState(true);
   const [qrLink,       setQrLink]      = useState(null);
   const [jugPagosVer,  setJugPagosVer] = useState(null); // jugador para ver historial desde planteles
-  const [jugPagosModo, setJugPagosModo] = useState("historial"); // historial | pagar | eximir
-  const [jugPagosMeses, setJugPagosMeses] = useState([]);
-  const [jugPagosExim, setJugPagosExim] = useState([]);
-  const [jugPagosMetodo, setJugPagosMetodo] = useState(null);
-  const [jugPagosSaving, setJugPagosSaving] = useState(false);
   const añoActual = new Date().getFullYear();
 
   const load = useCallback(async () => {
@@ -2014,8 +1564,7 @@ function AdminScreen({ user, onLogout }) {
     ]);
     setCategorias(cats||[]);
     setJugadores(jugs||[]);
-    setPendientes((pends||[]).filter(p=>{try{const d=JSON.parse(p.datos_json||'{}');return d._tipo!=="comprobante";}catch(e){return true;}}));
-    setComprobantes((pends||[]).filter(p=>{try{const d=JSON.parse(p.datos_json||'{}');return d._tipo==="comprobante";}catch(e){return false;}}));
+    setPendientes(pends||[]);
     setDelegados(dels||[]);
     setPlanPagos(plan||[]);
     setPagos(pags||[]);
@@ -2027,7 +1576,7 @@ function AdminScreen({ user, onLogout }) {
     const pags = await sbFetch(`baby_pagos?año=eq.${añoActual}&select=*`);
     if (pags) setPagos(pags);
     const pends = await sbFetch("baby_formularios_pendientes?select=*&order=created_at.desc");
-    if (pends) { setPendientes((pends||[]).filter(p=>{try{const d=JSON.parse(p.datos_json||'{}');return d._tipo!=="comprobante";}catch(e){return true;}})); setComprobantes((pends||[]).filter(p=>{try{const d=JSON.parse(p.datos_json||'{}');return d._tipo==="comprobante";}catch(e){return false;}})); }
+    if (pends) setPendientes(pends);
   },[añoActual]);
 
   useEffect(()=>{ load(); },[load]);
@@ -2047,12 +1596,13 @@ function AdminScreen({ user, onLogout }) {
     const planMes = planPagos.find(p=>p.mes===mes);
     if (!planMes || planMes.monto===0) return 0;
     const tipo = tiposCuota.find(t=>t.id===jug.tipo_cuota)||tiposCuota[0];
-    return Math.round(planMes.monto * tipo.porcentaje / 100);
+    if (tipo.monto_fijo > 0) return tipo.monto_fijo;
+    return Math.round(planMes.monto * (tipo.porcentaje||100) / 100);
   };
 
   const pagoJugMes = (jugId, mes) => pagos.find(p=>p.jugador_id===jugId&&p.mes===mes);
 
-  const saveJugador = async (data, mesInicio=null) => {
+  const saveJugador = async (data) => {
     // Si foto es base64 muy grande (>200KB), no la guardamos en este campo
     const fotoOk = data.foto_url && data.foto_url.length < 500000 ? data.foto_url : (data.foto_url?.startsWith("http") ? data.foto_url : "");
     const payload = {
@@ -2084,12 +1634,6 @@ function AdminScreen({ user, onLogout }) {
         alert("❌ Error al crear jugador:\n\n" + detail + "\n\n¿Ya ejecutaste el SQL para deshabilitar RLS en Supabase?");
         return;
       }
-      // Si es nuevo fichaje, eximir meses anteriores al mes de inicio
-      if (mesInicio && mesInicio > 1) {
-        for (let mes = 1; mes < mesInicio; mes++) {
-          await registrarPago(newId, mes, 0, "exento");
-        }
-      }
     }
     setModal(null); setSelJugador(null);
     load();
@@ -2103,13 +1647,13 @@ function AdminScreen({ user, onLogout }) {
       const plan=planPagos.find(p=>p.mes===mes);
       if(!plan||plan.monto===0||mes>(new Date().getDate()>10 ? new Date().getMonth()+1 : new Date().getMonth())) return false;
       const tipo=tiposCuota.find(t=>t.id===jug?.tipo_cuota)||tiposCuota[0];
-      const monto=Math.round(plan.monto*tipo.porcentaje/100);
+      const monto=(tipo.monto_fijo>0?tipo.monto_fijo:Math.round(plan.monto*(tipo.porcentaje||100)/100));
       return monto>0&&!pagos.find(p=>p.jugador_id===id&&p.mes===mes);
     });
     const montoDeuda = deudaMeses.reduce((acc,mes)=>{
       const plan=planPagos.find(p=>p.mes===mes);
       const tipo=tiposCuota.find(t=>t.id===jug?.tipo_cuota)||tiposCuota[0];
-      return acc+Math.round(plan.monto*tipo.porcentaje/100);
+      return acc+(tipo.monto_fijo>0?tipo.monto_fijo:Math.round(plan.monto*(tipo.porcentaje||100)/100));
     },0);
 
     if (deudaMeses.length>0) {
@@ -2136,15 +1680,8 @@ function AdminScreen({ user, onLogout }) {
     load();
   };
 
-  const validarPendiente = async (pend, mesInicioOverride=null) => {
+  const validarPendiente = async (pend) => {
     const datos = typeof pend.datos_json==="string" ? JSON.parse(pend.datos_json) : pend.datos_json;
-
-    // Si es nuevo fichaje y no se indicó mes, mostrar picker primero
-    if (datos.nuevo_fichaje && mesInicioOverride===null) {
-      setPendingFichaje({pend, mesInicio: new Date().getMonth()+1});
-      return;
-    }
-    const mesInicio = mesInicioOverride;
 
     // Si es formulario de delegado
     if (datos._tipo === "delegado") {
@@ -2193,14 +1730,7 @@ function AdminScreen({ user, onLogout }) {
     };
     const res = await sbFetch("baby_jugadores", "POST", jugador);
     if (res) {
-      // Si es nuevo fichaje, eximir meses anteriores al mes de inicio
-      if (mesInicio && mesInicio > 1) {
-        for (let mes = 1; mes < mesInicio; mes++) {
-          await registrarPago(jugador.id, mes, 0, "exento");
-        }
-      }
       await sbFetch(`baby_formularios_pendientes?id=eq.${pend.id}`, "DELETE");
-      setPendingFichaje(null);
       load();
     } else {
       const detail = window._lastSbError || "Sin detalle";
@@ -2301,10 +1831,11 @@ function AdminScreen({ user, onLogout }) {
     ["categorias", "🏷 Categorías"],
     ["accesos",    "🔗 Accesos"],
     ["respaldo",   "💾 Respaldo"],
-    ["manual",     "📖 Manual"],
   ];
 
   useEffect(()=>{
+    document.body.classList.add("needs-landscape");
+    return ()=>document.body.classList.remove("needs-landscape");
   },[]);
 
   return (
@@ -2335,8 +1866,8 @@ function AdminScreen({ user, onLogout }) {
               const parts = label.split(" ");
               const icon = parts[0];
               const text = parts.slice(1).join(" ");
-              const compsPend = comprobantes.length;
-              const altasPend = pendientes.length;
+              const compsPend = pendientes.filter(p=>{try{const d=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;return d._tipo==="comprobante";}catch(e){return false;}}).length;
+              const altasPend = pendientes.filter(p=>{try{const d=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;return d._tipo!=="comprobante";}catch(e){return true;}}).length;
               const hasBadge = (id==="pendientes" && altasPend>0) || (id==="pagos" && compsPend>0);
               const badgeCount = id==="pendientes" ? altasPend : id==="pagos" ? compsPend : 0;
               return(
@@ -2387,9 +1918,9 @@ function AdminScreen({ user, onLogout }) {
               <button onClick={()=>{
                   const base=window.location.origin;
                   const link=`${base}?form=jugador&org=paysandu`;
-                  const msg = `⚽ *PAYSANDÚ FC — BABY FÚTBOL*\n📝 *Formulario de inscripción de jugador*\n\nCompletá este formulario para inscribir a tu hijo/a en el club.\n👉 ${link}\n\n_Una vez enviado, el delegado o admin lo aprobará y el jugador quedará registrado en el sistema._`;
+                  const msg = "Acceso a Alta de Jugadores - Paysandú FC - Baby Fútbol\n" + link;
                   navigator.clipboard?.writeText(msg).then(()=>{
-                    alert("✅ Mensaje copiado. Pegalo en WhatsApp.");
+                    alert("✅ Enlace de alta copiado. Incluye el título y el link. Pegalo en WhatsApp o email.");
                   });
                 }}
                 style={{width:110,height:80,background:C.offWhite,color:C.navy,
@@ -2427,8 +1958,6 @@ function AdminScreen({ user, onLogout }) {
             {/* Tabla — ancho máximo = suma columnas */}
             <div className="tw-scroll" style={{maxWidth:920,overflowX:"auto"}}>
             {/* Encabezado tabla */}
-            <div className="tw-scroll">
-            <div style={{minWidth:680}}>
             <div style={{display:"grid",gridTemplateColumns:"280px 95px 65px 75px 100px 180px",gap:0,
               padding:"9px 14px",background:C.navy,borderRadius:"12px 12px 0 0",alignItems:"center"}}>
               {["Nombre","Nacimiento","Cat.","Código","Estado","Acciones"].map((h,i)=>(
@@ -2445,7 +1974,7 @@ function AdminScreen({ user, onLogout }) {
                 const plan=planPagos.find(p=>p.mes===mes);
                 if(!plan||plan.monto===0) return false;
                 const tipo=tiposCuota.find(t=>t.id===j.tipo_cuota)||tiposCuota[0];
-                const monto=Math.round(plan.monto*tipo.porcentaje/100);
+                const monto=(tipo.monto_fijo>0?tipo.monto_fijo:Math.round(plan.monto*(tipo.porcentaje||100)/100));
                 return monto>0 && !pagos.find(p=>p.jugador_id===j.id&&p.mes===mes) && mes<=(new Date().getDate()>10 ? new Date().getMonth()+1 : new Date().getMonth());
               });
               const est = deudaMeses.length===0
@@ -2556,8 +2085,6 @@ function AdminScreen({ user, onLogout }) {
             {jugadoresFilt.length===0&&(
               <div style={{textAlign:"center",padding:"40px 0",color:C.grayMid}}>Sin jugadores en esta categoría</div>
             )}
-            </div>{/* fin minWidth */}
-            </div>{/* fin tw-scroll */}
             </div>{/* fin contenedor tabla */}
           </div>
         )}
@@ -2567,6 +2094,13 @@ function AdminScreen({ user, onLogout }) {
           <div>
             {/* COMPROBANTES PENDIENTES */}
             {(()=>{
+              // Comprobantes de transferencia: vienen de formularios_pendientes con _tipo="comprobante"
+              const comprobantes = pendientes.filter(p=>{
+                try {
+                  const d = typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
+                  return d._tipo==="comprobante";
+                } catch(e){ return false; }
+              });
               if (comprobantes.length===0) return null;
               return(
                 <div style={{marginBottom:20}}>
@@ -2676,7 +2210,17 @@ function AdminScreen({ user, onLogout }) {
         {!loading&&tab==="plan"&&(
           <PlanPagosTab planPagos={planPagos} onSave={savePlanMes} añoActual={añoActual}
             tiposCuota={tiposCuota}
-            onSaveTipos={(nuevos)=>setTiposCuota(nuevos)}
+            onSaveTipos={async (nuevos)=>{
+              // Guardar cada tipo en Supabase
+              for (const t of nuevos) {
+                await sbFetch(`baby_tipos_cuota?id=eq.${t.id}`, "PATCH", {
+                  porcentaje: t.monto_fijo>0 ? 0 : (t.porcentaje||0),
+                  monto_fijo: t.monto_fijo||0,
+                  nombre: t.nombre,
+                });
+              }
+              setTiposCuota(nuevos);
+            }}
           />
         )}
 
@@ -2696,9 +2240,9 @@ function AdminScreen({ user, onLogout }) {
               <button onClick={()=>{
                   const base=window.location.origin;
                   const link=`${base}?form=delegado&org=paysandu`;
-                  const msg=`🏃 *PAYSANDÚ FC — BABY FÚTBOL*\n📋 *Formulario de registro de delegado*\n\nCompletá este formulario para registrarte como delegado del club.\n👉 ${link}`;
+                  const msg="Registro de Delegado - Paysandú FC - Baby Fútbol\n"+link;
                   navigator.clipboard?.writeText(msg).then(()=>{
-                    alert("✅ Mensaje copiado. Pegalo en WhatsApp.");
+                    alert("✅ Link de registro de delegado copiado. Pegalo en WhatsApp o email.");
                   });
                 }}
                 style={{width:110,height:80,background:C.offWhite,color:C.navy,
@@ -2814,9 +2358,7 @@ function AdminScreen({ user, onLogout }) {
                       textAlign:i===5?"center":"left",padding:"0 6px"}}>{h}</div>
                   ))}
                 </div>
-                {pendientes.filter(p=>{
-                  try{const d=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;return d._tipo!=="comprobante";}catch(e){return true;}
-                }).map((p,idx,arr)=>{
+                {pendientes.map((p,idx)=>{
                   const datos = typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
                   return(
                     <div key={p.id} style={{display:"grid",
@@ -2825,7 +2367,7 @@ function AdminScreen({ user, onLogout }) {
                       background:idx%2===0?"#fffbeb":"#fff8e1",
                       borderLeft:`2px solid ${C.gold}`,borderRight:`2px solid ${C.gold}`,
                       borderBottom:`1px solid #fde68a`,
-                      borderRadius:idx===arr.length-1?"0 0 12px 12px":"0"}}>
+                      borderRadius:idx===pendientes.length-1?"0 0 12px 12px":"0"}}>
                       <div style={{paddingRight:8,display:"flex",alignItems:"center",gap:8}}>
                         {datos.foto_url&&(
                           <img src={datos.foto_url} style={{width:32,height:32,borderRadius:"50%",
@@ -2902,12 +2444,12 @@ function AdminScreen({ user, onLogout }) {
                   const mesesDeuda=MESES.map((_,i)=>i+1).filter(mes=>{
                     const plan=planPagos.find(p=>p.mes===mes);
                     if(!plan||plan.monto===0||mes>(new Date().getDate()>10 ? new Date().getMonth()+1 : new Date().getMonth())) return false;
-                    const monto=Math.round(plan.monto*tipo.porcentaje/100);
+                    const monto=(tipo.monto_fijo>0?tipo.monto_fijo:Math.round(plan.monto*(tipo.porcentaje||100)/100));
                     return monto>0&&!pagos.find(p=>p.jugador_id===j.id&&p.mes===mes);
                   });
                   const total=mesesDeuda.reduce((acc,mes)=>{
                     const plan=planPagos.find(p=>p.mes===mes);
-                    return acc+Math.round(plan.monto*tipo.porcentaje/100);
+                    return acc+(tipo.monto_fijo>0?tipo.monto_fijo:Math.round(plan.monto*(tipo.porcentaje||100)/100));
                   },0);
                   return(
                     <div key={j.id} style={{background:C.white,borderRadius:14,overflow:"hidden",
@@ -2947,7 +2489,7 @@ function AdminScreen({ user, onLogout }) {
                             const mes=i+1;
                             const plan=planPagos.find(p=>p.mes===mes);
                             if(!plan||plan.monto===0) return null;
-                            const monto=Math.round(plan.monto*tipo.porcentaje/100);
+                            const monto=(tipo.monto_fijo>0?tipo.monto_fijo:Math.round(plan.monto*(tipo.porcentaje||100)/100));
                             if(monto===0) return null;
                             const pago=pagos.find(p=>p.jugador_id===j.id&&p.mes===mes);
                             const deuda=!pago&&mes<=(new Date().getDate()>10 ? new Date().getMonth()+1 : new Date().getMonth());
@@ -2967,7 +2509,7 @@ function AdminScreen({ user, onLogout }) {
                         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                           <button onClick={()=>{
                               const link=window.location.origin+"?id="+j.id;
-                              const msg=`⚽ *PAYSANDÚ FC — BABY FÚTBOL*\n💳 *Link de pago de cuotas*\n\nHola, te compartimos el link para ver y pagar las cuotas de *${j.nombre}* (Cat. ${j.categoria_id}).\n\n💰 Deuda pendiente: $${total.toLocaleString("es-UY")}\n\n👉 ${link}\n\n_Ingresá al link, seleccioná los meses a pagar y adjuntá el comprobante de transferencia._`;
+                              const msg=j.nombre+" (Cat."+j.categoria_id+") - Deuda pendiente $"+total.toLocaleString("es-UY")+" - Link de pago: "+link;
                               navigator.clipboard?.writeText(msg).then(()=>{
                                 alert("✅ Link de cobro copiado para "+j.nombre);
                               });
@@ -2977,7 +2519,10 @@ function AdminScreen({ user, onLogout }) {
                               fontWeight:800,fontSize:13,cursor:"pointer",textTransform:"uppercase"}}>
                             🔗 Enviar link de pago
                           </button>
-                          <button onClick={()=>setJugPagosVer(j)}
+                          <button onClick={()=>{
+                              setSelJugador(j);
+                              setTab("pagos");
+                            }}
                             style={{flex:1,padding:"9px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
                               color:C.white,border:"none",borderRadius:9,fontFamily:"'Barlow Condensed',sans-serif",
                               fontWeight:800,fontSize:13,cursor:"pointer",textTransform:"uppercase"}}>
@@ -3045,7 +2590,6 @@ function AdminScreen({ user, onLogout }) {
                 ["numero_cuenta","Número de cuenta","Ej: 037-0014628-00001"],
                 ["nombre_banco","Nombre del banco","Ej: Banco República (BROU)"],
                 ["sucursal","Sucursal (si corresponde)","Ej: Paysandú Centro"],
-                ["titular","Titular de la cuenta","Ej: Asociación Baby Fútbol Paysandú"],
                 ["nombre_club","Nombre del club","Paysandú FC — Baby Fútbol"],
               ].map(([k,lbl,ph])=>(
                 <div key={k} style={{marginBottom:12}}>
@@ -3076,13 +2620,7 @@ function AdminScreen({ user, onLogout }) {
               <button onClick={async()=>{
                   setSavingConfig(true);
                   // Upsert config
-              const payload = {
-                ...configAcceso,
-                org_id:"paysandu",
-                cbu: configAcceso.numero_cuenta || configAcceso.cbu || "",
-                alias: configAcceso.nombre_banco || configAcceso.alias || "",
-                titular: configAcceso.titular || "",
-              };
+                  const payload = {...configAcceso, org_id:"paysandu"};
                   let res = await sbFetch("baby_config_acceso?org_id=eq.paysandu","PATCH",payload);
                   if (!res || (Array.isArray(res) && res.length===0)) {
                     res = await sbFetch("baby_config_acceso","POST",{...payload,id:uid()});
@@ -3097,53 +2635,6 @@ function AdminScreen({ user, onLogout }) {
                   textTransform:"uppercase"}}>
                 {savingConfig?"⏳ Guardando...":savedConfig?"✅ Guardado":"💾 Guardar configuración"}
               </button>
-
-              {/* VISTA PREVIA — configuración actual */}
-              {(configAcceso.numero_cuenta||configAcceso.cbu||configAcceso.CBU||configAcceso.nombre_banco||configAcceso.alias||configAcceso.nombre_club)&&(
-                <div style={{marginTop:16,background:"linear-gradient(135deg,#1e3a8a,#1e40af)",
-                  borderRadius:12,padding:"12px 14px",border:"2px solid #3b82f6"}}>
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:12,
-                    color:"#e8b84b",textTransform:"uppercase",marginBottom:10}}>
-                    👁 Así se ve en la pantalla del jugador
-                  </div>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-                    {(configAcceso.numero_cuenta||configAcceso.CBU||configAcceso.cbu)&&(
-                      <div style={{background:"rgba(255,255,255,.15)",borderRadius:8,padding:"7px 10px"}}>
-                        <div style={{fontSize:9,color:"rgba(255,255,255,.6)",textTransform:"uppercase",fontWeight:700,marginBottom:2}}>Cuenta bancaria</div>
-                        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:12,color:"white",wordBreak:"break-all"}}>
-                          {configAcceso.numero_cuenta||configAcceso.CBU||configAcceso.cbu}
-                        </div>
-                      </div>
-                    )}
-                    {(configAcceso.nombre_banco||configAcceso.alias)&&(
-                      <div style={{background:"rgba(255,255,255,.15)",borderRadius:8,padding:"7px 10px"}}>
-                        <div style={{fontSize:9,color:"rgba(255,255,255,.6)",textTransform:"uppercase",fontWeight:700,marginBottom:2}}>Banco</div>
-                        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:12,color:"white"}}>
-                          {configAcceso.nombre_banco||configAcceso.alias}
-                        </div>
-                      </div>
-                    )}
-                    {configAcceso.sucursal&&(
-                      <div style={{background:"rgba(255,255,255,.15)",borderRadius:8,padding:"7px 10px",gridColumn:"span 2"}}>
-                        <div style={{fontSize:9,color:"rgba(255,255,255,.6)",textTransform:"uppercase",fontWeight:700,marginBottom:2}}>Sucursal</div>
-                        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:12,color:"white"}}>{configAcceso.sucursal}</div>
-                      </div>
-                    )}
-                    {configAcceso.nombre_club&&(
-                      <div style={{background:"rgba(255,255,255,.15)",borderRadius:8,padding:"7px 10px",gridColumn:"span 2"}}>
-                        <div style={{fontSize:9,color:"rgba(255,255,255,.6)",textTransform:"uppercase",fontWeight:700,marginBottom:2}}>A nombre de</div>
-                        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:12,color:"white"}}>{configAcceso.nombre_club}</div>
-                      </div>
-                    )}
-                  </div>
-                  {configAcceso.instrucciones_pago&&(
-                    <div style={{marginTop:8,fontSize:11,color:"rgba(255,255,255,.8)",fontStyle:"italic",
-                      background:"rgba(255,255,255,.1)",borderRadius:8,padding:"6px 10px"}}>
-                      📝 {configAcceso.instrucciones_pago}
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
 
             {/* LINKS */}
@@ -3152,14 +2643,9 @@ function AdminScreen({ user, onLogout }) {
               {id:"delegados",titulo:"🏃 Acceso Delegados",desc:"Para que los delegados ingresen al sistema",color:"#0369a1",bg:"#f0f9ff",border:"#93c5fd"},
             ].map(({id,titulo,desc,color,bg,border})=>{
               const link = `${window.location.origin}/?acceso=${id}`;
-              const cuenta = configAcceso.numero_cuenta||configAcceso.CBU||configAcceso.cbu||"";
-              const banco  = configAcceso.nombre_banco||configAcceso.alias||"";
-              const instruc = configAcceso.instrucciones_pago||"";
-              const titular = configAcceso.titular||"";
-              const nombreClub = configAcceso.nombre_club||"Paysandú FC Baby";
               const msgWA = id==="jugadores"
-                ? `⚽ *${nombreClub.toUpperCase()}*\n💳 *PAGO DE CUOTAS — ACCESO FAMILIAS*\n\nDesde este link podés ver el estado de cuotas de tu hijo/a y registrar el pago por transferencia.\n\n👉 ${link}\n\n🏦 *Datos para transferir:*\n${cuenta?`• Cuenta: ${cuenta}\n`:""}${banco?`• Banco: ${banco}\n`:""}${configAcceso.sucursal?`• Sucursal: ${configAcceso.sucursal}\n`:""}${(titular||nombreClub)?`• Titular: ${titular||nombreClub}\n`:""}\n📋 *Cómo pagar:*\n1. Abrí el link\n2. Elegí tu categoría y buscá tu nombre\n3. Seleccioná los meses a pagar\n4. Adjuntá el comprobante de transferencia`
-                : `🏃 *${nombreClub.toUpperCase()}*\n🔐 *ACCESO DELEGADOS — PANEL DE GESTIÓN*\n\nDesde este link podés ingresar al panel de delegados para gestionar tu categoría.\n\n👉 ${link}\n\n_Este link es exclusivo para delegados del club. No compartir con familias._`;
+                ? `*${configAcceso.nombre_club||"Paysandú FC Baby"}*\n\n⚽ Acceso para pago de cuotas:\n${link}\n\n📋 Para pagar:\n1. Seleccioná tu categoría\n2. Buscá tu nombre\n3. Elegí los meses y el método de pago`
+                : `*${configAcceso.nombre_club||"Paysandú FC Baby"}*\n\n🏃 Acceso Delegados:\n${link}`;
               return(
                 <div key={id} style={{background:bg,borderRadius:14,padding:"16px 18px",
                   border:`2px solid ${border}`,marginBottom:12}}>
@@ -3177,11 +2663,11 @@ function AdminScreen({ user, onLogout }) {
                     {link}
                   </div>
                   <div style={{display:"flex",gap:8}}>
-                    <button onClick={()=>navigator.clipboard?.writeText(msgWA).then(()=>alert("✅ Mensaje copiado — pegalo en WhatsApp"))}
+                    <button onClick={()=>navigator.clipboard?.writeText(link).then(()=>alert("✅ Link copiado"))}
                       style={{flex:1,padding:"9px",background:color,color:"white",border:"none",
                         borderRadius:8,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
                         fontSize:12,cursor:"pointer",textTransform:"uppercase"}}>
-                      📋 Copiar mensaje
+                      📋 Copiar link
                     </button>
                     <button onClick={()=>{
                         const url = `https://wa.me/?text=${encodeURIComponent(msgWA)}`;
@@ -3341,10 +2827,6 @@ function AdminScreen({ user, onLogout }) {
             </div>
           </div>
         )}
-
-        {tab==="manual"&&(
-          <ManualTab/>
-        )}
       </div>{/* fin contenido principal */}
       </div>{/* fin layout sidebar+contenido */}
 
@@ -3433,7 +2915,7 @@ function AdminScreen({ user, onLogout }) {
                           tablas: {
                             jugadores:             jugs  || [],
                             pagos:                 pags  || [],
-                            formularios_pendientes: (pends||[]).filter(p=>{try{const d=JSON.parse(p.datos_json||'{}');return d._tipo!=="comprobante";}catch(e){return true;}}),
+                            formularios_pendientes: pends || [],
                             delegados:             dels  || [],
                             categorias:            cats  || [],
                             plan_pagos:            plan  || [],
@@ -3980,7 +3462,7 @@ function AdminScreen({ user, onLogout }) {
                     const d=planPagos.filter(pl=>{
                       if(!pl.monto||pl.mes>ml)return false;
                       const tc=tiposCuota.find(t=>t.id===j.tipo_cuota)||tiposCuota[0];
-                      return Math.round(pl.monto*tc.porcentaje/100)>0&&!pagos.find(p=>p.jugador_id===j.id&&p.mes===pl.mes);
+                      return (tc.monto_fijo>0?tc.monto_fijo:Math.round(pl.monto*(tc.porcentaje||100)/100))>0&&!pagos.find(p=>p.jugador_id===j.id&&p.mes===pl.mes);
                     });
                     return d.length===0?"Al día":d.length+" mes"+(d.length>1?"es":"")+" adeudado"+(d.length>1?"s":"");
                   };
@@ -4029,7 +3511,7 @@ function AdminScreen({ user, onLogout }) {
                     const d=planPagos.filter(pl=>{
                       if(!pl.monto||pl.mes>ml2)return false;
                       const tc=tiposCuota.find(t=>t.id===j.tipo_cuota)||tiposCuota[0];
-                      return Math.round(pl.monto*tc.porcentaje/100)>0&&!pagos.find(p=>p.jugador_id===j.id&&p.mes===pl.mes);
+                      return (tc.monto_fijo>0?tc.monto_fijo:Math.round(pl.monto*(tc.porcentaje||100)/100))>0&&!pagos.find(p=>p.jugador_id===j.id&&p.mes===pl.mes);
                     });
                     return d.length===0?"Al día":d.length+" mes"+(d.length>1?"es":"")+" adeudado"+(d.length>1?"s":"");
                   };
@@ -4284,7 +3766,7 @@ function AdminScreen({ user, onLogout }) {
       )}
       {/* Modal historial pagos desde planteles */}
       {jugPagosVer&&(
-        <Modal onClose={()=>{setJugPagosVer(null);setJugPagosAccion(null);setJugPagosMeses([]);setJugPagosExim([]);setJugPagosMetodo(null);setJugPagosModo("pagar");}} maxWidth={500}>
+        <Modal onClose={()=>setJugPagosVer(null)} maxWidth={500}>
           <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"14px 20px",
             display:"flex",alignItems:"center",gap:12}}>
             {jugPagosVer.foto_url&&<img src={jugPagosVer.foto_url} style={{width:40,height:40,
@@ -4292,159 +3774,51 @@ function AdminScreen({ user, onLogout }) {
               onError={e=>e.target.style.display="none"}/>}
             <div>
               <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
-                color:C.white,textTransform:"uppercase"}}>💳 Pagos</div>
+                color:C.white,textTransform:"uppercase"}}>💳 Historial de pagos</div>
               <div style={{color:C.lilac,fontSize:12}}>{jugPagosVer.nombre} · Cat. {jugPagosVer.categoria_id}</div>
             </div>
           </div>
-          <div style={{padding:"16px 20px",maxHeight:"70dvh",overflowY:"auto"}}>
-
-            {/* MODO: Historial / Registrar / Eximir */}
-            <div style={{display:"flex",gap:6,marginBottom:14,background:"#f1f5f9",borderRadius:10,padding:4}}>
-              {[["historial","📋 Historial"],["pagar","💳 Registrar pago"],["eximir","🚫 Eximir meses"]].map(([m,lbl])=>(
-                <button key={m} onClick={()=>{setJugPagosModo(m);setJugPagosMeses([]);setJugPagosExim([]);setJugPagosMetodo(null);}}
-                  style={{flex:1,padding:"7px 4px",borderRadius:8,border:"none",cursor:"pointer",
-                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:11,
-                    textTransform:"uppercase",
-                    background:jugPagosModo===m?(m==="eximir"?"#dc2626":m==="pagar"?C.navy:"#475569"):"transparent",
-                    color:jugPagosModo===m?"white":C.grayMid}}>
-                  {lbl}
-                </button>
-              ))}
-            </div>
-
-            {/* HISTORIAL */}
-            {jugPagosModo==="historial"&&MESES.map((m,i)=>{
+          <div style={{padding:"16px 20px",maxHeight:"65dvh",overflowY:"auto"}}>
+            {MESES.map((m,i)=>{
               const mes=i+1;
               const plan=planPagos.find(p=>p.mes===mes);
               if(!plan||plan.monto===0) return null;
               const tipo=tiposCuota.find(t=>t.id===jugPagosVer.tipo_cuota)||tiposCuota[0];
-              const monto=Math.round(plan.monto*tipo.porcentaje/100);
+              const monto=(tipo.monto_fijo>0?tipo.monto_fijo:Math.round(plan.monto*(tipo.porcentaje||100)/100));
               const pago=pagos.find(p=>p.jugador_id===jugPagosVer.id&&p.mes===mes);
               return(
                 <div key={mes} style={{display:"flex",justifyContent:"space-between",alignItems:"center",
                   padding:"9px 0",borderBottom:`1px solid ${C.gray}`}}>
                   <div>
-                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:C.navy}}>{m}</div>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,
+                      color:C.navy}}>{m}</div>
                     {pago&&<div style={{fontSize:11,color:C.grayMid}}>{pago.fecha_pago} · {pago.metodo_pago}</div>}
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:10}}>
-                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,color:C.navy}}>{fmt(monto)}</div>
-                    <span style={{
-                      background:pago?(pago.metodo_pago==="exento"?"#fef3c7":"#dcfce7"):"#fee2e2",
-                      color:pago?(pago.metodo_pago==="exento"?"#92400e":"#16a34a"):"#dc2626",
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,
+                      color:C.navy}}>{fmt(monto)}</div>
+                    <span style={{background:pago?"#dcfce7":"#fee2e2",color:pago?"#16a34a":"#dc2626",
                       borderRadius:16,padding:"2px 10px",fontSize:11,fontWeight:700}}>
-                      {pago?(pago.metodo_pago==="exento"?"⭕ Exento":"✓ Pagado"):"Pendiente"}
+                      {pago?"✓ Pagado":"Pendiente"}
                     </span>
                   </div>
                 </div>
               );
             })}
-
-            {/* REGISTRAR PAGO / EXIMIR */}
-            {(jugPagosModo==="pagar"||jugPagosModo==="eximir")&&(()=>{
-              const cuotaMesLocal = (mes) => {
-                const plan=planPagos.find(p=>p.mes===mes);
-                if(!plan||plan.monto===0) return 0;
-                const tipo=tiposCuota.find(t=>t.id===jugPagosVer.tipo_cuota)||tiposCuota[0];
-                return Math.round(plan.monto*tipo.porcentaje/100);
-              };
-              return(
-                <>
-                  {jugPagosModo==="eximir"&&(
-                    <div style={{background:"#fef2f2",borderRadius:10,padding:"8px 12px",marginBottom:12,
-                      border:"1px solid #fecaca",fontSize:12,color:"#7f1d1d",lineHeight:1.5}}>
-                      Marcá los meses anteriores al ingreso del jugador para que no aparezcan como deuda.
-                    </div>
-                  )}
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:14}}>
-                    {MESES.map((_,i)=>{
-                      const mes=i+1;
-                      const monto=cuotaMesLocal(mes);
-                      const pago=pagos.find(p=>p.jugador_id===jugPagosVer.id&&p.mes===mes);
-                      if(pago) return(
-                        <div key={mes} style={{padding:"8px 4px",borderRadius:8,
-                          background:pago.metodo_pago==="exento"?"#fef3c7":"#dcfce7",
-                          border:`1px solid ${pago.metodo_pago==="exento"?"#fde68a":"#86efac"}`,
-                          textAlign:"center",
-                          fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:11,
-                          color:pago.metodo_pago==="exento"?"#92400e":"#16a34a"}}>
-                          <div>{MESES[i].slice(0,3)}</div>
-                          <div style={{fontSize:10}}>{pago.metodo_pago==="exento"?"⭕ Exento":"✓ Pago"}</div>
-                        </div>
-                      );
-                      if(monto===0) return null;
-                      const selP=jugPagosMeses.includes(mes);
-                      const selE=jugPagosExim.includes(mes);
-                      const sel=jugPagosModo==="pagar"?selP:selE;
-                      return(
-                        <button key={mes} onClick={()=>{
-                          if(jugPagosModo==="pagar") setJugPagosMeses(prev=>prev.includes(mes)?prev.filter(m=>m!==mes):[...prev,mes]);
-                          else setJugPagosExim(prev=>prev.includes(mes)?prev.filter(m=>m!==mes):[...prev,mes]);
-                        }}
-                          style={{padding:"8px 4px",borderRadius:8,position:"relative",
-                            border:`2px solid ${sel?(jugPagosModo==="eximir"?"#dc2626":"#16a34a"):C.gray}`,
-                            background:sel?(jugPagosModo==="eximir"?"#fee2e2":"#dcfce7"):C.white,
-                            cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:11,
-                            color:sel?(jugPagosModo==="eximir"?"#dc2626":"#16a34a"):C.navy}}>
-                          {sel&&<span style={{position:"absolute",top:2,right:4,fontSize:9}}>✓</span>}
-                          <div>{MESES[i].slice(0,3)}</div>
-                          <div style={{fontWeight:900,fontSize:13}}>{monto>0?fmt(monto):"—"}</div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {jugPagosModo==="pagar"&&(
-                    <>
-                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
-                        color:C.navy,textTransform:"uppercase",marginBottom:8}}>Medio de pago</div>
-                      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:14}}>
-                        {PAY_METHODS.map(pm=>(
-                          <button key={pm.id} onClick={()=>setJugPagosMetodo(pm.id)}
-                            style={{padding:"10px 6px",borderRadius:10,border:`2px solid ${jugPagosMetodo===pm.id?pm.color:C.gray}`,
-                              background:jugPagosMetodo===pm.id?pm.color+"18":C.white,cursor:"pointer",
-                              fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
-                              color:jugPagosMetodo===pm.id?pm.color:C.navy,display:"flex",flexDirection:"column",
-                              alignItems:"center",gap:3}}>
-                            <span style={{fontSize:18}}>{pm.icon}</span>{pm.label}
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                  <button
-                    disabled={(jugPagosModo==="pagar"&&(jugPagosMeses.length===0||!jugPagosMetodo))||(jugPagosModo==="eximir"&&jugPagosExim.length===0)||jugPagosSaving}
-                    onClick={async()=>{
-                      setJugPagosSaving(true);
-                      for(const mes of jugPagosMeses) await registrarPago(jugPagosVer.id,mes,cuotaMesLocal(mes),jugPagosMetodo);
-                      for(const mes of jugPagosExim) await registrarPago(jugPagosVer.id,mes,0,"exento");
-                      setJugPagosSaving(false);
-                      setJugPagosMeses([]); setJugPagosExim([]); setJugPagosMetodo(null);
-                      setJugPagosModo("historial");
-                    }}
-                    style={{width:"100%",padding:"11px",border:"none",borderRadius:10,
-                      background:(jugPagosModo==="pagar"&&jugPagosMeses.length>0&&jugPagosMetodo)||(jugPagosModo==="eximir"&&jugPagosExim.length>0)
-                        ?(jugPagosModo==="eximir"?"linear-gradient(135deg,#dc2626,#b91c1c)":`linear-gradient(135deg,${C.green},#15803d)`):"#e2e2da",
-                      color:(jugPagosModo==="pagar"&&jugPagosMeses.length>0&&jugPagosMetodo)||(jugPagosModo==="eximir"&&jugPagosExim.length>0)?C.white:C.grayMid,
-                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,textTransform:"uppercase"}}>
-                    {jugPagosSaving?"⏳ Guardando...":jugPagosModo==="eximir"?`🚫 Eximir (${jugPagosExim.length} meses)`:`✅ Confirmar (${jugPagosMeses.length} meses)`}
-                  </button>
-                </>
-              );
-            })()}
-
-            {/* Botones footer */}
-            <div style={{display:"flex",gap:8,marginTop:14}}>
+            <div style={{marginTop:14,display:"flex",gap:8}}>
               <button onClick={()=>{
-                  const link=window.location.origin+"?id="+jugPagosVer.id;
-                  const msg=`⚽ *PAYSANDÚ FC — BABY FÚTBOL*\n💳 *Link de pago de cuotas*\n\nHola, te compartimos el link para ver y pagar las cuotas de *${jugPagosVer.nombre}* (Cat. ${jugPagosVer.categoria_id}).\n\n👉 ${link}\n\n_Ingresá al link, seleccioná los meses a pagar y adjuntá el comprobante de transferencia._`;
-                  navigator.clipboard?.writeText(msg).then(()=>alert("✅ Mensaje copiado para "+jugPagosVer.nombre));
+                  const link = window.location.origin+"?id="+jugPagosVer.id;
+                  const msg = jugPagosVer.nombre+" (Cat."+jugPagosVer.categoria_id+") - Link de pago: "+link;
+                  navigator.clipboard?.writeText(msg).then(()=>{
+                    alert("✅ Link de pago copiado para "+jugPagosVer.nombre);
+                  });
                 }}
-                style={{flex:1,padding:"10px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                style={{flex:1,padding:"10px",background:`linear-gradient(135deg,${C.green},#15803d)`,
                   color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
-                  fontWeight:700,fontSize:12,cursor:"pointer",textTransform:"uppercase"}}>
-                🔗 Link de pago
+                  fontWeight:700,fontSize:13,cursor:"pointer",textTransform:"uppercase"}}>
+                💳 Enviar link de pago
               </button>
-              <button onClick={()=>{setJugPagosVer(null);setJugPagosModo("historial");setJugPagosMeses([]);setJugPagosExim([]);setJugPagosMetodo(null);}}
+              <button onClick={()=>setJugPagosVer(null)}
                 style={{padding:"10px 16px",background:C.offWhite,color:C.navy,
                   border:`1px solid ${C.gray}`,borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
                   fontWeight:700,fontSize:13,cursor:"pointer"}}>Cerrar</button>
@@ -4458,61 +3832,6 @@ function AdminScreen({ user, onLogout }) {
         jug={jugadores.find(j=>j.id===qrLink)||null}
         onClose={()=>setModal(null)}
       />}
-
-      {/* MODAL: Nuevo fichaje — elegir mes de inicio */}
-      {pendingFichaje&&(
-        <Modal onClose={()=>setPendingFichaje(null)} maxWidth={420}>
-          <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"16px 20px"}}>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
-              color:C.white,textTransform:"uppercase"}}>⚽ Nuevo fichaje</div>
-            <div style={{color:C.lilac,fontSize:12,marginTop:3}}>
-              {(typeof pendingFichaje.pend.datos_json==="string"
-                ?JSON.parse(pendingFichaje.pend.datos_json)
-                :pendingFichaje.pend.datos_json).nombre}
-            </div>
-          </div>
-          <div style={{padding:"20px"}}>
-            <div style={{fontSize:13,color:C.navy,marginBottom:14,lineHeight:1.6}}>
-              La familia indicó que es un <strong>nuevo fichaje</strong>. Seleccioná a partir de qué mes paga la cuota. Los meses anteriores quedarán como <strong>⭕ Exento</strong>.
-            </div>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
-              color:C.navy,textTransform:"uppercase",marginBottom:8}}>Paga a partir de:</div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,marginBottom:14}}>
-              {MESES.map((m,i)=>{
-                const mes=i+1;
-                const sel=pendingFichaje.mesInicio===mes;
-                return(
-                  <button key={mes} onClick={()=>setPendingFichaje(p=>({...p,mesInicio:mes}))}
-                    style={{padding:"10px 4px",borderRadius:8,
-                      border:`2px solid ${sel?"#1d4ed8":"#bfdbfe"}`,
-                      background:sel?"#1d4ed8":"white",color:sel?"white":"#1d4ed8",
-                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>
-                    {m.slice(0,3)}
-                  </button>
-                );
-              })}
-            </div>
-            <div style={{background:"#eff6ff",borderRadius:8,padding:"8px 12px",marginBottom:16,
-              fontSize:12,color:"#1e40af",fontWeight:600}}>
-              {pendingFichaje.mesInicio===1
-                ? "✅ Paga desde el inicio del año (sin exenciones)"
-                : `⭕ Enero a ${MESES[pendingFichaje.mesInicio-2]} → Exento | Paga desde ${MESES[pendingFichaje.mesInicio-1]}`}
-            </div>
-            <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>setPendingFichaje(null)}
-                style={{flex:1,padding:"11px",background:"transparent",color:C.navy,
-                  border:`2px solid ${C.navy}`,borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
-                  fontWeight:700,fontSize:13,textTransform:"uppercase"}}>Cancelar</button>
-              <button onClick={()=>validarPendiente(pendingFichaje.pend, pendingFichaje.mesInicio)}
-                style={{flex:2,padding:"11px",background:`linear-gradient(135deg,${C.green},#15803d)`,
-                  color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
-                  fontWeight:900,fontSize:14,textTransform:"uppercase"}}>
-                ✅ Confirmar alta
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
     </div>
   );
 }
@@ -4541,16 +3860,16 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
       setSelMeses(prev => prev.filter(m=>m!==mes));
     }
   };
+  const totalSeleccionado = selJug
+    ? selMeses.reduce((acc,mes)=>acc+cuotaMes(selJug,mes),0) : 0;
 
   const cuotaMes = (jug, mes) => {
     const planMes = planPagos.find(p=>p.mes===mes);
     if (!planMes||planMes.monto===0) return 0;
     const tipo = (tiposCuota||TIPOS_CUOTA_DEFAULT).find(t=>t.id===jug.tipo_cuota)||(tiposCuota||TIPOS_CUOTA_DEFAULT)[0];
-    return Math.round(planMes.monto * tipo.porcentaje / 100);
+    if (tipo.monto_fijo > 0) return tipo.monto_fijo;
+    return Math.round(planMes.monto * (tipo.porcentaje||100) / 100);
   };
-
-  const totalSeleccionado = selJug
-    ? selMeses.reduce((acc,mes)=>acc+cuotaMes(selJug,mes),0) : 0;
 
   const pagoJugMes = (jugId, mes) => pagos.find(p=>p.jugador_id===jugId&&p.mes===mes);
 
@@ -5009,11 +4328,11 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
                         if(mes>(new Date().getDate()>10 ? new Date().getMonth()+1 : new Date().getMonth())) return false;
                         const plan=planPagos.find(p=>p.mes===mes);
                         if(!plan||plan.monto===0) return false;
-                        const monto=Math.round(plan.monto*tipo.porcentaje/100);
+                        const monto=(tipo.monto_fijo>0?tipo.monto_fijo:Math.round(plan.monto*(tipo.porcentaje||100)/100));
                         return monto>0&&!pagos.find(p=>p.jugador_id===j.id&&p.mes===mes);
                       }).reduce((acc,mes)=>{
                         const plan=planPagos.find(p=>p.mes===mes);
-                        const monto=Math.round(plan.monto*tipo.porcentaje/100);
+                        const monto=(tipo.monto_fijo>0?tipo.monto_fijo:Math.round(plan.monto*(tipo.porcentaje||100)/100));
                         return acc+monto;
                       },0);
 
@@ -5045,7 +4364,7 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
                           </td>
                           {mesesActivos.map(mes=>{
                             const plan=planPagos.find(p=>p.mes===mes);
-                            const monto=plan?Math.round(plan.monto*tipo.porcentaje/100):0;
+                            const monto=plan?(tipo.monto_fijo>0?tipo.monto_fijo:Math.round(plan.monto*(tipo.porcentaje||100)/100)):0;
                             const pago=pagos.find(p=>p.jugador_id===j.id&&p.mes===mes);
                             const futuro=mes>(new Date().getDate()>10 ? new Date().getMonth()+1 : new Date().getMonth());
                             if(monto===0) return(
@@ -5147,20 +4466,51 @@ function PlanPagosTab({ planPagos, onSave, añoActual, tiposCuota, onSaveTipos }
               border:`1px solid ${C.gray}`}}>
               <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,
                 color:C.navy,marginBottom:6}}>{t.nombre}</div>
-              {editTipos ? (
-                <div style={{display:"flex",alignItems:"center",gap:6}}>
-                  <input type="number" min="0" max="100" value={t.porcentaje}
-                    disabled={t.id==="base"}
-                    onChange={e=>setTiposEdit(prev=>prev.map((x,j)=>j===i?{...x,porcentaje:parseInt(e.target.value)||0}:x))}
-                    style={{flex:1,padding:"6px 10px",border:`1px solid ${C.gray}`,borderRadius:6,
-                      fontSize:16,fontWeight:700,color:C.navy,textAlign:"center",
-                      background:t.id==="base"?C.gray:C.white}}/>
-                  <span style={{fontWeight:700,color:C.grayMid}}>%</span>
+              {editTipos && t.id!=="base" ? (
+                <div>
+                  {/* Toggle: % o monto fijo */}
+                  <div style={{display:"flex",gap:6,marginBottom:6}}>
+                    <button onClick={()=>setTiposEdit(prev=>prev.map((x,j)=>j===i?{...x,monto_fijo:0}:x))}
+                      style={{flex:1,padding:"4px",borderRadius:6,border:`1px solid ${C.gray}`,
+                        background:!t.monto_fijo?C.navy:C.white,
+                        color:!t.monto_fijo?C.white:C.grayMid,
+                        fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:11,cursor:"pointer"}}>
+                      % porcentaje
+                    </button>
+                    <button onClick={()=>setTiposEdit(prev=>prev.map((x,j)=>j===i?{...x,monto_fijo:t.monto_fijo||1}:x))}
+                      style={{flex:1,padding:"4px",borderRadius:6,border:`1px solid ${C.gray}`,
+                        background:t.monto_fijo>0?C.navy:C.white,
+                        color:t.monto_fijo>0?C.white:C.grayMid,
+                        fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:11,cursor:"pointer"}}>
+                      $ monto fijo
+                    </button>
+                  </div>
+                  {t.monto_fijo>0 ? (
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      <span style={{fontWeight:700,color:C.grayMid}}>$</span>
+                      <input type="number" min="0" value={t.monto_fijo}
+                        onChange={e=>setTiposEdit(prev=>prev.map((x,j)=>j===i?{...x,monto_fijo:parseInt(e.target.value)||0}:x))}
+                        style={{flex:1,padding:"6px 10px",border:`1px solid ${C.gray}`,borderRadius:6,
+                          fontSize:16,fontWeight:700,color:C.navy,textAlign:"center"}}/>
+                    </div>
+                  ) : (
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      <input type="number" min="0" max="100" value={t.porcentaje}
+                        onChange={e=>setTiposEdit(prev=>prev.map((x,j)=>j===i?{...x,porcentaje:parseInt(e.target.value)||0}:x))}
+                        style={{flex:1,padding:"6px 10px",border:`1px solid ${C.gray}`,borderRadius:6,
+                          fontSize:16,fontWeight:700,color:C.navy,textAlign:"center"}}/>
+                      <span style={{fontWeight:700,color:C.grayMid}}>%</span>
+                    </div>
+                  )}
+                </div>
+              ) : editTipos && t.id==="base" ? (
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,color:C.green}}>
+                  100%
                 </div>
               ) : (
                 <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,
                   color:t.porcentaje===100?C.green:t.porcentaje===0?"#dc2626":C.amber}}>
-                  {t.porcentaje}%
+                  {t.monto_fijo>0 ? `$${t.monto_fijo} fijo` : `${t.porcentaje}%`}
                 </div>
               )}
               {t.id==="base"&&<div style={{fontSize:10,color:C.grayMid,marginTop:2}}>Asignado por defecto</div>}
@@ -5451,7 +4801,6 @@ function DelegadoScreen({ user, onLogout }) {
   const [categorias,  setCat]       = useState([]);
   const [jugadores,   setJug]       = useState([]);
   const [pendientes,  setPend]      = useState([]);
-  const [pendingFichajeDel, setPendingFichajeDel] = useState(null); // modal mes inicio nuevo fichaje
   const [planPagos,   setPlan]      = useState([]);
   const [filtCat,     setFiltCat]   = useState("todos");
   const [modal,       setModal]     = useState(null);
@@ -5473,7 +4822,7 @@ function DelegadoScreen({ user, onLogout }) {
       setCat(catsFilt);
       const jugFilt = (jugs||[]).filter(j=>misCategs.length===0||misCategs.includes(j.categoria_id));
       setJug(jugFilt);
-      setPend((pends||[]).filter(p=>{try{const d=JSON.parse(p.datos_json||'{}');return d._tipo!=="comprobante";}catch(e){return true;}}));
+      setPend(pends||[]);
       setPlan(plan||[]);
       setLoading(false);
     };
@@ -5482,75 +4831,44 @@ function DelegadoScreen({ user, onLogout }) {
 
   const jugFiltrados = filtCat==="todos"?jugadores:jugadores.filter(j=>j.categoria_id===filtCat);
 
-  const saveJugador = async (data, mesInicio=null) => {
+  const saveJugador = async (data) => {
     if (selJugador) {
       const {pagos:_,...rest}=data;
       await sbFetch(`baby_jugadores?id=eq.${selJugador.id}`,"PATCH",rest);
     } else {
-      const newId = uid();
       await sbFetch("baby_jugadores","POST",{
-        ...data, id:newId, org_id:"paysandu", estado:"activo",
+        ...data, id:uid(), org_id:"paysandu", estado:"activo",
         pendiente_validacion:false, created_at:new Date().toISOString(),
       });
-      // Si es nuevo fichaje, eximir meses anteriores al mes de inicio
-      if (mesInicio && mesInicio > 1) {
-        for (let mes = 1; mes < mesInicio; mes++) {
-          await sbFetch("baby_pagos","POST",{
-            id:uid(), jugador_id:newId, org_id:"paysandu",
-            año:new Date().getFullYear(), mes, monto:0,
-            metodo_pago:"exento", fecha_pago:new Date().toISOString().slice(0,10),
-            pendiente_verificacion:false,
-          });
-        }
-      }
     }
     setModal(null); setSelJug(null);
     const jugs = await sbFetch("baby_jugadores?select=*&order=nombre.asc");
     setJug((jugs||[]).filter(j=>misCategs.length===0||misCategs.includes(j.categoria_id)));
   };
 
-  const validarPend = async (p, mesInicioOverride=null) => {
+  const validarPend = async (p) => {
     const datos = typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
-
-    // Si es nuevo fichaje y no se indicó mes, mostrar picker primero
-    if (datos.nuevo_fichaje && mesInicioOverride===null) {
-      setPendingFichajeDel({pend:p, mesInicio: new Date().getMonth()+1});
-      return;
-    }
-    const mesInicio = mesInicioOverride;
-
-    const { foto_url, tipo_cuota, nuevo_fichaje:_nf, ...resto } = datos;
-    const newId = uid();
+    const { foto_url, tipo_cuota, ...resto } = datos;
     const jugador = {
       ...resto,
-      foto_url: foto_url || p.foto_url || "",
+      foto_url: foto_url || "",
       tipo_cuota: tipo_cuota || "base",
-      id: newId, org_id:"paysandu", estado:"activo",
+      id: uid(), org_id:"paysandu", estado:"activo",
       pendiente_validacion:false, created_at:new Date().toISOString(),
     };
     const res = await sbFetch("baby_jugadores","POST",jugador);
     if (!res) {
       await sbFetch("baby_jugadores","POST",{...jugador, foto_url:""});
     }
-    // Eximir meses anteriores si nuevo fichaje
-    if (mesInicio && mesInicio > 1) {
-      for (let mes = 1; mes < mesInicio; mes++) {
-        await sbFetch("baby_pagos","POST",{
-          id:uid(), jugador_id:newId, org_id:"paysandu",
-          año:new Date().getFullYear(), mes, monto:0,
-          metodo_pago:"exento", fecha_pago:new Date().toISOString().slice(0,10),
-          pendiente_verificacion:false,
-        });
-      }
-    }
     await sbFetch(`baby_formularios_pendientes?id=eq.${p.id}`,"DELETE");
     setPend(prev=>prev.filter(x=>x.id!==p.id));
-    setPendingFichajeDel(null);
     const jugs = await sbFetch("baby_jugadores?select=*&order=nombre.asc");
     setJug((jugs||[]).filter(j=>misCategs.length===0||misCategs.includes(j.categoria_id)));
   };
 
   useEffect(()=>{
+    document.body.classList.add("needs-landscape");
+    return ()=>document.body.classList.remove("needs-landscape");
   },[]);
 
   return (
@@ -5577,10 +4895,9 @@ function DelegadoScreen({ user, onLogout }) {
         <div className="admin-sidebar" style={{width:200,background:C.white,borderRight:`2px solid ${C.gray}`,
           padding:"20px 14px",flexShrink:0,overflowY:"auto"}}>
           <div className="sidebar-grid-admin" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
-            {[["planteles","⚽","Planteles"],["pendientes","⏳","Pendientes"],["manual","📖","Manual"]].map(([id,icon,lbl])=>{
+            {[["planteles","⚽","Planteles"],["pendientes","⏳","Pendientes"]].map(([id,icon,lbl])=>{
               const active=tab===id;
               const hasBadge=id==="pendientes"&&pendientes.length>0;
-              const badgeCount=pendientes.length;
               return(
                 <button key={id} onClick={()=>setTab(id)}
                   style={{
@@ -5625,9 +4942,9 @@ function DelegadoScreen({ user, onLogout }) {
               <button onClick={()=>{
                   const base=window.location.origin;
                   const link=`${base}?form=jugador&org=paysandu`;
-                  const msg = `⚽ *PAYSANDÚ FC — BABY FÚTBOL*\n📝 *Formulario de inscripción de jugador*\n\nCompletá este formulario para inscribir a tu hijo/a en el club.\n👉 ${link}\n\n_Una vez enviado, el delegado o admin lo aprobará y el jugador quedará registrado en el sistema._`;
+                  const msg = "Acceso a Alta de Jugadores - Paysandú FC - Baby Fútbol\n" + link;
                   navigator.clipboard?.writeText(msg).then(()=>{
-                    alert("✅ Mensaje copiado. Pegalo en WhatsApp.");
+                    alert("✅ Enlace de alta copiado. Incluye el título y el link. Pegalo en WhatsApp o email.");
                   });
                 }}
                 style={{width:110,height:80,background:C.offWhite,color:C.navy,
@@ -5759,11 +5076,8 @@ function DelegadoScreen({ user, onLogout }) {
               ))}
             </div>
             {pendientes.filter(p=>{
-              try {
-                const datos=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
-                if (datos._tipo==="comprobante") return false;
-                return misCategs.length===0||misCategs.includes(datos.categoria_id);
-              } catch(e) { return true; }
+              const datos=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
+              return misCategs.length===0||misCategs.includes(datos.categoria_id);
             }).map((p,idx,arr)=>{
               const datos=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
               return(
@@ -5799,17 +5113,12 @@ function DelegadoScreen({ user, onLogout }) {
             )}
           </div>
         )}
-
-        {tab==="manual"&&(
-          <ManualTab seccionesVisibles={["delegado","jugador"]}/>
-        )}
-
         </div>{/* fin contenido delegado */}
       </div>{/* fin layout sidebar+contenido delegado */}
 
       {/* MOBILE BOTTOM NAV DELEGADO */}
       <div className="mobile-bottom-nav" style={{display:"none"}}>
-        {[["planteles","⚽","Planteles"],["pendientes","⏳","Pendientes"],["manual","📖","Manual"]].map(([id,icon,lbl])=>{
+        {[["planteles","⚽","Planteles"],["pendientes","⏳","Pendientes"]].map(([id,icon,lbl])=>{
           const active=tab===id;
           const hasBadge=id==="pendientes"&&pendientes.length>0;
           return(
@@ -5836,61 +5145,6 @@ function DelegadoScreen({ user, onLogout }) {
             showTipoCuota={false} readOnly={true}/>
         </Modal>
       )}
-
-      {/* MODAL: Nuevo fichaje delegado — elegir mes de inicio */}
-      {pendingFichajeDel&&(
-        <Modal onClose={()=>setPendingFichajeDel(null)} maxWidth={420}>
-          <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"16px 20px"}}>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
-              color:C.white,textTransform:"uppercase"}}>⚽ Nuevo fichaje</div>
-            <div style={{color:C.lilac,fontSize:12,marginTop:3}}>
-              {(typeof pendingFichajeDel.pend.datos_json==="string"
-                ?JSON.parse(pendingFichajeDel.pend.datos_json)
-                :pendingFichajeDel.pend.datos_json).nombre}
-            </div>
-          </div>
-          <div style={{padding:"20px"}}>
-            <div style={{fontSize:13,color:C.navy,marginBottom:14,lineHeight:1.6}}>
-              La familia indicó que es un <strong>nuevo fichaje</strong>. Seleccioná a partir de qué mes paga la cuota. Los meses anteriores quedarán como <strong>⭕ Exento</strong>.
-            </div>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
-              color:C.navy,textTransform:"uppercase",marginBottom:8}}>Paga a partir de:</div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,marginBottom:14}}>
-              {MESES.map((m,i)=>{
-                const mes=i+1;
-                const sel=pendingFichajeDel.mesInicio===mes;
-                return(
-                  <button key={mes} onClick={()=>setPendingFichajeDel(p=>({...p,mesInicio:mes}))}
-                    style={{padding:"10px 4px",borderRadius:8,
-                      border:`2px solid ${sel?"#1d4ed8":"#bfdbfe"}`,
-                      background:sel?"#1d4ed8":"white",color:sel?"white":"#1d4ed8",
-                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>
-                    {m.slice(0,3)}
-                  </button>
-                );
-              })}
-            </div>
-            <div style={{background:"#eff6ff",borderRadius:8,padding:"8px 12px",marginBottom:16,
-              fontSize:12,color:"#1e40af",fontWeight:600}}>
-              {pendingFichajeDel.mesInicio===1
-                ? "✅ Paga desde el inicio del año (sin exenciones)"
-                : `⭕ Enero a ${MESES[pendingFichajeDel.mesInicio-2]} → Exento | Paga desde ${MESES[pendingFichajeDel.mesInicio-1]}`}
-            </div>
-            <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>setPendingFichajeDel(null)}
-                style={{flex:1,padding:"11px",background:"transparent",color:C.navy,
-                  border:`2px solid ${C.navy}`,borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
-                  fontWeight:700,fontSize:13,textTransform:"uppercase"}}>Cancelar</button>
-              <button onClick={()=>validarPend(pendingFichajeDel.pend, pendingFichajeDel.mesInicio)}
-                style={{flex:2,padding:"11px",background:`linear-gradient(135deg,${C.green},#15803d)`,
-                  color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
-                  fontWeight:900,fontSize:14,textTransform:"uppercase"}}>
-                ✅ Confirmar alta
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
     </div>
   );
 }
@@ -5907,7 +5161,6 @@ function AccesoJugadoresDirecto() {
   const [err, setErr] = useState("");
   const [step, setStep] = useState("cats"); // cats | jugs | pin | pagos
   const [configAcceso, setConfigAcceso] = useState({});
-  const [showManual, setShowManual] = useState(false);
 
   useEffect(()=>{
     sbFetch("baby_categorias?select=*&order=nombre.asc").then(d=>setCats(d||[]));
@@ -5943,10 +5196,9 @@ function AccesoJugadoresDirecto() {
     }
   };
 
-  const numeroCuenta = configAcceso.numero_cuenta || configAcceso.CBU || configAcceso.cbu || "";
-  const nombreBanco  = configAcceso.nombre_banco  || configAcceso.alias || "";
+  const numeroCuenta = configAcceso.numero_cuenta || "";
+  const nombreBanco  = configAcceso.nombre_banco  || "";
   const sucursal     = configAcceso.sucursal       || "";
-  const titular      = configAcceso.titular        || "";
   const instrucciones = configAcceso.instrucciones_pago || "";
   const nombreClub = configAcceso.nombre_club || "Paysandú FC — Baby Fútbol";
 
@@ -5954,34 +5206,8 @@ function AccesoJugadoresDirecto() {
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,#0f1535,#1e2a6e,#2d3d9a)`,
       display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"24px 16px"}}>
       <div style={{maxWidth:440,width:"100%"}}>
-
-      {/* Modal manual */}
-      {showManual&&(
-        <Modal onClose={()=>setShowManual(false)} maxWidth={520}>
-          <div style={{padding:20,maxHeight:"85dvh",overflowY:"auto"}}>
-            <ManualTab seccionesVisibles={["jugador"]}/>
-          </div>
-        </Modal>
-      )}
         {/* Header */}
-        <div style={{textAlign:"center",marginBottom:24,position:"relative"}}>
-          {/* Botones arriba a la derecha */}
-          <div style={{position:"absolute",top:0,right:0,display:"flex",gap:6}}>
-            <button onClick={()=>setShowManual(true)}
-              style={{background:"rgba(255,255,255,.12)",border:"1px solid rgba(255,255,255,.2)",
-                borderRadius:8,padding:"6px 12px",color:"white",cursor:"pointer",
-                fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
-                textTransform:"uppercase"}}>
-              📖 Ayuda
-            </button>
-            <button onClick={()=>window.location.href=`${window.location.origin}?acceso=jugadores`}
-              style={{background:"rgba(255,255,255,.12)",border:"1px solid rgba(255,255,255,.2)",
-                borderRadius:8,padding:"6px 12px",color:"white",cursor:"pointer",
-                fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
-                textTransform:"uppercase"}}>
-              ↩ Salir
-            </button>
-          </div>
+        <div style={{textAlign:"center",marginBottom:24}}>
           <ClubLogo size={90}/>
           <h1 style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:30,
             color:"white",textTransform:"uppercase",letterSpacing:".04em",marginTop:14,lineHeight:1}}>
@@ -6018,11 +5244,6 @@ function AccesoJugadoresDirecto() {
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
                     color:"white"}}>{sucursal}</div>
                 </div>}
-                {(titular||nombreClub)&&<div style={{background:"rgba(255,255,255,.1)",borderRadius:8,padding:"8px 10px",gridColumn:"span 2"}}>
-                  <div style={{fontSize:9,color:"rgba(255,255,255,.5)",textTransform:"uppercase",fontWeight:600}}>Titular</div>
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
-                    color:"white"}}>{titular||nombreClub}</div>
-                </div>}
               </div>
             )}
             <div style={{fontSize:12,color:"rgba(255,255,255,.75)",lineHeight:1.6}}>
@@ -6045,7 +5266,7 @@ function AccesoJugadoresDirecto() {
               color:"white",textTransform:"uppercase",marginBottom:14,textAlign:"center"}}>
               Seleccioná tu categoría
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
               {cats.map(c=>(
                 <button key={c.id} onClick={()=>elegirCat(c.id)}
                   style={{padding:"16px 8px",background:"rgba(255,255,255,.12)",
@@ -6056,26 +5277,6 @@ function AccesoJugadoresDirecto() {
                 </button>
               ))}
             </div>
-
-            {/* Instructivo agregar a pantalla */}
-            <div style={{background:"rgba(255,255,255,.06)",borderRadius:12,padding:"12px 14px",
-              border:"1px solid rgba(255,255,255,.12)",marginBottom:12}}>
-              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:12,
-                color:"#e8b84b",textTransform:"uppercase",marginBottom:8}}>
-                📱 Agregá esta página a tu celular
-              </div>
-              <div style={{fontSize:11,color:"rgba(255,255,255,.75)",lineHeight:1.7}}>
-                <div style={{marginBottom:4,fontWeight:600,color:"rgba(255,255,255,.9)"}}>📱 iPhone (Safari):</div>
-                <div>1. Tocá el ícono <strong>Compartir</strong> (cuadrado con flecha ↑)</div>
-                <div>2. Seleccioná <strong>"Agregar a pantalla de inicio"</strong></div>
-                <div>3. Tocá <strong>"Agregar"</strong></div>
-                <div style={{marginTop:8,marginBottom:4,fontWeight:600,color:"rgba(255,255,255,.9)"}}>🤖 Android (Chrome):</div>
-                <div>1. Tocá los <strong>3 puntos</strong> del menú (⋮)</div>
-                <div>2. Seleccioná <strong>"Agregar a pantalla principal"</strong></div>
-                <div>3. Tocá <strong>"Agregar"</strong></div>
-              </div>
-            </div>
-
           </div>
         )}
 
@@ -6229,50 +5430,25 @@ function AccesoDelegadosDirecto() {
   );
 }
 
+/* ══ ROTATE OVERLAY COMPONENT ════════════════════════════════════════ */
+function RotateOverlay() {
+  return (
+    <div id="rotate-overlay">
+      <div className="ri">📱</div>
+      <div className="rm">Girá la pantalla</div>
+      <div className="rs">Este sistema funciona mejor en modo horizontal</div>
+    </div>
+  );
+}
 
-/* ══ APP ROOT ════════════════════════════════════════════════════════ */
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [autoLoading, setAutoLoading] = useState(false);
 
   const params = new URLSearchParams(window.location.search);
-  const formType    = params.get("form");
-  const directId    = params.get("id");
-  const accesoTipo  = params.get("acceso");
-  const delegadoId  = params.get("_delegado"); // desde AccesoDelegadosDirecto
-
-  // Acceso delegado via link con _delegado param
-  useEffect(()=>{
-    if (delegadoId && !currentUser) {
-      setAutoLoading(true);
-      // Primero intentar desde sessionStorage (guardado por AccesoDelegadosDirecto)
-      const stored = sessionStorage.getItem("delegado_directo");
-      if (stored) {
-        try {
-          const d = JSON.parse(stored);
-          if (d.id === delegadoId) {
-            // Limpiar URL ANTES de setCurrentUser para evitar loop
-            window.history.replaceState({}, "", window.location.origin + "/");
-            sessionStorage.removeItem("delegado_directo");
-            setCurrentUser({role:"delegado", ...d});
-            setAutoLoading(false);
-            return;
-          }
-        } catch(e){}
-      }
-      // Fallback: buscar en BD
-      sbFetch(`baby_delegados?id=eq.${delegadoId}&select=*`).then(data=>{
-        setAutoLoading(false);
-        if (data && data.length > 0) {
-          window.history.replaceState({}, "", window.location.origin + "/");
-          setCurrentUser({role:"delegado", ...data[0]});
-        } else {
-          // Si no se encontró, volver a la pantalla de delegados
-          window.location.href = window.location.origin + "?acceso=delegados";
-        }
-      });
-    }
-  },[delegadoId]);
+  const formType   = params.get("form");
+  const directId   = params.get("id");    // link directo ?id=XXXXXX
+  const accesoTipo = params.get("acceso"); // ?acceso=jugadores | delegados
 
   // Acceso directo con link de jugador
   useEffect(()=>{
@@ -6282,6 +5458,7 @@ export default function App() {
         setAutoLoading(false);
         if (data && data.length > 0) {
           setCurrentUser({role:"publico", jugador:data[0]});
+          // Limpiar URL para no recargar
           window.history.replaceState({}, "", window.location.pathname);
         }
       });
@@ -6289,19 +5466,30 @@ export default function App() {
   },[directId]);
 
   // Acceso directo jugadores via link
-  if (!delegadoId && accesoTipo === "jugadores") {
-    return (<><GlobalStyle/><AccesoJugadoresDirecto/></>);
+  if (accesoTipo === "jugadores") {
+    return (
+      <>
+        <GlobalStyle/>
+        <AccesoJugadoresDirecto/>
+      </>
+    );
   }
 
-  // Acceso directo delegados via link — solo si no hay _delegado en proceso ni autoLoading
-  if (!delegadoId && !autoLoading && accesoTipo === "delegados") {
-    return (<><GlobalStyle/><AccesoDelegadosDirecto/></>);
+  // Acceso directo delegados via link
+  if (accesoTipo === "delegados") {
+    return (
+      <>
+        <GlobalStyle/>
+        <AccesoDelegadosDirecto/>
+      </>
+    );
   }
 
   if (formType === "jugador") {
     return (
       <>
         <GlobalStyle/>
+        <RotateOverlay/>
         <FormularioPublico tipo={formType} org={params.get("org")||"paysandu"}/>
       </>
     );
@@ -6310,6 +5498,7 @@ export default function App() {
     return (
       <>
         <GlobalStyle/>
+        <RotateOverlay/>
         <FormularioDelegado org={params.get("org")||"paysandu"}/>
       </>
     );
@@ -6319,6 +5508,7 @@ export default function App() {
     return (
       <>
         <GlobalStyle/>
+        <RotateOverlay/>
         <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${C.navyDark},${C.navy})`,
           display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}>
           <ClubLogo size={64}/>
@@ -6333,6 +5523,7 @@ export default function App() {
     return (
       <>
         <GlobalStyle/>
+        <RotateOverlay/>
         <LoginScreen onLogin={setCurrentUser}/>
       </>
     );
@@ -6341,9 +5532,10 @@ export default function App() {
   return (
     <>
       <GlobalStyle/>
+      <RotateOverlay/>
       <div id="app-root">
       {currentUser.role==="admin"    && <AdminScreen    user={currentUser} onLogout={()=>setCurrentUser(null)}/>}
-      {currentUser.role==="delegado" && <DelegadoScreen user={currentUser} onLogout={()=>{ sessionStorage.removeItem("delegado_directo"); window.location.href=window.location.origin+"?acceso=delegados"; }}/>}
+      {currentUser.role==="delegado" && <DelegadoScreen user={currentUser} onLogout={()=>setCurrentUser(null)}/>}
       {currentUser.role==="publico"  && <PublicoView    user={currentUser} onLogout={()=>setCurrentUser(null)}/>}
       </div>
     </>
@@ -6524,7 +5716,6 @@ function FormularioPublico({ tipo, org }) {
   const [categorias, setCat]   = useState([]);
   const [sent,       setSent]  = useState(false);
   const [loading,    setLoading]= useState(false);
-  const [nuevoFichaje, setNuevoFichaje] = useState(false);
 
   useEffect(()=>{
     sbFetch("baby_categorias?select=*&order=nombre.asc").then(d=>setCat(d||[]));
@@ -6547,10 +5738,11 @@ function FormularioPublico({ tipo, org }) {
   const enviar = async () => {
     if (!valid) return;
     setLoading(true);
+    // Separar foto del JSON para evitar límite de tamaño
     const { foto_url: fotoJugForm, ...fJugSinFoto } = f;
     await sbFetch("baby_formularios_pendientes","POST",{
       id:uid(), org_id:org,
-      datos_json: JSON.stringify({...fJugSinFoto, nuevo_fichaje: nuevoFichaje}),
+      datos_json: JSON.stringify(fJugSinFoto),
       foto_url: fotoJugForm||"",
       created_at: new Date().toISOString(),
     });
@@ -6662,25 +5854,6 @@ function FormularioPublico({ tipo, org }) {
               <option value="">— Seleccioná —</option>
               {categorias.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}
             </select>
-          </div>
-
-          {/* NUEVO FICHAJE */}
-          <div style={{marginBottom:16,background:"#eff6ff",borderRadius:12,
-            padding:"14px 16px",border:"2px solid #bfdbfe"}}>
-            <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
-              <input type="checkbox" id="pub_fichaje" checked={nuevoFichaje}
-                onChange={e=>setNuevoFichaje(e.target.checked)}
-                style={{width:20,height:20,marginTop:2,cursor:"pointer",accentColor:"#1d4ed8",flexShrink:0}}/>
-              <label htmlFor="pub_fichaje" style={{cursor:"pointer"}}>
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:14,
-                  color:"#1d4ed8",textTransform:"uppercase"}}>
-                  ⚽ Soy nuevo en el club
-                </div>
-                <div style={{fontSize:12,color:"#374151",marginTop:3,lineHeight:1.5}}>
-                  Marcá esta opción si el jugador se incorpora durante el año. El delegado o admin indicará a partir de qué mes paga cuota.
-                </div>
-              </label>
-            </div>
           </div>
 
           <button onClick={enviar} disabled={!valid||loading}
