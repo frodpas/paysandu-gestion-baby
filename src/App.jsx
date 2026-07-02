@@ -849,9 +849,9 @@ function PublicoView({ user, onLogout }) {
               color:C.white,textTransform:"uppercase"}}>Paysandú FC — Baby</div>
             <div style={{color:C.lilac,fontSize:12}}>Ficha del jugador</div>
           </div>
-          <button onClick={onLogout} style={{background:"rgba(255,255,255,.1)",border:"none",
+          <button onClick={()=>window.location.href=window.location.origin+"?acceso=jugadores"} style={{background:"rgba(255,255,255,.1)",border:"none",
             borderRadius:8,padding:"7px 12px",color:C.white,fontFamily:"'Barlow Condensed',sans-serif",
-            fontWeight:700,fontSize:12,textTransform:"uppercase"}}>Salir</button>
+            fontWeight:700,fontSize:12,textTransform:"uppercase"}}>← Inicio</button>
         </div>
       </div>
 
@@ -1568,13 +1568,14 @@ function AdminScreen({ user, onLogout }) {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [cats, jugs, pends, dels, plan, pags] = await Promise.all([
+    const [cats, jugs, pends, dels, plan, pags, tcs] = await Promise.all([
       sbFetch("baby_categorias?select=*&order=nombre.asc"),
       sbFetch("baby_jugadores?select=*&order=nombre.asc"),
       sbFetch("baby_formularios_pendientes?select=*&order=created_at.desc"),
       sbFetch("baby_delegados?select=*&order=nombre.asc"),
       sbFetch(`baby_plan_pagos?año=eq.${añoActual}&select=*&order=mes.asc`),
       sbFetch(`baby_pagos?año=eq.${añoActual}&select=*`),
+      sbFetch("baby_tipos_cuota?select=*").catch(()=>null),
     ]);
     setCategorias(cats||[]);
     setJugadores(jugs||[]);
@@ -1582,6 +1583,7 @@ function AdminScreen({ user, onLogout }) {
     setDelegados(dels||[]);
     setPlanPagos(plan||[]);
     setPagos(pags||[]);
+    if (tcs&&tcs.length>0) setTiposCuota(tcs);
     setLoading(false);
   },[añoActual]);
 
@@ -3805,7 +3807,7 @@ function AdminScreen({ user, onLogout }) {
       )}
       {/* Modal historial pagos desde planteles */}
       {jugPagosVer&&(
-        <Modal onClose={()=>setJugPagosVer(null)} maxWidth={500}>
+        <Modal onClose={()=>{setJugPagosVer(null);setJugPagosModo("historial");setJugPagosMeses([]);setJugPagosExim([]);setJugPagosMetodo(null);}} maxWidth={500}>
           <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"14px 20px",
             display:"flex",alignItems:"center",gap:12}}>
             {jugPagosVer.foto_url&&<img src={jugPagosVer.foto_url} style={{width:40,height:40,
@@ -3813,12 +3815,27 @@ function AdminScreen({ user, onLogout }) {
               onError={e=>e.target.style.display="none"}/>}
             <div>
               <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
-                color:C.white,textTransform:"uppercase"}}>💳 Historial de pagos</div>
+                color:C.white,textTransform:"uppercase"}}>💳 Pagos</div>
               <div style={{color:C.lilac,fontSize:12}}>{jugPagosVer.nombre} · Cat. {jugPagosVer.categoria_id}</div>
             </div>
           </div>
-          <div style={{padding:"16px 20px",maxHeight:"65dvh",overflowY:"auto"}}>
-            {MESES.map((m,i)=>{
+          <div style={{padding:"16px 20px",maxHeight:"70dvh",overflowY:"auto"}}>
+            {/* Tabs */}
+            <div style={{display:"flex",gap:6,marginBottom:14,background:"#f1f5f9",borderRadius:10,padding:4}}>
+              {[["historial","📋 Historial"],["pagar","💳 Registrar pago"],["eximir","🚫 Eximir meses"]].map(([m,lbl])=>(
+                <button key={m} onClick={()=>{setJugPagosModo(m);setJugPagosMeses([]);setJugPagosExim([]);setJugPagosMetodo(null);}}
+                  style={{flex:1,padding:"7px 4px",borderRadius:8,border:"none",cursor:"pointer",
+                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:11,
+                    textTransform:"uppercase",
+                    background:jugPagosModo===m?(m==="eximir"?"#dc2626":m==="pagar"?C.navy:"#475569"):"transparent",
+                    color:jugPagosModo===m?"white":C.grayMid}}>
+                  {lbl}
+                </button>
+              ))}
+            </div>
+
+            {/* HISTORIAL */}
+            {jugPagosModo==="historial"&&MESES.map((m,i)=>{
               const mes=i+1;
               const plan=planPagos.find(p=>p.mes===mes);
               if(!plan||plan.monto===0) return null;
@@ -3829,35 +3846,115 @@ function AdminScreen({ user, onLogout }) {
                 <div key={mes} style={{display:"flex",justifyContent:"space-between",alignItems:"center",
                   padding:"9px 0",borderBottom:`1px solid ${C.gray}`}}>
                   <div>
-                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,
-                      color:C.navy}}>{m}</div>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:C.navy}}>{m}</div>
                     {pago&&<div style={{fontSize:11,color:C.grayMid}}>{pago.fecha_pago} · {pago.metodo_pago}</div>}
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:10}}>
-                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,
-                      color:C.navy}}>{fmt(monto)}</div>
-                    <span style={{background:pago?"#dcfce7":"#fee2e2",color:pago?"#16a34a":"#dc2626",
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,color:C.navy}}>{fmt(monto)}</div>
+                    <span style={{
+                      background:pago?(pago.metodo_pago==="exento"?"#fef3c7":"#dcfce7"):"#fee2e2",
+                      color:pago?(pago.metodo_pago==="exento"?"#92400e":"#16a34a"):"#dc2626",
                       borderRadius:16,padding:"2px 10px",fontSize:11,fontWeight:700}}>
-                      {pago?"✓ Pagado":"Pendiente"}
+                      {pago?(pago.metodo_pago==="exento"?"⭕ Exento":"✓ Pago"):"Pendiente"}
                     </span>
                   </div>
                 </div>
               );
             })}
-            <div style={{marginTop:14,display:"flex",gap:8}}>
+
+            {/* REGISTRAR / EXIMIR */}
+            {(jugPagosModo==="pagar"||jugPagosModo==="eximir")&&(()=>{
+              const cuotaLocal=(mes)=>{
+                const plan=planPagos.find(p=>p.mes===mes);
+                if(!plan||plan.monto===0) return 0;
+                const tipo=tiposCuota.find(t=>t.id===jugPagosVer.tipo_cuota)||tiposCuota[0];
+                return tipo.monto_fijo>0?tipo.monto_fijo:Math.round(plan.monto*(tipo.porcentaje||100)/100);
+              };
+              const mesesDisp=MESES.map((_,i)=>i+1).filter(mes=>cuotaLocal(mes)>0&&!pagos.find(p=>p.jugador_id===jugPagosVer.id&&p.mes===mes));
+              return(<>
+                {jugPagosModo==="eximir"&&(
+                  <div style={{background:"#fef2f2",borderRadius:10,padding:"8px 12px",marginBottom:12,
+                    border:"1px solid #fecaca",fontSize:12,color:"#7f1d1d",lineHeight:1.5}}>
+                    Marcá los meses anteriores al ingreso del jugador para que no aparezcan como deuda.
+                  </div>
+                )}
+                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:14}}>
+                  {mesesDisp.length===0&&<div style={{gridColumn:"span 3",textAlign:"center",padding:20,color:C.grayMid}}>No hay meses pendientes</div>}
+                  {mesesDisp.map(mes=>{
+                    const selP=jugPagosMeses.includes(mes), selE=jugPagosExim.includes(mes);
+                    const sel=jugPagosModo==="pagar"?selP:selE;
+                    return(
+                      <button key={mes} onClick={()=>{
+                        if(jugPagosModo==="pagar") setJugPagosMeses(prev=>prev.includes(mes)?prev.filter(m=>m!==mes):[...prev,mes]);
+                        else setJugPagosExim(prev=>prev.includes(mes)?prev.filter(m=>m!==mes):[...prev,mes]);
+                      }}
+                        style={{padding:"8px 4px",borderRadius:8,position:"relative",
+                          border:`2px solid ${sel?(jugPagosModo==="eximir"?"#dc2626":"#16a34a"):C.gray}`,
+                          background:sel?(jugPagosModo==="eximir"?"#fee2e2":"#dcfce7"):C.white,
+                          cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:11,
+                          color:sel?(jugPagosModo==="eximir"?"#dc2626":"#16a34a"):C.navy}}>
+                        {sel&&<span style={{position:"absolute",top:2,right:4,fontSize:9}}>✓</span>}
+                        <div>{MESES[mes-1].slice(0,3)}</div>
+                        <div style={{fontWeight:900,fontSize:13}}>{fmt(cuotaLocal(mes))}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+                {jugPagosModo==="pagar"&&(<>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
+                    color:C.navy,textTransform:"uppercase",marginBottom:8}}>Medio de pago</div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:14}}>
+                    {PAY_METHODS.map(pm=>(
+                      <button key={pm.id} onClick={()=>setJugPagosMetodo(pm.id)}
+                        style={{padding:"8px 4px",borderRadius:10,
+                          border:`2px solid ${jugPagosMetodo===pm.id?pm.color:C.gray}`,
+                          background:jugPagosMetodo===pm.id?pm.color+"18":C.white,cursor:"pointer",
+                          fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:11,
+                          color:jugPagosMetodo===pm.id?pm.color:C.navy,
+                          display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+                        <span style={{fontSize:16}}>{pm.icon}</span>{pm.label}
+                      </button>
+                    ))}
+                  </div>
+                </>)}
+                <button
+                  disabled={(jugPagosModo==="pagar"&&(jugPagosMeses.length===0||!jugPagosMetodo))||(jugPagosModo==="eximir"&&jugPagosExim.length===0)||jugPagosSaving}
+                  onClick={async()=>{
+                    setJugPagosSaving(true);
+                    for(const mes of jugPagosMeses){
+                      const plan=planPagos.find(p=>p.mes===mes);
+                      const tipo=tiposCuota.find(t=>t.id===jugPagosVer.tipo_cuota)||tiposCuota[0];
+                      const monto=tipo.monto_fijo>0?tipo.monto_fijo:Math.round((plan?.monto||0)*(tipo.porcentaje||100)/100);
+                      await registrarPago(jugPagosVer.id,mes,monto,jugPagosMetodo);
+                    }
+                    for(const mes of jugPagosExim) await registrarPago(jugPagosVer.id,mes,0,"exento");
+                    setJugPagosSaving(false);
+                    setJugPagosMeses([]); setJugPagosExim([]); setJugPagosMetodo(null);
+                    setJugPagosModo("historial");
+                  }}
+                  style={{width:"100%",padding:"11px",border:"none",borderRadius:10,
+                    background:(jugPagosModo==="pagar"&&jugPagosMeses.length>0&&jugPagosMetodo)||(jugPagosModo==="eximir"&&jugPagosExim.length>0)
+                      ?(jugPagosModo==="eximir"?"linear-gradient(135deg,#dc2626,#b91c1c)":`linear-gradient(135deg,${C.green},#15803d)`):"#e2e2da",
+                    color:(jugPagosModo==="pagar"&&jugPagosMeses.length>0&&jugPagosMetodo)||(jugPagosModo==="eximir"&&jugPagosExim.length>0)?C.white:C.grayMid,
+                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,textTransform:"uppercase"}}>
+                  {jugPagosSaving?"⏳ Guardando...":jugPagosModo==="eximir"?`🚫 Eximir (${jugPagosExim.length} meses)`:`✅ Confirmar (${jugPagosMeses.length} meses)`}
+                </button>
+              </>);
+            })()}
+
+            {/* Footer */}
+            <div style={{display:"flex",gap:8,marginTop:14}}>
               <button onClick={()=>{
-                  const link = window.location.origin+"?id="+jugPagosVer.id;
-                  const msg = jugPagosVer.nombre+" (Cat."+jugPagosVer.categoria_id+") - Link de pago: "+link;
-                  navigator.clipboard?.writeText(msg).then(()=>{
-                    alert("✅ Link de pago copiado para "+jugPagosVer.nombre);
-                  });
+                  const link=window.location.origin+"?id="+jugPagosVer.id;
+                  const msg=`⚽ *PAYSANDÚ FC — BABY FÚTBOL*\n💳 *Link de pago de cuotas*\n\nHola, te compartimos el link para ver y pagar las cuotas de *${jugPagosVer.nombre}* (Cat. ${jugPagosVer.categoria_id}).\n\n👉 ${link}\n\n_Ingresá al link, seleccioná los meses a pagar y adjuntá el comprobante de transferencia._`;
+                  navigator.clipboard?.writeText(msg).then(()=>alert("✅ Mensaje copiado para "+jugPagosVer.nombre));
                 }}
                 style={{flex:1,padding:"10px",background:`linear-gradient(135deg,${C.green},#15803d)`,
                   color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
-                  fontWeight:700,fontSize:13,cursor:"pointer",textTransform:"uppercase"}}>
-                💳 Enviar link de pago
+                  fontWeight:700,fontSize:12,cursor:"pointer",textTransform:"uppercase"}}>
+                🔗 Link de pago
               </button>
-              <button onClick={()=>setJugPagosVer(null)}
+              <button onClick={()=>{setJugPagosVer(null);setJugPagosModo("historial");setJugPagosMeses([]);setJugPagosExim([]);setJugPagosMetodo(null);}}
                 style={{padding:"10px 16px",background:C.offWhite,color:C.navy,
                   border:`1px solid ${C.gray}`,borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
                   fontWeight:700,fontSize:13,cursor:"pointer"}}>Cerrar</button>
