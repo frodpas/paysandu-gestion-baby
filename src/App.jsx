@@ -2157,12 +2157,23 @@ function AdminScreen({ user, onLogout }) {
                           {p.foto_url&&(
                             <div style={{background:"#f0f9ff",padding:"8px 14px 0",
                               display:"flex",justifyContent:"center"}}>
-                              <img src={p.foto_url}
-                                style={{maxHeight:120,maxWidth:"100%",borderRadius:8,
-                                  objectFit:"contain",cursor:"pointer",
-                                  border:"1px solid #bae6fd"}}
-                                onClick={()=>setVerComprobante(p.foto_url)}
-                                title="Click para ampliar"/>
+                              {p.foto_url.startsWith("data:application/pdf") ? (
+                                <div onClick={()=>setVerComprobante(p.foto_url)}
+                                  style={{display:"flex",flexDirection:"column",alignItems:"center",
+                                    gap:4,padding:"12px 24px",cursor:"pointer",
+                                    border:"1px solid #bae6fd",borderRadius:8,background:"white"}}>
+                                  <span style={{fontSize:32}}>📄</span>
+                                  <span style={{fontSize:11,color:"#0284c7",fontWeight:700}}>PDF — Click para descargar</span>
+                                </div>
+                              ) : (
+                                <img src={p.foto_url}
+                                  loading="lazy"
+                                  style={{maxHeight:120,maxWidth:"100%",borderRadius:8,
+                                    objectFit:"contain",cursor:"pointer",
+                                    border:"1px solid #bae6fd"}}
+                                  onClick={()=>setVerComprobante(p.foto_url)}
+                                  title="Click para ampliar"/>
+                              )}
                             </div>
                           )}
                           <div style={{padding:"10px 14px"}}>
@@ -3678,9 +3689,30 @@ function AdminScreen({ user, onLogout }) {
               background:"#dc2626",border:"2px solid white",color:"white",fontSize:22,
               cursor:"pointer",fontWeight:900,display:"flex",alignItems:"center",
               justifyContent:"center",zIndex:10000}}>✕</button>
-          <img src={verComprobante}
-            style={{maxWidth:"90vw",maxHeight:"82dvh",borderRadius:10,objectFit:"contain",
-              boxShadow:"0 8px 40px rgba(0,0,0,.7)"}}/>
+          {verComprobante.startsWith("data:application/pdf")||verComprobante.toLowerCase().includes(".pdf") ? (
+            /* PDF — no usar iframe con base64 grande, ofrecer descarga */
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:20,
+              background:"white",borderRadius:16,padding:"40px 48px",textAlign:"center"}}>
+              <div style={{fontSize:64}}>📄</div>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,
+                color:"#1e2a6e"}}>Comprobante PDF</div>
+              <a href={verComprobante} download="comprobante.pdf"
+                style={{padding:"12px 28px",background:"#0ea5e9",color:"white",
+                  borderRadius:10,textDecoration:"none",fontWeight:700,fontSize:15,
+                  fontFamily:"'Barlow Condensed',sans-serif",textTransform:"uppercase"}}>
+                ⬇ Descargar PDF
+              </a>
+              <button onClick={()=>setVerComprobante(null)}
+                style={{background:"none",border:"none",color:"#94a3b8",cursor:"pointer",
+                  fontSize:13,fontWeight:600}}>Cerrar</button>
+            </div>
+          ) : (
+            /* Imagen — mostrar directamente */
+            <img src={verComprobante}
+              style={{maxWidth:"90vw",maxHeight:"82dvh",borderRadius:10,objectFit:"contain",
+                boxShadow:"0 8px 40px rgba(0,0,0,.7)"}}
+              onError={e=>{e.target.style.display="none";}}/>
+          )}
           <div style={{color:"rgba(255,255,255,.5)",fontSize:12,marginTop:12}}>
             Presioná ✕ para cerrar
           </div>
