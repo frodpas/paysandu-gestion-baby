@@ -853,13 +853,16 @@ function PublicoView({ user, onLogout }) {
           boxShadow:"0 4px 16px rgba(20,28,78,.08)"}}>
           <div style={{display:"flex",gap:14,alignItems:"center",marginBottom:16}}>
             {jug.foto_url
-              ? <img src={jug.foto_url} style={{width:80,height:80,borderRadius:"50%",objectFit:"cover",border:`3px solid ${C.navy}`}}
-                  onError={e=>{e.target.style.display="none";e.target.nextSibling&&(e.target.nextSibling.style.display="flex");}}/>
-              : null}
-            {(!jug.foto_url)&&(
-              <div style={{width:80,height:80,borderRadius:"50%",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
-                display:"flex",alignItems:"center",justifyContent:"center",fontSize:32}}>⚽</div>
-            )}
+              ? <img src={jug.foto_url}
+                  onClick={()=>setModal("foto")}
+                  style={{width:80,height:80,borderRadius:"50%",objectFit:"cover",
+                    border:`3px solid ${C.navy}`,cursor:"pointer",
+                    boxShadow:"0 2px 8px rgba(20,28,78,.2)"}}
+                  title="Click para ampliar"
+                  onError={e=>{e.target.style.display="none";}}/>
+              : <div style={{width:80,height:80,borderRadius:"50%",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                  display:"flex",alignItems:"center",justifyContent:"center",fontSize:32}}>⚽</div>
+            }
             <div>
               <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,
                 color:C.navy,textTransform:"uppercase",lineHeight:1}}>{jug.nombre}</div>
@@ -1110,6 +1113,18 @@ function PublicoView({ user, onLogout }) {
           </div>
         )}
       </div>
+      {modal==="foto"&&jug.foto_url&&(
+        <div onClick={()=>setModal(null)}
+          style={{position:"fixed",inset:0,background:"rgba(0,0,0,.92)",zIndex:9999,
+            display:"flex",alignItems:"center",justifyContent:"center",padding:20,cursor:"pointer"}}>
+          <img src={jug.foto_url}
+            style={{maxWidth:"92vw",maxHeight:"88dvh",borderRadius:16,objectFit:"contain",
+              boxShadow:"0 8px 40px rgba(0,0,0,.7)"}}/>
+          <div style={{position:"fixed",top:16,right:16,color:"white",fontSize:26,fontWeight:900,
+            background:"rgba(0,0,0,.5)",borderRadius:"50%",width:40,height:40,
+            display:"flex",alignItems:"center",justifyContent:"center"}}>✕</div>
+        </div>
+      )}
       {modal==="success_transf"&&(
         <Modal onClose={()=>setModal(null)} maxWidth={360}>
           <div style={{padding:"36px 28px",textAlign:"center"}}>
@@ -3787,23 +3802,33 @@ function AdminScreen({ user, onLogout }) {
               const plan=planPagos.find(p=>p.mes===mes);
               if(!plan||plan.monto===0) return null;
               const tipo=tiposCuota.find(t=>t.id===jugPagosVer.tipo_cuota)||tiposCuota[0];
-              const monto=Math.round(plan.monto*tipo.porcentaje/100);
+              const monto=tipo?.monto_fijo>0?tipo.monto_fijo:Math.round(plan.monto*(tipo?.porcentaje||100)/100);
               const pago=pagos.find(p=>p.jugador_id===jugPagosVer.id&&p.mes===mes);
               return(
-                <div key={mes} style={{display:"flex",justifyContent:"space-between",alignItems:"center",
-                  padding:"9px 0",borderBottom:`1px solid ${C.gray}`}}>
-                  <div>
-                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,
-                      color:C.navy}}>{m}</div>
-                    {pago&&<div style={{fontSize:11,color:C.grayMid}}>{pago.fecha_pago} · {pago.metodo_pago}</div>}
-                  </div>
-                  <div style={{display:"flex",alignItems:"center",gap:10}}>
-                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,
-                      color:C.navy}}>{fmt(monto)}</div>
-                    <span style={{background:pago?"#dcfce7":"#fee2e2",color:pago?"#16a34a":"#dc2626",
-                      borderRadius:16,padding:"2px 10px",fontSize:11,fontWeight:700}}>
-                      {pago?"✓ Pagado":"Pendiente"}
-                    </span>
+                <div key={mes} style={{borderBottom:`1px solid ${C.gray}`}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0"}}>
+                    <div>
+                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,
+                        color:C.navy}}>{m}</div>
+                      {pago&&<div style={{fontSize:11,color:C.grayMid}}>{pago.fecha_pago} · {pago.metodo_pago}</div>}
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,
+                        color:C.navy}}>{fmt(monto)}</div>
+                      <span style={{
+                        background:pago?(pago.metodo_pago==="exento"?"#fef3c7":"#dcfce7"):"#fee2e2",
+                        color:pago?(pago.metodo_pago==="exento"?"#92400e":"#16a34a"):"#dc2626",
+                        borderRadius:16,padding:"2px 10px",fontSize:11,fontWeight:700}}>
+                        {pago?(pago.metodo_pago==="exento"?"⭕ Exento":"✓ Pago"):"Pendiente"}
+                      </span>
+                      {pago?.foto_url&&(
+                        <button onClick={()=>setVerComprobante(pago.foto_url)}
+                          style={{background:"none",border:`1px solid #bae6fd`,borderRadius:6,
+                            padding:"2px 8px",fontSize:11,color:"#0284c7",cursor:"pointer",fontWeight:700}}>
+                          📄
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
