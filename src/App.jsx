@@ -733,12 +733,11 @@ function PublicoView({ user, onLogout }) {
         sbFetch(`baby_pagos?jugador_id=eq.${jug.id}&año=eq.${añoActual}&select=*`),
         sbFetch(`baby_plan_pagos?año=eq.${añoActual}&select=*&order=mes.asc`),
         sbFetch("baby_config_acceso?org_id=eq.paysandu&select=*"),
-        sbFetch("baby_tipos_cuota?select=*").catch(()=>null),
       ]);
       setPagos(p||[]);
       setPlan(pl||[]);
+      // cfg puede tener las columnas viejas (cbu, alias) o las nuevas (numero_cuenta, nombre_banco)
       setConfigPago(cfg&&cfg.length>0 ? cfg[0] : {});
-      if (tcs&&tcs.length>0) setTiposCuotaPub(tcs);
     };
     load();
   },[jug.id]);
@@ -748,7 +747,6 @@ function PublicoView({ user, onLogout }) {
   const cuotaMes = (mes) => {
     const planMes = plan.find(p=>p.mes===mes);
     if (!planMes || planMes.monto===0) return 0;
-    // Si el tipo tiene monto fijo, usarlo directamente
     if (tipoCuota.monto_fijo > 0) return tipoCuota.monto_fijo;
     return Math.round(planMes.monto * (tipoCuota.porcentaje||100) / 100);
   };
@@ -773,14 +771,8 @@ function PublicoView({ user, onLogout }) {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = async ev => {
-      if (file.type === "application/pdf") {
-        // PDF: guardar directamente sin comprimir
-        setComprobante(ev.target.result);
-      } else {
-        // Imagen: comprimir
-        const compressed = await comprimirImagen(ev.target.result, 900, 0.75);
-        setComprobante(compressed);
-      }
+      const compressed = await comprimirImagen(ev.target.result, 900, 0.75);
+      setComprobante(compressed);
     };
     reader.readAsDataURL(file);
   };
@@ -1056,20 +1048,12 @@ function PublicoView({ user, onLogout }) {
             {/* Foto */}
             {comprobante?(
               <div style={{textAlign:"center",marginBottom:12}}>
-                {comprobante.startsWith("data:application/pdf") ? (
-                  <div style={{padding:"16px",background:"#f0f9ff",borderRadius:10,
-                    border:"2px solid #0ea5e9",display:"inline-block"}}>
-                    <div style={{fontSize:40,marginBottom:4}}>📄</div>
-                    <div style={{fontSize:12,color:"#0284c7",fontWeight:700}}>PDF adjuntado</div>
-                  </div>
-                ) : (
-                  <img src={comprobante} style={{maxWidth:"100%",maxHeight:200,borderRadius:10,
-                    border:"2px solid #0ea5e9"}}/>
-                )}
+                <img src={comprobante} style={{maxWidth:"100%",maxHeight:200,borderRadius:10,
+                  border:"2px solid #0ea5e9"}}/>
                 <button onClick={()=>setComprobante(null)}
                   style={{display:"block",margin:"6px auto 0",background:"none",border:"none",
                     color:"#dc2626",fontSize:12,cursor:"pointer",fontWeight:600}}>
-                  ✕ Cambiar archivo
+                  ✕ Cambiar foto
                 </button>
               </div>
             ):(
@@ -1091,7 +1075,7 @@ function PublicoView({ user, onLogout }) {
                   <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
                     fontSize:12,color:C.navy,textTransform:"uppercase"}}>Adjuntar</span>
                   <span style={{fontSize:10,color:C.grayMid}}>Galería / archivo</span>
-                  <input type="file" accept="image/*,application/pdf"
+                  <input type="file" accept="image/*"
                     style={{display:"none"}} onChange={handleComprobante}/>
                 </label>
               </div>
@@ -1430,7 +1414,7 @@ function AdminScreen({ user, onLogout }) {
       const d = planPagos.filter(pl => {
         if (!pl.monto || pl.mes > mesLim) return false;
         const tc = tiposCuota.find(t => t.id === j.tipo_cuota) || tiposCuota[0];
-        return (tc.monto_fijo>0?tc.monto_fijo:Math.round(pl.monto*(tc.porcentaje||100)/100)) > 0 &&
+        return Math.round(pl.monto * tc.porcentaje / 100) > 0 &&
           !pagos.find(p => p.jugador_id === j.id && p.mes === pl.mes);
       });
       return d.length === 0
@@ -1521,7 +1505,7 @@ function AdminScreen({ user, onLogout }) {
       const d = planPagos.filter(pl => {
         if (!pl.monto || pl.mes > mesLim) return false;
         const tc = tiposCuota.find(t => t.id === j.tipo_cuota) || tiposCuota[0];
-        return (tc.monto_fijo>0?tc.monto_fijo:Math.round(pl.monto*(tc.porcentaje||100)/100)) > 0 &&
+        return Math.round(pl.monto * tc.porcentaje / 100) > 0 &&
           !pagos.find(p => p.jugador_id === j.id && p.mes === pl.mes);
       });
       return d.length === 0 ? "Al día" : d.length + " mes" + (d.length > 1 ? "es" : "") + " adeudado" + (d.length > 1 ? "s" : "");
@@ -1564,7 +1548,7 @@ function AdminScreen({ user, onLogout }) {
   const [loading,      setLoading]     = useState(true);
   const [qrLink,       setQrLink]      = useState(null);
   const [jugPagosVer,     setJugPagosVer]     = useState(null);
-  const [jugPagosModo,    setJugPagosModo]    = useState("historial"); // historial | pagar | eximir
+  const [jugPagosModo,    setJugPagosModo]    = useState("historial");
   const [jugPagosMeses,   setJugPagosMeses]   = useState([]);
   const [jugPagosExim,    setJugPagosExim]    = useState([]);
   const [jugPagosSaving,  setJugPagosSaving]  = useState(false);
@@ -1667,13 +1651,13 @@ function AdminScreen({ user, onLogout }) {
       const plan=planPagos.find(p=>p.mes===mes);
       if(!plan||plan.monto===0||mes>(new Date().getDate()>10 ? new Date().getMonth()+1 : new Date().getMonth())) return false;
       const tipo=tiposCuota.find(t=>t.id===jug?.tipo_cuota)||tiposCuota[0];
-      const monto=(tipo.monto_fijo>0?tipo.monto_fijo:Math.round(plan.monto*(tipo.porcentaje||100)/100));
+      const monto=Math.round(plan.monto*tipo.porcentaje/100);
       return monto>0&&!pagos.find(p=>p.jugador_id===id&&p.mes===mes);
     });
     const montoDeuda = deudaMeses.reduce((acc,mes)=>{
       const plan=planPagos.find(p=>p.mes===mes);
       const tipo=tiposCuota.find(t=>t.id===jug?.tipo_cuota)||tiposCuota[0];
-      return acc+(tipo.monto_fijo>0?tipo.monto_fijo:Math.round(plan.monto*(tipo.porcentaje||100)/100));
+      return acc+Math.round(plan.monto*tipo.porcentaje/100);
     },0);
 
     if (deudaMeses.length>0) {
@@ -1994,7 +1978,7 @@ function AdminScreen({ user, onLogout }) {
                 const plan=planPagos.find(p=>p.mes===mes);
                 if(!plan||plan.monto===0) return false;
                 const tipo=tiposCuota.find(t=>t.id===j.tipo_cuota)||tiposCuota[0];
-                const monto=(tipo.monto_fijo>0?tipo.monto_fijo:Math.round(plan.monto*(tipo.porcentaje||100)/100));
+                const monto=Math.round(plan.monto*tipo.porcentaje/100);
                 return monto>0 && !pagos.find(p=>p.jugador_id===j.id&&p.mes===mes) && mes<=(new Date().getDate()>10 ? new Date().getMonth()+1 : new Date().getMonth());
               });
               const est = deudaMeses.length===0
@@ -2137,26 +2121,16 @@ function AdminScreen({ user, onLogout }) {
                       return(
                         <div key={p.id} style={{background:"white",borderRadius:14,
                           border:"2px solid #fca5a5",overflow:"hidden"}}>
-                          {/* Miniatura comprobante si hay foto/archivo */}
+                          {/* Miniatura comprobante si hay foto */}
                           {p.foto_url&&(
                             <div style={{background:"#f0f9ff",padding:"8px 14px 0",
                               display:"flex",justifyContent:"center"}}>
-                              {p.foto_url.startsWith("data:application/pdf")||p.foto_url.includes(".pdf") ? (
-                                <div onClick={()=>setVerComprobante(p.foto_url)}
-                                  style={{display:"flex",flexDirection:"column",alignItems:"center",
-                                    gap:4,padding:"12px 24px",cursor:"pointer",
-                                    border:"1px solid #bae6fd",borderRadius:8,background:"white"}}>
-                                  <span style={{fontSize:36}}>📄</span>
-                                  <span style={{fontSize:11,color:"#0284c7",fontWeight:700}}>PDF — Click para ver</span>
-                                </div>
-                              ) : (
-                                <img src={p.foto_url}
-                                  style={{maxHeight:120,maxWidth:"100%",borderRadius:8,
-                                    objectFit:"contain",cursor:"pointer",
-                                    border:"1px solid #bae6fd"}}
-                                  onClick={()=>setVerComprobante(p.foto_url)}
-                                  title="Click para ampliar"/>
-                              )}
+                              <img src={p.foto_url}
+                                style={{maxHeight:120,maxWidth:"100%",borderRadius:8,
+                                  objectFit:"contain",cursor:"pointer",
+                                  border:"1px solid #bae6fd"}}
+                                onClick={()=>setVerComprobante(p.foto_url)}
+                                title="Click para ampliar"/>
                             </div>
                           )}
                           <div style={{padding:"10px 14px"}}>
@@ -2241,7 +2215,6 @@ function AdminScreen({ user, onLogout }) {
           <PlanPagosTab planPagos={planPagos} onSave={savePlanMes} añoActual={añoActual}
             tiposCuota={tiposCuota}
             onSaveTipos={async (nuevos)=>{
-              // Guardar cada tipo en Supabase
               for (const t of nuevos) {
                 await sbFetch(`baby_tipos_cuota?id=eq.${t.id}`, "PATCH", {
                   porcentaje: t.monto_fijo>0 ? 0 : (t.porcentaje||0),
@@ -2474,12 +2447,12 @@ function AdminScreen({ user, onLogout }) {
                   const mesesDeuda=MESES.map((_,i)=>i+1).filter(mes=>{
                     const plan=planPagos.find(p=>p.mes===mes);
                     if(!plan||plan.monto===0||mes>(new Date().getDate()>10 ? new Date().getMonth()+1 : new Date().getMonth())) return false;
-                    const monto=(tipo.monto_fijo>0?tipo.monto_fijo:Math.round(plan.monto*(tipo.porcentaje||100)/100));
+                    const monto=Math.round(plan.monto*tipo.porcentaje/100);
                     return monto>0&&!pagos.find(p=>p.jugador_id===j.id&&p.mes===mes);
                   });
                   const total=mesesDeuda.reduce((acc,mes)=>{
                     const plan=planPagos.find(p=>p.mes===mes);
-                    return acc+(tipo.monto_fijo>0?tipo.monto_fijo:Math.round(plan.monto*(tipo.porcentaje||100)/100));
+                    return acc+Math.round(plan.monto*tipo.porcentaje/100);
                   },0);
                   return(
                     <div key={j.id} style={{background:C.white,borderRadius:14,overflow:"hidden",
@@ -2519,7 +2492,7 @@ function AdminScreen({ user, onLogout }) {
                             const mes=i+1;
                             const plan=planPagos.find(p=>p.mes===mes);
                             if(!plan||plan.monto===0) return null;
-                            const monto=(tipo.monto_fijo>0?tipo.monto_fijo:Math.round(plan.monto*(tipo.porcentaje||100)/100));
+                            const monto=Math.round(plan.monto*tipo.porcentaje/100);
                             if(monto===0) return null;
                             const pago=pagos.find(p=>p.jugador_id===j.id&&p.mes===mes);
                             const deuda=!pago&&mes<=(new Date().getDate()>10 ? new Date().getMonth()+1 : new Date().getMonth());
@@ -3492,7 +3465,7 @@ function AdminScreen({ user, onLogout }) {
                     const d=planPagos.filter(pl=>{
                       if(!pl.monto||pl.mes>ml)return false;
                       const tc=tiposCuota.find(t=>t.id===j.tipo_cuota)||tiposCuota[0];
-                      return (tc.monto_fijo>0?tc.monto_fijo:Math.round(pl.monto*(tc.porcentaje||100)/100))>0&&!pagos.find(p=>p.jugador_id===j.id&&p.mes===pl.mes);
+                      return Math.round(pl.monto*tc.porcentaje/100)>0&&!pagos.find(p=>p.jugador_id===j.id&&p.mes===pl.mes);
                     });
                     return d.length===0?"Al día":d.length+" mes"+(d.length>1?"es":"")+" adeudado"+(d.length>1?"s":"");
                   };
@@ -3541,7 +3514,7 @@ function AdminScreen({ user, onLogout }) {
                     const d=planPagos.filter(pl=>{
                       if(!pl.monto||pl.mes>ml2)return false;
                       const tc=tiposCuota.find(t=>t.id===j.tipo_cuota)||tiposCuota[0];
-                      return (tc.monto_fijo>0?tc.monto_fijo:Math.round(pl.monto*(tc.porcentaje||100)/100))>0&&!pagos.find(p=>p.jugador_id===j.id&&p.mes===pl.mes);
+                      return Math.round(pl.monto*tc.porcentaje/100)>0&&!pagos.find(p=>p.jugador_id===j.id&&p.mes===pl.mes);
                     });
                     return d.length===0?"Al día":d.length+" mes"+(d.length>1?"es":"")+" adeudado"+(d.length>1?"s":"");
                   };
@@ -3672,24 +3645,9 @@ function AdminScreen({ user, onLogout }) {
               background:"#dc2626",border:"2px solid white",color:"white",fontSize:22,
               cursor:"pointer",fontWeight:900,display:"flex",alignItems:"center",
               justifyContent:"center",zIndex:10000}}>✕</button>
-          {verComprobante.startsWith("data:application/pdf") || verComprobante.includes(".pdf") ? (
-            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:16}}>
-              <div style={{fontSize:60}}>📄</div>
-              <div style={{color:"white",fontSize:16,fontWeight:700}}>Comprobante PDF</div>
-              <a href={verComprobante} download="comprobante.pdf" target="_blank" rel="noreferrer"
-                style={{padding:"12px 24px",background:"#0ea5e9",color:"white",
-                  borderRadius:10,textDecoration:"none",fontWeight:700,fontSize:14}}>
-                ⬇ Descargar PDF
-              </a>
-              <iframe src={verComprobante}
-                style={{width:"min(90vw,700px)",height:"70dvh",borderRadius:10,border:"none"}}
-                title="Comprobante"/>
-            </div>
-          ) : (
-            <img src={verComprobante}
-              style={{maxWidth:"90vw",maxHeight:"82dvh",borderRadius:10,objectFit:"contain",
-                boxShadow:"0 8px 40px rgba(0,0,0,.7)"}}/>
-          )}
+          <img src={verComprobante}
+            style={{maxWidth:"90vw",maxHeight:"82dvh",borderRadius:10,objectFit:"contain",
+              boxShadow:"0 8px 40px rgba(0,0,0,.7)"}}/>
           <div style={{color:"rgba(255,255,255,.5)",fontSize:12,marginTop:12}}>
             Presioná ✕ para cerrar
           </div>
@@ -3811,7 +3769,7 @@ function AdminScreen({ user, onLogout }) {
       )}
       {/* Modal historial pagos desde planteles */}
       {jugPagosVer&&(
-        <Modal onClose={()=>{setJugPagosVer(null);setJugPagosModo("historial");setJugPagosMeses([]);setJugPagosExim([]);setJugPagosMetodo(null);}} maxWidth={500}>
+        <Modal onClose={()=>setJugPagosVer(null)} maxWidth={500}>
           <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"14px 20px",
             display:"flex",alignItems:"center",gap:12}}>
             {jugPagosVer.foto_url&&<img src={jugPagosVer.foto_url} style={{width:40,height:40,
@@ -3819,135 +3777,51 @@ function AdminScreen({ user, onLogout }) {
               onError={e=>e.target.style.display="none"}/>}
             <div>
               <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
-                color:C.white,textTransform:"uppercase"}}>💳 Pagos</div>
+                color:C.white,textTransform:"uppercase"}}>💳 Historial de pagos</div>
               <div style={{color:C.lilac,fontSize:12}}>{jugPagosVer.nombre} · Cat. {jugPagosVer.categoria_id}</div>
             </div>
           </div>
-          <div style={{padding:"16px 20px",maxHeight:"70dvh",overflowY:"auto"}}>
-            {/* Tabs */}
-            <div style={{display:"flex",gap:6,marginBottom:14,background:"#f1f5f9",borderRadius:10,padding:4}}>
-              {[["historial","📋 Historial"],["pagar","💳 Registrar pago"],["eximir","🚫 Eximir meses"]].map(([m,lbl])=>(
-                <button key={m} onClick={()=>{setJugPagosModo(m);setJugPagosMeses([]);setJugPagosExim([]);setJugPagosMetodo(null);}}
-                  style={{flex:1,padding:"7px 4px",borderRadius:8,border:"none",cursor:"pointer",
-                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:11,
-                    textTransform:"uppercase",
-                    background:jugPagosModo===m?(m==="eximir"?"#dc2626":m==="pagar"?C.navy:"#475569"):"transparent",
-                    color:jugPagosModo===m?"white":C.grayMid}}>
-                  {lbl}
-                </button>
-              ))}
-            </div>
-
-            {/* HISTORIAL */}
-            {jugPagosModo==="historial"&&MESES.map((m,i)=>{
+          <div style={{padding:"16px 20px",maxHeight:"65dvh",overflowY:"auto"}}>
+            {MESES.map((m,i)=>{
               const mes=i+1;
               const plan=planPagos.find(p=>p.mes===mes);
               if(!plan||plan.monto===0) return null;
               const tipo=tiposCuota.find(t=>t.id===jugPagosVer.tipo_cuota)||tiposCuota[0];
-              const monto=(tipo.monto_fijo>0?tipo.monto_fijo:Math.round(plan.monto*(tipo.porcentaje||100)/100));
+              const monto=Math.round(plan.monto*tipo.porcentaje/100);
               const pago=pagos.find(p=>p.jugador_id===jugPagosVer.id&&p.mes===mes);
               return(
                 <div key={mes} style={{display:"flex",justifyContent:"space-between",alignItems:"center",
                   padding:"9px 0",borderBottom:`1px solid ${C.gray}`}}>
                   <div>
-                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:C.navy}}>{m}</div>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,
+                      color:C.navy}}>{m}</div>
                     {pago&&<div style={{fontSize:11,color:C.grayMid}}>{pago.fecha_pago} · {pago.metodo_pago}</div>}
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:10}}>
-                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,color:C.navy}}>{fmt(monto)}</div>
-                    <span style={{
-                      background:pago?(pago.metodo_pago==="exento"?"#fef3c7":"#dcfce7"):"#fee2e2",
-                      color:pago?(pago.metodo_pago==="exento"?"#92400e":"#16a34a"):"#dc2626",
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,
+                      color:C.navy}}>{fmt(monto)}</div>
+                    <span style={{background:pago?"#dcfce7":"#fee2e2",color:pago?"#16a34a":"#dc2626",
                       borderRadius:16,padding:"2px 10px",fontSize:11,fontWeight:700}}>
-                      {pago?(pago.metodo_pago==="exento"?"⭕ Exento":"✓ Pago"):"Pendiente"}
+                      {pago?"✓ Pagado":"Pendiente"}
                     </span>
                   </div>
                 </div>
               );
             })}
-
-            {/* REGISTRAR / EXIMIR */}
-            {(jugPagosModo==="pagar"||jugPagosModo==="eximir")&&(()=>{
-              const cuotaLocal=(mes)=>{
-                const plan=planPagos.find(p=>p.mes===mes);
-                if(!plan||plan.monto===0) return 0;
-                const tipo=tiposCuota.find(t=>t.id===jugPagosVer.tipo_cuota)||tiposCuota[0];
-                return tipo.monto_fijo>0?tipo.monto_fijo:Math.round(plan.monto*(tipo.porcentaje||100)/100);
-              };
-              const mesesDisp=MESES.map((_,i)=>i+1).filter(mes=>cuotaLocal(mes)>0&&!pagos.find(p=>p.jugador_id===jugPagosVer.id&&p.mes===mes));
-              return(<>
-                {jugPagosModo==="eximir"&&(
-                  <div style={{background:"#fef2f2",borderRadius:10,padding:"8px 12px",marginBottom:12,
-                    border:"1px solid #fecaca",fontSize:12,color:"#7f1d1d",lineHeight:1.5}}>
-                    Marcá los meses anteriores al ingreso del jugador para que no aparezcan como deuda.
-                  </div>
-                )}
-                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:14}}>
-                  {mesesDisp.length===0&&<div style={{gridColumn:"span 3",textAlign:"center",padding:20,color:C.grayMid}}>No hay meses pendientes</div>}
-                  {mesesDisp.map(mes=>{
-                    const selP=jugPagosMeses.includes(mes), selE=jugPagosExim.includes(mes);
-                    const sel=jugPagosModo==="pagar"?selP:selE;
-                    return(
-                      <button key={mes} onClick={()=>{
-                        if(jugPagosModo==="pagar") setJugPagosMeses(prev=>prev.includes(mes)?prev.filter(m=>m!==mes):[...prev,mes]);
-                        else setJugPagosExim(prev=>prev.includes(mes)?prev.filter(m=>m!==mes):[...prev,mes]);
-                      }}
-                        style={{padding:"8px 4px",borderRadius:8,position:"relative",
-                          border:`2px solid ${sel?(jugPagosModo==="eximir"?"#dc2626":"#16a34a"):C.gray}`,
-                          background:sel?(jugPagosModo==="eximir"?"#fee2e2":"#dcfce7"):C.white,
-                          cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:11,
-                          color:sel?(jugPagosModo==="eximir"?"#dc2626":"#16a34a"):C.navy}}>
-                        {sel&&<span style={{position:"absolute",top:2,right:4,fontSize:9}}>✓</span>}
-                        <div>{MESES[mes-1].slice(0,3)}</div>
-                        <div style={{fontWeight:900,fontSize:13}}>{fmt(cuotaLocal(mes))}</div>
-                      </button>
-                    );
-                  })}
-                </div>
-                {jugPagosModo==="pagar"&&(<>
-                  <div style={{background:"#eff6ff",borderRadius:8,padding:"8px 12px",marginBottom:12,
-                    border:"1px solid #bfdbfe",fontSize:12,color:"#1e40af"}}>
-                    💡 Se registrará como <strong>pago manual</strong>. Seleccioná los meses a confirmar.
-                  </div>
-                </>)}
-                <button
-                  disabled={(jugPagosModo==="pagar"&&jugPagosMeses.length===0)||(jugPagosModo==="eximir"&&jugPagosExim.length===0)||jugPagosSaving}
-                  onClick={async()=>{
-                    setJugPagosSaving(true);
-                    for(const mes of jugPagosMeses){
-                      const plan=planPagos.find(p=>p.mes===mes);
-                      const tipo=tiposCuota.find(t=>t.id===jugPagosVer.tipo_cuota)||tiposCuota[0];
-                      const monto=tipo.monto_fijo>0?tipo.monto_fijo:Math.round((plan?.monto||0)*(tipo.porcentaje||100)/100);
-                      await registrarPago(jugPagosVer.id,mes,monto,"manual");
-                    }
-                    for(const mes of jugPagosExim) await registrarPago(jugPagosVer.id,mes,0,"exento");
-                    setJugPagosSaving(false);
-                    setJugPagosMeses([]); setJugPagosExim([]);
-                    setJugPagosModo("historial");
-                  }}
-                  style={{width:"100%",padding:"11px",border:"none",borderRadius:10,
-                    background:(jugPagosModo==="pagar"&&jugPagosMeses.length>0)||(jugPagosModo==="eximir"&&jugPagosExim.length>0)
-                      ?(jugPagosModo==="eximir"?"linear-gradient(135deg,#dc2626,#b91c1c)":`linear-gradient(135deg,${C.green},#15803d)`):"#e2e2da",
-                    color:(jugPagosModo==="pagar"&&jugPagosMeses.length>0)||(jugPagosModo==="eximir"&&jugPagosExim.length>0)?C.white:C.grayMid,
-                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,textTransform:"uppercase"}}>
-                  {jugPagosSaving?"⏳ Guardando...":jugPagosModo==="eximir"?`🚫 Eximir (${jugPagosExim.length} meses)`:`✅ Confirmar pago (${jugPagosMeses.length} meses)`}
-                </button>
-              </>);
-            })()}
-
-            {/* Footer */}
-            <div style={{display:"flex",gap:8,marginTop:14}}>
+            <div style={{marginTop:14,display:"flex",gap:8}}>
               <button onClick={()=>{
-                  const link=window.location.origin+"?id="+jugPagosVer.id;
-                  const msg=`⚽ *PAYSANDÚ FC — BABY FÚTBOL*\n💳 *Link de pago de cuotas*\n\nHola, te compartimos el link para ver y pagar las cuotas de *${jugPagosVer.nombre}* (Cat. ${jugPagosVer.categoria_id}).\n\n👉 ${link}\n\n_Ingresá al link, seleccioná los meses a pagar y adjuntá el comprobante de transferencia._`;
-                  navigator.clipboard?.writeText(msg).then(()=>alert("✅ Mensaje copiado para "+jugPagosVer.nombre));
+                  const link = window.location.origin+"?id="+jugPagosVer.id;
+                  const msg = jugPagosVer.nombre+" (Cat."+jugPagosVer.categoria_id+") - Link de pago: "+link;
+                  navigator.clipboard?.writeText(msg).then(()=>{
+                    alert("✅ Link de pago copiado para "+jugPagosVer.nombre);
+                  });
                 }}
                 style={{flex:1,padding:"10px",background:`linear-gradient(135deg,${C.green},#15803d)`,
                   color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
-                  fontWeight:700,fontSize:12,cursor:"pointer",textTransform:"uppercase"}}>
-                🔗 Link de pago
+                  fontWeight:700,fontSize:13,cursor:"pointer",textTransform:"uppercase"}}>
+                💳 Enviar link de pago
               </button>
-              <button onClick={()=>{setJugPagosVer(null);setJugPagosModo("historial");setJugPagosMeses([]);setJugPagosExim([]);setJugPagosMetodo(null);}}
+              <button onClick={()=>setJugPagosVer(null)}
                 style={{padding:"10px 16px",background:C.offWhite,color:C.navy,
                   border:`1px solid ${C.gray}`,borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
                   fontWeight:700,fontSize:13,cursor:"pointer"}}>Cerrar</button>
@@ -4018,17 +3892,19 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
 
   const confirmar = async () => {
     if (!selJug) return;
-    if (modoAccion==="pagar" && selMeses.length===0) return;
+    if (modoAccion==="pagar" && (selMeses.length===0)) return;
     if (modoAccion==="eximir" && exemMeses.length===0) return;
     setSaving(true);
+    // Registrar pagos normales
     for (const mes of selMeses) {
       await onRegistrarPago(selJug.id, mes, cuotaMes(selJug,mes), "manual");
     }
+    // Registrar meses eximidos (monto 0, metodo "exento")
     for (const mes of exemMeses) {
       await onRegistrarPago(selJug.id, mes, 0, "exento");
     }
     setSaving(false); setDone(true);
-    setTimeout(()=>{setDone(false);setSelJug(null);setSelMeses([]);setExemMeses([]);setModoAccion("pagar");setMostrarTodos(false);},2500);
+    setTimeout(()=>{setDone(false);setSelJug(null);setSelMeses([]);setExemMeses([]);setMetodo(null);setModoAccion("pagar");setMostrarTodos(false);},2500);
   };
 
   // Ordenar jugadores: por categoría luego alfabético
@@ -4162,135 +4038,70 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
         <Modal onClose={()=>setVerHistorial(null)} maxWidth={500}>
           <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"16px 20px"}}>
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
-              color:C.white,textTransform:"uppercase"}}>💳 Pagos</div>
+              color:C.white,textTransform:"uppercase"}}>📋 Historial de pagos</div>
             <div style={{color:C.lilac,fontSize:13}}>{verHistorial.nombre} · {verHistorial.categoria_id}</div>
           </div>
-          <div style={{padding:"18px 20px",maxHeight:"70dvh",overflowY:"auto"}}>
-            {/* Tabs */}
-            {(()=>{
-              const [tabHist, setTabHist] = [verHistorial._tab||"historial",
-                (v)=>setVerHistorial(prev=>({...prev,_tab:v}))];
-              const cuotaLocal = (mes) => cuotaMes(verHistorial, mes);
-              return (
-                <>
-                  <div style={{display:"flex",gap:6,marginBottom:14,background:"#f1f5f9",
-                    borderRadius:10,padding:4}}>
-                    {[["historial","📋 Historial"],["pagar","💳 Registrar"],["eximir","🚫 Eximir"]].map(([t,lbl])=>(
-                      <button key={t} onClick={()=>setTabHist(t)}
-                        style={{flex:1,padding:"7px 4px",borderRadius:8,border:"none",cursor:"pointer",
-                          fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:11,
-                          textTransform:"uppercase",
-                          background:tabHist===t?(t==="eximir"?"#dc2626":t==="pagar"?C.navy:"#475569"):"transparent",
-                          color:tabHist===t?"white":C.grayMid}}>
-                        {lbl}
-                      </button>
-                    ))}
+          <div style={{padding:"18px 20px",maxHeight:"60dvh",overflowY:"auto"}}>
+            {MESES.map((m,i)=>{
+              const mes=i+1;
+              const monto=cuotaMes(verHistorial,mes);
+              const pago=pagoJugMes(verHistorial.id,mes);
+              if(monto===0) return null;
+              return(
+                <div key={mes} style={{display:"flex",justifyContent:"space-between",alignItems:"center",
+                  padding:"8px 0",borderBottom:`1px solid ${C.gray}`}}>
+                  <div>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,
+                      color:C.navy}}>{m}</div>
+                    {pago&&<div style={{fontSize:11,color:C.grayMid}}>{pago.fecha_pago} · {pago.metodo_pago}</div>}
                   </div>
-
-                  {tabHist==="historial"&&MESES.map((m,i)=>{
-                    const mes=i+1; const monto=cuotaLocal(mes);
-                    const pago=pagoJugMes(verHistorial.id,mes);
-                    if(monto===0) return null;
-                    return(
-                      <div key={mes} style={{display:"flex",justifyContent:"space-between",alignItems:"center",
-                        padding:"8px 0",borderBottom:`1px solid ${C.gray}`}}>
-                        <div>
-                          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:C.navy}}>{m}</div>
-                          {pago&&<div style={{fontSize:11,color:C.grayMid}}>{pago.fecha_pago} · {pago.metodo_pago}</div>}
-                        </div>
-                        <div style={{display:"flex",alignItems:"center",gap:10}}>
-                          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,color:C.navy}}>{fmt(monto)}</div>
-                          <span style={{
-                            background:pago?(pago.metodo_pago==="exento"?"#fef3c7":"#dcfce7"):"#fee2e2",
-                            color:pago?(pago.metodo_pago==="exento"?"#92400e":"#16a34a"):"#dc2626",
-                            borderRadius:16,padding:"2px 10px",fontSize:11,fontWeight:700}}>
-                            {pago?(pago.metodo_pago==="exento"?"⭕ Exento":"✓ Pagado"):"Pendiente"}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  {(tabHist==="pagar"||tabHist==="eximir")&&(()=>{
-                    const mesesDisp = MESES.map((_,i)=>i+1).filter(mes=>cuotaLocal(mes)>0&&!pagoJugMes(verHistorial.id,mes));
-                    const selH = verHistorial._sel||[];
-                    const setSelH = (fn) => setVerHistorial(prev=>({...prev,_sel:fn(prev._sel||[])}));
-                    return (
-                      <>
-                        {tabHist==="eximir"&&(
-                          <div style={{background:"#fef2f2",borderRadius:10,padding:"8px 12px",
-                            marginBottom:12,border:"1px solid #fecaca",fontSize:12,color:"#7f1d1d"}}>
-                            Marcá los meses anteriores al ingreso del jugador para que no aparezcan como deuda.
-                          </div>
-                        )}
-                        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:14}}>
-                          {mesesDisp.length===0&&(
-                            <div style={{gridColumn:"span 3",textAlign:"center",padding:20,color:C.grayMid}}>
-                              No hay meses pendientes
-                            </div>
-                          )}
-                          {mesesDisp.map(mes=>{
-                            const sel=selH.includes(mes);
-                            return(
-                              <button key={mes} onClick={()=>setSelH(prev=>prev.includes(mes)?prev.filter(m=>m!==mes):[...prev,mes])}
-                                style={{padding:"8px 4px",borderRadius:8,position:"relative",
-                                  border:`2px solid ${sel?(tabHist==="eximir"?"#dc2626":"#16a34a"):C.gray}`,
-                                  background:sel?(tabHist==="eximir"?"#fee2e2":"#dcfce7"):C.white,
-                                  cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:11,
-                                  color:sel?(tabHist==="eximir"?"#dc2626":"#16a34a"):C.navy}}>
-                                {sel&&<span style={{position:"absolute",top:2,right:4,fontSize:9}}>✓</span>}
-                                <div>{MESES[mes-1].slice(0,3)}</div>
-                                <div style={{fontWeight:900,fontSize:13}}>{fmt(cuotaLocal(mes))}</div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                        {tabHist==="pagar"&&(
-                          <div style={{background:"#eff6ff",borderRadius:8,padding:"8px 12px",marginBottom:12,
-                            border:"1px solid #bfdbfe",fontSize:12,color:"#1e40af"}}>
-                            💡 Se registrará como <strong>pago manual</strong>.
-                          </div>
-                        )}
-                        <button
-                          disabled={(tabHist==="pagar"&&selH.length===0)||(tabHist==="eximir"&&selH.length===0)}
-                          onClick={async()=>{
-                            if(tabHist==="pagar"){
-                              for(const mes of selH) await onRegistrarPago(verHistorial.id,mes,cuotaLocal(mes),"manual");
-                            } else {
-                              for(const mes of selH) await onRegistrarPago(verHistorial.id,mes,0,"exento");
-                            }
-                            setVerHistorial(null);
-                          }}
-                          style={{width:"100%",padding:"11px",border:"none",borderRadius:10,
-                            background:(tabHist==="pagar"&&selH.length>0)||(tabHist==="eximir"&&selH.length>0)
-                              ?(tabHist==="eximir"?"linear-gradient(135deg,#dc2626,#b91c1c)":`linear-gradient(135deg,${C.green},#15803d)`):"#e2e2da",
-                            color:(tabHist==="pagar"&&selH.length>0)||(tabHist==="eximir"&&selH.length>0)?C.white:C.grayMid,
-                            fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,textTransform:"uppercase"}}>
-                          {tabHist==="eximir"?`🚫 Eximir (${selH.length})`:`✅ Confirmar (${selH.length})`}
-                        </button>
-                      </>
-                    );
-                  })()}
-
-                  <div style={{marginTop:14,display:"flex",gap:8}}>
-                    <button onClick={()=>{
-                        const link=window.location.origin+"?id="+verHistorial.id;
-                        const msg=`⚽ *PAYSANDÚ FC — BABY FÚTBOL*\n💳 *Link de pago de cuotas*\n\nHola, te compartimos el link para ver y pagar las cuotas de *${verHistorial.nombre}* (Cat. ${verHistorial.categoria_id}).\n\n👉 ${link}\n\n_Ingresá al link, seleccioná los meses a pagar y adjuntá el comprobante de transferencia._`;
-                        navigator.clipboard?.writeText(msg).then(()=>alert("✅ Mensaje copiado para "+verHistorial.nombre));
-                      }}
-                      style={{flex:1,padding:"9px",background:`linear-gradient(135deg,${C.green},#15803d)`,
-                        color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
-                        fontWeight:700,fontSize:12,cursor:"pointer",textTransform:"uppercase"}}>
-                      🔗 Link de pago
-                    </button>
-                    <button onClick={()=>setVerHistorial(null)}
-                      style={{padding:"9px 14px",background:C.offWhite,color:C.navy,
-                        border:`1px solid ${C.gray}`,borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
-                        fontWeight:700,fontSize:13,cursor:"pointer"}}>Cerrar</button>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:15,
+                      color:C.navy}}>{fmt(monto)}</div>
+                    <span style={{background:pago?"#dcfce7":"#fee2e2",color:pago?"#16a34a":"#dc2626",
+                      borderRadius:16,padding:"2px 10px",fontSize:11,fontWeight:700}}>
+                      {pago?"✓ Pagado":"Pendiente"}
+                    </span>
                   </div>
-                </>
+                </div>
               );
-            })()}
+            })}
+            <div style={{marginTop:14,display:"flex",flexDirection:"column",gap:8}}>
+              {(()=>{
+                const deudaMeses=MESES.map((_,i)=>i+1).filter(mes=>{
+                  const monto=cuotaMes(verHistorial,mes);
+                  return monto>0&&!pagoJugMes(verHistorial.id,mes)&&mes<=(new Date().getDate()>10 ? new Date().getMonth()+1 : new Date().getMonth());
+                });
+                return deudaMeses.length>0 ? (
+                  <button onClick={()=>{setSelJug(verHistorial);setVerHistorial(null);setSelMeses([]);setMetodo(null);}}
+                    style={{padding:"10px",background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,
+                      color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+                      fontWeight:800,fontSize:14,textTransform:"uppercase",cursor:"pointer"}}>
+                    ✏ Registrar pago
+                  </button>
+                ) : (
+                  <div style={{padding:"10px",background:"#dcfce7",borderRadius:10,
+                    textAlign:"center",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
+                    fontSize:14,color:"#16a34a"}}>✅ Al día con los pagos</div>
+                );
+              })()}
+              <button onClick={()=>{
+                  const link=window.location.origin+"?id="+verHistorial.id;
+                  const msg=verHistorial.nombre+" (Cat."+verHistorial.categoria_id+") - Link de pago: "+link;
+                  navigator.clipboard?.writeText(msg).then(()=>{
+                    alert("✅ Link de pago copiado para "+verHistorial.nombre+" (Cat."+verHistorial.categoria_id+")");
+                  });
+                }}
+                style={{padding:"10px",background:`linear-gradient(135deg,${C.green},#15803d)`,
+                  color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+                  fontWeight:800,fontSize:14,cursor:"pointer",textTransform:"uppercase"}}>
+                🔗 Enviar link de pago
+              </button>
+              <button onClick={()=>setVerHistorial(null)}
+                style={{padding:"9px",background:C.offWhite,color:C.navy,
+                  border:`1px solid ${C.gray}`,borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+                  fontWeight:700,fontSize:13,cursor:"pointer"}}>Cerrar</button>
+            </div>
           </div>
         </Modal>
       )}
@@ -4389,11 +4200,24 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
                   })}
                 </div>
 
+                {/* Método de pago — solo en modo pagar */}
                 {modoAccion==="pagar"&&(
-                  <div style={{background:"#eff6ff",borderRadius:8,padding:"8px 12px",marginBottom:14,
-                    border:"1px solid #bfdbfe",fontSize:12,color:"#1e40af"}}>
-                    💡 Se registrará como <strong>pago manual</strong>. Seleccioná los meses a confirmar.
-                  </div>
+                  <>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
+                      color:C.navy,textTransform:"uppercase",marginBottom:8}}>Medio de pago</div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:16}}>
+                      {PAY_METHODS.map(pm=>(
+                        <button key={pm.id} onClick={()=>setMetodo(pm.id)}
+                          style={{padding:"10px 6px",borderRadius:10,border:`2px solid ${metodo===pm.id?pm.color:C.gray}`,
+                            background:metodo===pm.id?pm.color+"18":C.white,cursor:"pointer",
+                            fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
+                            color:metodo===pm.id?pm.color:C.navy,display:"flex",flexDirection:"column",
+                            alignItems:"center",gap:3}}>
+                          <span style={{fontSize:18}}>{pm.icon}</span>{pm.label}
+                        </button>
+                      ))}
+                    </div>
+                  </>
                 )}
 
                 <div style={{display:"flex",gap:8}}>
@@ -4402,7 +4226,7 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
                       border:`2px solid ${C.navy}`,borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
                       fontWeight:700,fontSize:13,textTransform:"uppercase"}}>Cancelar</button>
                   <button onClick={confirmar}
-                    disabled={(modoAccion==="pagar"&&selMeses.length===0)||(modoAccion==="eximir"&&exemMeses.length===0)||saving}
+                    disabled={(modoAccion==="pagar"&&(selMeses.length===0))||(modoAccion==="eximir"&&exemMeses.length===0)||saving}
                     style={{flex:2,padding:"10px",
                       background:(modoAccion==="pagar"&&selMeses.length>0)||(modoAccion==="eximir"&&exemMeses.length>0)
                         ?(modoAccion==="eximir"?"linear-gradient(135deg,#dc2626,#b91c1c)":`linear-gradient(135deg,${C.green},#15803d)`):"#e2e2da",
@@ -4508,11 +4332,11 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
                         if(mes>(new Date().getDate()>10 ? new Date().getMonth()+1 : new Date().getMonth())) return false;
                         const plan=planPagos.find(p=>p.mes===mes);
                         if(!plan||plan.monto===0) return false;
-                        const monto=(tipo.monto_fijo>0?tipo.monto_fijo:Math.round(plan.monto*(tipo.porcentaje||100)/100));
+                        const monto=Math.round(plan.monto*tipo.porcentaje/100);
                         return monto>0&&!pagos.find(p=>p.jugador_id===j.id&&p.mes===mes);
                       }).reduce((acc,mes)=>{
                         const plan=planPagos.find(p=>p.mes===mes);
-                        const monto=(tipo.monto_fijo>0?tipo.monto_fijo:Math.round(plan.monto*(tipo.porcentaje||100)/100));
+                        const monto=Math.round(plan.monto*tipo.porcentaje/100);
                         return acc+monto;
                       },0);
 
@@ -4544,7 +4368,7 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
                           </td>
                           {mesesActivos.map(mes=>{
                             const plan=planPagos.find(p=>p.mes===mes);
-                            const monto=plan?(tipo.monto_fijo>0?tipo.monto_fijo:Math.round(plan.monto*(tipo.porcentaje||100)/100)):0;
+                            const monto=plan?Math.round(plan.monto*tipo.porcentaje/100):0;
                             const pago=pagos.find(p=>p.jugador_id===j.id&&p.mes===mes);
                             const futuro=mes>(new Date().getDate()>10 ? new Date().getMonth()+1 : new Date().getMonth());
                             if(monto===0) return(
@@ -4648,7 +4472,6 @@ function PlanPagosTab({ planPagos, onSave, añoActual, tiposCuota, onSaveTipos }
                 color:C.navy,marginBottom:6}}>{t.nombre}</div>
               {editTipos && t.id!=="base" ? (
                 <div>
-                  {/* Toggle: % o monto fijo */}
                   <div style={{display:"flex",gap:6,marginBottom:6}}>
                     <button onClick={()=>setTiposEdit(prev=>prev.map((x,j)=>j===i?{...x,monto_fijo:0}:x))}
                       style={{flex:1,padding:"4px",borderRadius:6,border:`1px solid ${C.gray}`,
@@ -4684,9 +4507,7 @@ function PlanPagosTab({ planPagos, onSave, añoActual, tiposCuota, onSaveTipos }
                   )}
                 </div>
               ) : editTipos && t.id==="base" ? (
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,color:C.green}}>
-                  100%
-                </div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,color:C.green}}>100%</div>
               ) : (
                 <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,
                   color:t.porcentaje===100?C.green:t.porcentaje===0?"#dc2626":C.amber}}>
@@ -5078,6 +4899,7 @@ function DelegadoScreen({ user, onLogout }) {
             {[["planteles","⚽","Planteles"],["pendientes","⏳","Pendientes"]].map(([id,icon,lbl])=>{
               const active=tab===id;
               const hasBadge=id==="pendientes"&&pendientes.length>0;
+              const badgeCount=pendientes.length;
               return(
                 <button key={id} onClick={()=>setTab(id)}
                   style={{
