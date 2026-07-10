@@ -3839,13 +3839,31 @@ function AdminScreen({ user, onLogout }) {
                         borderRadius:16,padding:"2px 10px",fontSize:11,fontWeight:700}}>
                         {pago?(pago.metodo_pago==="exento"?"⭕ Exento":"✓ Pago"):"Pendiente"}
                       </span>
-                      {pago?.foto_url&&(
+                      {pago?.foto_url ? (
                         <button onClick={()=>setVerComprobante(pago.foto_url)}
                           style={{background:"none",border:`1px solid #bae6fd`,borderRadius:6,
                             padding:"2px 8px",fontSize:11,color:"#0284c7",cursor:"pointer",fontWeight:700}}>
-                          📄
+                          📄 Ver
                         </button>
-                      )}
+                      ) : pago&&pago.metodo_pago==="transferencia" ? (
+                        <label style={{background:"none",border:`1px dashed #bae6fd`,borderRadius:6,
+                          padding:"2px 8px",fontSize:11,color:"#94a3b8",cursor:"pointer",fontWeight:600}}>
+                          📎 Adjuntar
+                          <input type="file" accept="image/*,application/pdf" style={{display:"none"}}
+                            onChange={async e=>{
+                              const file=e.target.files?.[0]; if(!file) return;
+                              const reader=new FileReader();
+                              reader.onload=async ev=>{
+                                let data=ev.target.result;
+                                if(file.type!=="application/pdf") data=await comprimirImagen(data,900,0.75);
+                                await sbFetch(`baby_pagos?id=eq.${pago.id}`,"PATCH",{foto_url:data});
+                                const pags=await sbFetch(`baby_pagos?año=eq.${añoActual}&select=*`);
+                                setPagos(pags||[]);
+                              };
+                              reader.readAsDataURL(file);
+                            }}/>
+                        </label>
+                      ) : null}
                     </div>
                   </div>
                 </div>
@@ -4214,12 +4232,13 @@ function PagosTab({ jugadores, pagos, planPagos, categorias, tiposCuota,
                     // Ya pagado → mostrar como pagado (no seleccionable)
                     if(pago) return(
                       <div key={mes} style={{padding:"10px 4px",borderRadius:8,
-                        background:"#dcfce7",border:"2px solid #86efac",
+                        background:pago.metodo_pago==="exento"?"#fef3c7":"#dcfce7",
+                        border:`2px solid ${pago.metodo_pago==="exento"?"#fde68a":"#86efac"}`,
                         textAlign:"center",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
-                        color:"#16a34a"}}>
+                        color:pago.metodo_pago==="exento"?"#92400e":"#16a34a"}}>
                         <div>{MESES[i].slice(0,3)}</div>
                         <div style={{fontSize:10,fontWeight:600}}>
-                          {pago.metodo_pago==="exento"?"Exento":"✓ Pago"}
+                          {pago.metodo_pago==="exento"?"⭕ Exento":"✓ Pago"}
                         </div>
                       </div>
                     );
