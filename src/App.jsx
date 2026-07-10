@@ -1155,6 +1155,8 @@ function FormAltaJugador({ categorias, onSave, onCancel, initialData=null, reado
     foto_url:"", tipo_cuota:"base", pin_familia:"",
   });
 
+  const [verFotoGrande, setVerFotoGrande] = useState(false);
+
   const set = (k,v) => setF(p=>({...p,[k]:v}));
 
   const valid = f.nombre && f.celular && f.categoria_id && f.fecha_nacimiento;
@@ -1166,11 +1168,28 @@ function FormAltaJugador({ categorias, onSave, onCancel, initialData=null, reado
 
   return (
     <div>
+      {/* Overlay foto grande */}
+      {verFotoGrande&&initialData?.foto_url&&(
+        <div onClick={()=>setVerFotoGrande(false)}
+          style={{position:"fixed",inset:0,background:"rgba(0,0,0,.92)",zIndex:99999,
+            display:"flex",alignItems:"center",justifyContent:"center",padding:20,cursor:"pointer"}}>
+          <img src={initialData.foto_url}
+            style={{maxWidth:"92vw",maxHeight:"88dvh",borderRadius:16,objectFit:"contain",
+              boxShadow:"0 8px 40px rgba(0,0,0,.7)"}}/>
+          <div style={{position:"fixed",top:16,right:16,color:"white",fontSize:26,fontWeight:900,
+            background:"rgba(0,0,0,.5)",borderRadius:"50%",width:40,height:40,
+            display:"flex",alignItems:"center",justifyContent:"center"}}>✕</div>
+        </div>
+      )}
       <div style={{background:`linear-gradient(135deg,${C.navyDark},${C.navy})`,padding:"18px 22px",
         display:"flex",alignItems:"center",gap:14}}>
         {initialData?.foto_url&&(
-          <img src={initialData.foto_url} style={{width:48,height:48,borderRadius:"50%",
-            objectFit:"cover",border:"2px solid rgba(255,255,255,.4)",flexShrink:0}}
+          <img src={initialData.foto_url}
+            onClick={()=>setVerFotoGrande(true)}
+            style={{width:48,height:48,borderRadius:"50%",
+              objectFit:"cover",border:"2px solid rgba(255,255,255,.4)",flexShrink:0,
+              cursor:"pointer"}}
+            title="Click para ampliar"
             onError={e=>e.target.style.display="none"}/>
         )}
         <div>
@@ -1853,8 +1872,6 @@ function AdminScreen({ user, onLogout }) {
   ];
 
   useEffect(()=>{
-    document.body.classList.add("needs-landscape");
-    return ()=>document.body.classList.remove("needs-landscape");
   },[]);
 
   return (
@@ -2175,13 +2192,14 @@ function AdminScreen({ user, onLogout }) {
                               )}
                               <button onClick={async()=>{
                                   if(!confirm("¿Aprobar esta transferencia? Se registrarán los pagos de los meses indicados.")) return;
-                                  // Registrar pagos en baby_pagos
+                                  // Registrar pagos en baby_pagos — incluir foto_url del comprobante
                                   for (const mes of (d.meses||[])) {
                                     await sbFetch("baby_pagos","POST",{
                                       id:uid(), jugador_id:d.jugador_id,
                                       org_id:"paysandu", año:d.año||new Date().getFullYear(),
                                       mes, monto:Math.round((d.monto_total||0)/(d.meses||[1]).length),
                                       metodo_pago:"transferencia", fecha_pago:fdate(),
+                                      foto_url: p.foto_url||"",
                                       pendiente_verificacion:false,
                                     });
                                   }
@@ -4893,8 +4911,6 @@ function DelegadoScreen({ user, onLogout }) {
   };
 
   useEffect(()=>{
-    document.body.classList.add("needs-landscape");
-    return ()=>document.body.classList.remove("needs-landscape");
   },[]);
 
   return (
