@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";  
 
 /* ══ CONFIG ═══════════════════════════════════════════════════════════ */
 const SB_URL = "https://ipgvsrmlgavsmickwrst.supabase.co";
