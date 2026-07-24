@@ -34,6 +34,19 @@ const TIPOS_CUOTA_DEFAULT = [
 /* ══ HELPERS ═══════════════════════════════════════════════════════════ */
 const uid = () => Math.random().toString(36).slice(2,8).toUpperCase();
 const fmt = n => "$"+(n||0).toLocaleString("es-UY");
+
+// Similitud de nombres — algoritmo simple de coincidencia de tokens
+const similitudNombre = (a, b) => {
+  if (!a||!b) return 0;
+  const norm = s => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
+  const na = norm(a), nb = norm(b);
+  if (na === nb) return 1;
+  // Coincidencia por palabras en común
+  const wa = na.split(/\s+/), wb = nb.split(/\s+/);
+  const comunes = wa.filter(w => w.length>1 && wb.includes(w));
+  const pct = (comunes.length * 2) / (wa.length + wb.length);
+  return pct;
+};
 const fdate = () => new Date().toLocaleDateString("es-UY");
 
 async function sbFetch(path, method="GET", body=null) {
@@ -1660,9 +1673,37 @@ function AdminScreen({ user, onLogout }) {
       pendiente_validacion: false,
     };
     if (selJugador) {
+      // Edición — sin chequeo de duplicados
       const res = await sbFetch(`baby_jugadores?id=eq.${selJugador.id}`, "PATCH", payload);
       if (!res) { alert("Error al guardar. Revisá la consola del navegador (F12)."); return; }
     } else {
+      // Alta nueva — chequeo de duplicados
+      if (payload.ci && payload.ci.trim()) {
+        const ciExiste = jugadores.find(j => j.ci && j.ci.trim() === payload.ci.trim() && j.estado !== "baja");
+        if (ciExiste) {
+          const ok = window.confirm(
+            `⚠️ POSIBLE DUPLICADO — CI ya registrada\n\n` +
+            `El jugador que querés dar de alta:\n  ${payload.nombre} (${payload.ci})\n\n` +
+            `Ya existe en el sistema:\n  ${ciExiste.nombre} — Cat. ${ciExiste.categoria_id}\n\n` +
+            `¿Querés darlo de alta de todas formas?`
+          );
+          if (!ok) return;
+        }
+      }
+      const similares = jugadores.filter(j =>
+        j.estado !== "baja" && similitudNombre(j.nombre, payload.nombre) >= 0.7 &&
+        (!payload.ci || !j.ci || j.ci.trim() !== payload.ci.trim())
+      );
+      if (similares.length > 0) {
+        const lista = similares.map(j => `  • ${j.nombre} — Cat. ${j.categoria_id}`).join("\n");
+        const ok = window.confirm(
+          `⚠️ POSIBLE DUPLICADO — Nombre similar\n\n` +
+          `El jugador que querés dar de alta:\n  ${payload.nombre}\n\n` +
+          `Jugadores con nombre similar en el sistema:\n${lista}\n\n` +
+          `¿Querés darlo de alta de todas formas?`
+        );
+        if (!ok) return;
+      }
       const newId = uid();
       const res = await sbFetch("baby_jugadores", "POST", {
         ...payload, id:newId, created_at:new Date().toISOString(),
@@ -1766,6 +1807,41 @@ function AdminScreen({ user, onLogout }) {
       pendiente_validacion: false,
       created_at: new Date().toISOString(),
     };
+    // ── CONTROL DE DUPLICADOS ─────────────────────────────────────
+    // 1. Chequeo exacto por CI
+    if (jugador.ci && jugador.ci.trim()) {
+      const ciExiste = jugadores.find(j =>
+        j.ci && j.ci.trim() === jugador.ci.trim() && j.estado !== "baja"
+      );
+      if (ciExiste) {
+        const ok = window.confirm(
+          `⚠️ POSIBLE DUPLICADO — CI ya registrada\n\n` +
+          `El jugador que querés dar de alta:\n  ${jugador.nombre} (${jugador.ci})\n\n` +
+          `Ya existe en el sistema:\n  ${ciExiste.nombre} — Cat. ${ciExiste.categoria_id}\n\n` +
+          `¿Querés darlo de alta de todas formas?`
+        );
+        if (!ok) return;
+      }
+    }
+
+    // 2. Chequeo por similitud de nombre (umbral 70%)
+    const similares = jugadores.filter(j =>
+      j.estado !== "baja" &&
+      similitudNombre(j.nombre, jugador.nombre) >= 0.7 &&
+      (!jugador.ci || !j.ci || j.ci.trim() !== jugador.ci.trim()) // no repetir si ya alertamos por CI
+    );
+    if (similares.length > 0) {
+      const lista = similares.map(j => `  • ${j.nombre} — Cat. ${j.categoria_id}`).join("\n");
+      const ok = window.confirm(
+        `⚠️ POSIBLE DUPLICADO — Nombre similar\n\n` +
+        `El jugador que querés dar de alta:\n  ${jugador.nombre}\n\n` +
+        `Jugadores con nombre similar ya en el sistema:\n${lista}\n\n` +
+        `¿Querés darlo de alta de todas formas?`
+      );
+      if (!ok) return;
+    }
+    // ─────────────────────────────────────────────────────────────
+
     const res = await sbFetch("baby_jugadores", "POST", jugador);
     if (res) {
       await sbFetch(`baby_formularios_pendientes?id=eq.${pend.id}`, "DELETE");
@@ -4951,6 +5027,42 @@ function DelegadoScreen({ user, onLogout }) {
       id: uid(), org_id:"paysandu", estado:"activo",
       pendiente_validacion:false, created_at:new Date().toISOString(),
     };
+
+    // ── CONTROL DE DUPLICADOS ─────────────────────────────────────
+    // Traer todos los jugadores activos para comparar
+    const todosJugs = await sbFetch("baby_jugadores?estado=eq.activo&select=id,nombre,ci,categoria_id") || [];
+
+    // 1. Chequeo exacto por CI
+    if (jugador.ci && jugador.ci.trim()) {
+      const ciExiste = todosJugs.find(j => j.ci && j.ci.trim() === jugador.ci.trim());
+      if (ciExiste) {
+        const ok = window.confirm(
+          `⚠️ POSIBLE DUPLICADO — CI ya registrada\n\n` +
+          `El jugador que querés dar de alta:\n  ${jugador.nombre} (${jugador.ci})\n\n` +
+          `Ya existe en el sistema:\n  ${ciExiste.nombre} — Cat. ${ciExiste.categoria_id}\n\n` +
+          `¿Querés darlo de alta de todas formas?`
+        );
+        if (!ok) return;
+      }
+    }
+
+    // 2. Chequeo por similitud de nombre (umbral 70%)
+    const similares = todosJugs.filter(j =>
+      similitudNombre(j.nombre, jugador.nombre) >= 0.7 &&
+      (!jugador.ci || !j.ci || j.ci.trim() !== jugador.ci.trim())
+    );
+    if (similares.length > 0) {
+      const lista = similares.map(j => `  • ${j.nombre} — Cat. ${j.categoria_id}`).join("\n");
+      const ok = window.confirm(
+        `⚠️ POSIBLE DUPLICADO — Nombre similar\n\n` +
+        `El jugador que querés dar de alta:\n  ${jugador.nombre}\n\n` +
+        `Jugadores con nombre similar ya en el sistema:\n${lista}\n\n` +
+        `¿Querés darlo de alta de todas formas?`
+      );
+      if (!ok) return;
+    }
+    // ─────────────────────────────────────────────────────────────
+
     const res = await sbFetch("baby_jugadores","POST",jugador);
     if (!res) {
       await sbFetch("baby_jugadores","POST",{...jugador, foto_url:""});
