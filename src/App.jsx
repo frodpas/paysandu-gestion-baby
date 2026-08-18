@@ -35,17 +35,14 @@ const TIPOS_CUOTA_DEFAULT = [
 const uid = () => Math.random().toString(36).slice(2,8).toUpperCase();
 const fmt = n => "$"+(n||0).toLocaleString("es-UY");
 
-// Similitud de nombres — algoritmo simple de coincidencia de tokens
 const similitudNombre = (a, b) => {
   if (!a||!b) return 0;
   const norm = s => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
   const na = norm(a), nb = norm(b);
   if (na === nb) return 1;
-  // Coincidencia por palabras en común
   const wa = na.split(/\s+/), wb = nb.split(/\s+/);
   const comunes = wa.filter(w => w.length>1 && wb.includes(w));
-  const pct = (comunes.length * 2) / (wa.length + wb.length);
-  return pct;
+  return (comunes.length * 2) / (wa.length + wb.length);
 };
 const fdate = () => new Date().toLocaleDateString("es-UY");
 
@@ -1614,7 +1611,7 @@ function AdminScreen({ user, onLogout }) {
     ]);
     setCategorias(cats||[]);
     setJugadores(jugs||[]);
-    setPendientes(pends||[]);
+    setPendientes((pends||[]).filter(p=>{try{const d=JSON.parse(p.datos_json||'{}');return d._tipo!=="comprobante";}catch(e){return true;}}));
     setDelegados(dels||[]);
     setPlanPagos(plan||[]);
     setPagos(pags||[]);
@@ -1627,7 +1624,7 @@ function AdminScreen({ user, onLogout }) {
     const pags = await sbFetch(`baby_pagos?año=eq.${añoActual}&select=*`);
     if (pags) setPagos(pags);
     const pends = await sbFetch("baby_formularios_pendientes?select=*&order=created_at.desc");
-    if (pends) setPendientes(pends);
+    if (pends) setPendientes((pends||[]).filter(p=>{try{const d=JSON.parse(p.datos_json||'{}');return d._tipo!=="comprobante";}catch(e){return true;}}));
   },[añoActual]);
 
   useEffect(()=>{ load(); },[load]);
@@ -1673,37 +1670,9 @@ function AdminScreen({ user, onLogout }) {
       pendiente_validacion: false,
     };
     if (selJugador) {
-      // Edición — sin chequeo de duplicados
       const res = await sbFetch(`baby_jugadores?id=eq.${selJugador.id}`, "PATCH", payload);
       if (!res) { alert("Error al guardar. Revisá la consola del navegador (F12)."); return; }
     } else {
-      // Alta nueva — chequeo de duplicados
-      if (payload.ci && payload.ci.trim()) {
-        const ciExiste = jugadores.find(j => j.ci && j.ci.trim() === payload.ci.trim() && j.estado !== "baja");
-        if (ciExiste) {
-          const ok = window.confirm(
-            `⚠️ POSIBLE DUPLICADO — CI ya registrada\n\n` +
-            `El jugador que querés dar de alta:\n  ${payload.nombre} (${payload.ci})\n\n` +
-            `Ya existe en el sistema:\n  ${ciExiste.nombre} — Cat. ${ciExiste.categoria_id}\n\n` +
-            `¿Querés darlo de alta de todas formas?`
-          );
-          if (!ok) return;
-        }
-      }
-      const similares = jugadores.filter(j =>
-        j.estado !== "baja" && similitudNombre(j.nombre, payload.nombre) >= 0.7 &&
-        (!payload.ci || !j.ci || j.ci.trim() !== payload.ci.trim())
-      );
-      if (similares.length > 0) {
-        const lista = similares.map(j => `  • ${j.nombre} — Cat. ${j.categoria_id}`).join("\n");
-        const ok = window.confirm(
-          `⚠️ POSIBLE DUPLICADO — Nombre similar\n\n` +
-          `El jugador que querés dar de alta:\n  ${payload.nombre}\n\n` +
-          `Jugadores con nombre similar en el sistema:\n${lista}\n\n` +
-          `¿Querés darlo de alta de todas formas?`
-        );
-        if (!ok) return;
-      }
       const newId = uid();
       const res = await sbFetch("baby_jugadores", "POST", {
         ...payload, id:newId, created_at:new Date().toISOString(),
@@ -1807,41 +1776,21 @@ function AdminScreen({ user, onLogout }) {
       pendiente_validacion: false,
       created_at: new Date().toISOString(),
     };
-    // ── CONTROL DE DUPLICADOS ─────────────────────────────────────
-    // 1. Chequeo exacto por CI
+    // ── CONTROL DUPLICADOS ────────────────────────────────────────
     if (jugador.ci && jugador.ci.trim()) {
-      const ciExiste = jugadores.find(j =>
-        j.ci && j.ci.trim() === jugador.ci.trim() && j.estado !== "baja"
-      );
+      const ciExiste = jugadores.find(j => j.ci&&j.ci.trim()===jugador.ci.trim()&&j.estado!=="baja");
       if (ciExiste) {
-        const ok = window.confirm(
-          `⚠️ POSIBLE DUPLICADO — CI ya registrada\n\n` +
-          `El jugador que querés dar de alta:\n  ${jugador.nombre} (${jugador.ci})\n\n` +
-          `Ya existe en el sistema:\n  ${ciExiste.nombre} — Cat. ${ciExiste.categoria_id}\n\n` +
-          `¿Querés darlo de alta de todas formas?`
-        );
+        const ok = window.confirm(`⚠️ POSIBLE DUPLICADO — CI ya registrada\n\nAlta solicitada: ${jugador.nombre} (${jugador.ci})\nYa existe: ${ciExiste.nombre} — Cat. ${ciExiste.categoria_id}\n\n¿Dar de alta de todas formas?`);
         if (!ok) return;
       }
     }
-
-    // 2. Chequeo por similitud de nombre (umbral 70%)
-    const similares = jugadores.filter(j =>
-      j.estado !== "baja" &&
-      similitudNombre(j.nombre, jugador.nombre) >= 0.7 &&
-      (!jugador.ci || !j.ci || j.ci.trim() !== jugador.ci.trim()) // no repetir si ya alertamos por CI
-    );
-    if (similares.length > 0) {
-      const lista = similares.map(j => `  • ${j.nombre} — Cat. ${j.categoria_id}`).join("\n");
-      const ok = window.confirm(
-        `⚠️ POSIBLE DUPLICADO — Nombre similar\n\n` +
-        `El jugador que querés dar de alta:\n  ${jugador.nombre}\n\n` +
-        `Jugadores con nombre similar ya en el sistema:\n${lista}\n\n` +
-        `¿Querés darlo de alta de todas formas?`
-      );
+    const similares = jugadores.filter(j => j.estado!=="baja" && similitudNombre(j.nombre,jugador.nombre)>=0.7 && (!jugador.ci||!j.ci||j.ci.trim()!==jugador.ci.trim()));
+    if (similares.length>0) {
+      const lista = similares.map(j=>`  • ${j.nombre} — Cat. ${j.categoria_id}`).join("\n");
+      const ok = window.confirm(`⚠️ POSIBLE DUPLICADO — Nombre similar\n\nAlta solicitada: ${jugador.nombre}\nSimilares en el sistema:\n${lista}\n\n¿Dar de alta de todas formas?`);
       if (!ok) return;
     }
     // ─────────────────────────────────────────────────────────────
-
     const res = await sbFetch("baby_jugadores", "POST", jugador);
     if (res) {
       await sbFetch(`baby_formularios_pendientes?id=eq.${pend.id}`, "DELETE");
@@ -2481,7 +2430,7 @@ function AdminScreen({ user, onLogout }) {
                       textAlign:i===5?"center":"left",padding:"0 6px"}}>{h}</div>
                   ))}
                 </div>
-                {pendientes.map((p,idx)=>{
+                {pendientes.filter(p=>{try{const d=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;return d._tipo!=="comprobante";}catch(e){return true;}}).map((p,idx,arr)=>{
                   const datos = typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
                   return(
                     <div key={p.id} style={{display:"grid",
@@ -5027,42 +4976,6 @@ function DelegadoScreen({ user, onLogout }) {
       id: uid(), org_id:"paysandu", estado:"activo",
       pendiente_validacion:false, created_at:new Date().toISOString(),
     };
-
-    // ── CONTROL DE DUPLICADOS ─────────────────────────────────────
-    // Traer todos los jugadores activos para comparar
-    const todosJugs = await sbFetch("baby_jugadores?estado=eq.activo&select=id,nombre,ci,categoria_id") || [];
-
-    // 1. Chequeo exacto por CI
-    if (jugador.ci && jugador.ci.trim()) {
-      const ciExiste = todosJugs.find(j => j.ci && j.ci.trim() === jugador.ci.trim());
-      if (ciExiste) {
-        const ok = window.confirm(
-          `⚠️ POSIBLE DUPLICADO — CI ya registrada\n\n` +
-          `El jugador que querés dar de alta:\n  ${jugador.nombre} (${jugador.ci})\n\n` +
-          `Ya existe en el sistema:\n  ${ciExiste.nombre} — Cat. ${ciExiste.categoria_id}\n\n` +
-          `¿Querés darlo de alta de todas formas?`
-        );
-        if (!ok) return;
-      }
-    }
-
-    // 2. Chequeo por similitud de nombre (umbral 70%)
-    const similares = todosJugs.filter(j =>
-      similitudNombre(j.nombre, jugador.nombre) >= 0.7 &&
-      (!jugador.ci || !j.ci || j.ci.trim() !== jugador.ci.trim())
-    );
-    if (similares.length > 0) {
-      const lista = similares.map(j => `  • ${j.nombre} — Cat. ${j.categoria_id}`).join("\n");
-      const ok = window.confirm(
-        `⚠️ POSIBLE DUPLICADO — Nombre similar\n\n` +
-        `El jugador que querés dar de alta:\n  ${jugador.nombre}\n\n` +
-        `Jugadores con nombre similar ya en el sistema:\n${lista}\n\n` +
-        `¿Querés darlo de alta de todas formas?`
-      );
-      if (!ok) return;
-    }
-    // ─────────────────────────────────────────────────────────────
-
     const res = await sbFetch("baby_jugadores","POST",jugador);
     if (!res) {
       await sbFetch("baby_jugadores","POST",{...jugador, foto_url:""});
@@ -5265,10 +5178,10 @@ function DelegadoScreen({ user, onLogout }) {
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,
               color:C.navy,textTransform:"uppercase",marginBottom:12}}>
               ⏳ Altas pendientes
-              {pendientes.filter(p=>{const d=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;return misCategs.length===0||misCategs.includes(d.categoria_id);}).length > 0 &&
+              {pendientes.filter(p=>{try{const d=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;return d._tipo!=="comprobante"&&(misCategs.length===0||misCategs.includes(d.categoria_id));}catch(e){return true;}}).length > 0 &&
                 <span style={{background:C.gold,color:C.navyDark,borderRadius:20,padding:"2px 10px",
                   fontSize:13,fontWeight:900,marginLeft:8}}>
-                  {pendientes.filter(p=>{const d=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;return misCategs.length===0||misCategs.includes(d.categoria_id);}).length}
+                  {pendientes.filter(p=>{try{const d=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;return d._tipo!=="comprobante"&&(misCategs.length===0||misCategs.includes(d.categoria_id));}catch(e){return true;}}).length}
                 </span>
               }
             </div>
@@ -5282,8 +5195,8 @@ function DelegadoScreen({ user, onLogout }) {
               ))}
             </div>
             {pendientes.filter(p=>{
-              const datos=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
-              return misCategs.length===0||misCategs.includes(datos.categoria_id);
+              try{const datos=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
+              return datos._tipo!=="comprobante"&&(misCategs.length===0||misCategs.includes(datos.categoria_id));}catch(e){return true;}
             }).map((p,idx,arr)=>{
               const datos=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
               return(
@@ -5314,7 +5227,7 @@ function DelegadoScreen({ user, onLogout }) {
                 </div>
               );
             })}
-            {pendientes.filter(p=>{const d=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;return misCategs.length===0||misCategs.includes(d.categoria_id);}).length===0&&(
+            {pendientes.filter(p=>{try{const d=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;return d._tipo!=="comprobante"&&(misCategs.length===0||misCategs.includes(d.categoria_id));}catch(e){return true;}}).length===0&&(
               <div style={{textAlign:"center",padding:"30px 0",color:C.grayMid,fontSize:13}}>Sin pendientes</div>
             )}
           </div>
