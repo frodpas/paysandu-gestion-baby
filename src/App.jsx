@@ -35,14 +35,15 @@ const TIPOS_CUOTA_DEFAULT = [
 const uid = () => Math.random().toString(36).slice(2,8).toUpperCase();
 const fmt = n => "$"+(n||0).toLocaleString("es-UY");
 
-const similitudNombre = (a, b) => {
-  if (!a||!b) return 0;
-  const norm = s => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
-  const na = norm(a), nb = norm(b);
-  if (na === nb) return 1;
-  const wa = na.split(/\s+/), wb = nb.split(/\s+/);
-  const comunes = wa.filter(w => w.length>1 && wb.includes(w));
-  return (comunes.length * 2) / (wa.length + wb.length);
+// Parser seguro para datos_json — maneja JSON doblemente serializado
+const parseDJ = (raw) => {
+  try {
+    if (!raw) return {};
+    let d = typeof raw === "string" ? JSON.parse(raw) : raw;
+    // Si el resultado sigue siendo string (doble serialización), parsear de nuevo
+    if (typeof d === "string") d = JSON.parse(d);
+    return d || {};
+  } catch(e) { return {}; }
 };
 const fdate = () => new Date().toLocaleDateString("es-UY");
 
@@ -804,7 +805,7 @@ function PublicoView({ user, onLogout }) {
       id: grupoId,
       org_id: jug.org_id||"paysandu",
       foto_url: comprobante,
-      datos_json: JSON.stringify({
+      datos_json: {
         _tipo: "comprobante",
         jugador_id: jug.id,
         jugador_nombre: jug.nombre,
@@ -1611,7 +1612,7 @@ function AdminScreen({ user, onLogout }) {
     ]);
     setCategorias(cats||[]);
     setJugadores(jugs||[]);
-    setPendientes((pends||[]).filter(p=>{try{const d=JSON.parse(p.datos_json||'{}');return d._tipo!=="comprobante";}catch(e){return true;}}));
+    setPendientes(pends||[]);
     setDelegados(dels||[]);
     setPlanPagos(plan||[]);
     setPagos(pags||[]);
@@ -1624,7 +1625,7 @@ function AdminScreen({ user, onLogout }) {
     const pags = await sbFetch(`baby_pagos?año=eq.${añoActual}&select=*`);
     if (pags) setPagos(pags);
     const pends = await sbFetch("baby_formularios_pendientes?select=*&order=created_at.desc");
-    if (pends) setPendientes((pends||[]).filter(p=>{try{const d=JSON.parse(p.datos_json||'{}');return d._tipo!=="comprobante";}catch(e){return true;}}));
+    if (pends) setPendientes(pends);
   },[añoActual]);
 
   useEffect(()=>{ load(); },[load]);
@@ -1729,7 +1730,7 @@ function AdminScreen({ user, onLogout }) {
   };
 
   const validarPendiente = async (pend) => {
-    const datos = typeof pend.datos_json==="string" ? JSON.parse(pend.datos_json) : pend.datos_json;
+    const datos = parseDJ(pend.datos_json);
 
     // Si es formulario de delegado
     if (datos._tipo === "delegado") {
@@ -1776,21 +1777,6 @@ function AdminScreen({ user, onLogout }) {
       pendiente_validacion: false,
       created_at: new Date().toISOString(),
     };
-    // ── CONTROL DUPLICADOS ────────────────────────────────────────
-    if (jugador.ci && jugador.ci.trim()) {
-      const ciExiste = jugadores.find(j => j.ci&&j.ci.trim()===jugador.ci.trim()&&j.estado!=="baja");
-      if (ciExiste) {
-        const ok = window.confirm(`⚠️ POSIBLE DUPLICADO — CI ya registrada\n\nAlta solicitada: ${jugador.nombre} (${jugador.ci})\nYa existe: ${ciExiste.nombre} — Cat. ${ciExiste.categoria_id}\n\n¿Dar de alta de todas formas?`);
-        if (!ok) return;
-      }
-    }
-    const similares = jugadores.filter(j => j.estado!=="baja" && similitudNombre(j.nombre,jugador.nombre)>=0.7 && (!jugador.ci||!j.ci||j.ci.trim()!==jugador.ci.trim()));
-    if (similares.length>0) {
-      const lista = similares.map(j=>`  • ${j.nombre} — Cat. ${j.categoria_id}`).join("\n");
-      const ok = window.confirm(`⚠️ POSIBLE DUPLICADO — Nombre similar\n\nAlta solicitada: ${jugador.nombre}\nSimilares en el sistema:\n${lista}\n\n¿Dar de alta de todas formas?`);
-      if (!ok) return;
-    }
-    // ─────────────────────────────────────────────────────────────
     const res = await sbFetch("baby_jugadores", "POST", jugador);
     if (res) {
       await sbFetch(`baby_formularios_pendientes?id=eq.${pend.id}`, "DELETE");
@@ -1927,8 +1913,8 @@ function AdminScreen({ user, onLogout }) {
               const parts = label.split(" ");
               const icon = parts[0];
               const text = parts.slice(1).join(" ");
-              const compsPend = pendientes.filter(p=>{try{const d=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;return d._tipo==="comprobante";}catch(e){return false;}}).length;
-              const altasPend = pendientes.filter(p=>{try{const d=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;return d._tipo!=="comprobante";}catch(e){return true;}}).length;
+              const compsPend = pendientes.filter(p=>{try{const d=parseDJ(p.datos_json);return d._tipo==="comprobante";}catch(e){return false;}}).length;
+              const altasPend = pendientes.filter(p=>{try{const d=parseDJ(p.datos_json);return d._tipo!=="comprobante";}catch(e){return true;}}).length;
               const hasBadge = (id==="pendientes" && altasPend>0) || (id==="pagos" && compsPend>0);
               const badgeCount = id==="pendientes" ? altasPend : id==="pagos" ? compsPend : 0;
               return(
@@ -2158,7 +2144,7 @@ function AdminScreen({ user, onLogout }) {
               // Comprobantes de transferencia: vienen de formularios_pendientes con _tipo="comprobante"
               const comprobantes = pendientes.filter(p=>{
                 try {
-                  const d = typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
+                  const d = parseDJ(p.datos_json);
                   return d._tipo==="comprobante";
                 } catch(e){ return false; }
               });
@@ -2174,7 +2160,7 @@ function AdminScreen({ user, onLogout }) {
                   </div>
                   <div style={{display:"flex",flexDirection:"column",gap:10}}>
                     {comprobantes.map(p=>{
-                      const d = typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
+                      const d = parseDJ(p.datos_json);
                       return(
                         <div key={p.id} style={{background:"white",borderRadius:14,
                           border:"2px solid #fca5a5",overflow:"hidden"}}>
@@ -2430,8 +2416,8 @@ function AdminScreen({ user, onLogout }) {
                       textAlign:i===5?"center":"left",padding:"0 6px"}}>{h}</div>
                   ))}
                 </div>
-                {pendientes.filter(p=>{try{const d=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;return d._tipo!=="comprobante";}catch(e){return true;}}).map((p,idx,arr)=>{
-                  const datos = typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
+                {pendientes.map((p,idx)=>{
+                  const datos = parseDJ(p.datos_json);
                   return(
                     <div key={p.id} style={{display:"grid",
                       gridTemplateColumns:"2fr 100px 130px 130px 130px 160px",gap:0,
@@ -3414,7 +3400,7 @@ function AdminScreen({ user, onLogout }) {
                       let borrados = 0;
                       for (const p of (pends||[])) {
                         try {
-                          const d = typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
+                          const d = parseDJ(p.datos_json);
                           if (d._tipo==="comprobante") {
                             await sbFetch(`baby_formularios_pendientes?id=eq.${p.id}`,"DELETE");
                             borrados++;
@@ -4967,7 +4953,7 @@ function DelegadoScreen({ user, onLogout }) {
   };
 
   const validarPend = async (p) => {
-    const datos = typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
+    const datos = parseDJ(p.datos_json);
     const { foto_url, tipo_cuota, ...resto } = datos;
     const jugador = {
       ...resto,
@@ -5178,10 +5164,10 @@ function DelegadoScreen({ user, onLogout }) {
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,
               color:C.navy,textTransform:"uppercase",marginBottom:12}}>
               ⏳ Altas pendientes
-              {pendientes.filter(p=>{try{const d=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;return d._tipo!=="comprobante"&&(misCategs.length===0||misCategs.includes(d.categoria_id));}catch(e){return true;}}).length > 0 &&
+              {pendientes.filter(p=>{const d=parseDJ(p.datos_json);return misCategs.length===0||misCategs.includes(d.categoria_id);}).length > 0 &&
                 <span style={{background:C.gold,color:C.navyDark,borderRadius:20,padding:"2px 10px",
                   fontSize:13,fontWeight:900,marginLeft:8}}>
-                  {pendientes.filter(p=>{try{const d=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;return d._tipo!=="comprobante"&&(misCategs.length===0||misCategs.includes(d.categoria_id));}catch(e){return true;}}).length}
+                  {pendientes.filter(p=>{const d=parseDJ(p.datos_json);return misCategs.length===0||misCategs.includes(d.categoria_id);}).length}
                 </span>
               }
             </div>
@@ -5195,10 +5181,10 @@ function DelegadoScreen({ user, onLogout }) {
               ))}
             </div>
             {pendientes.filter(p=>{
-              try{const datos=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
-              return datos._tipo!=="comprobante"&&(misCategs.length===0||misCategs.includes(datos.categoria_id));}catch(e){return true;}
+              const datos=parseDJ(p.datos_json);
+              return misCategs.length===0||misCategs.includes(datos.categoria_id);
             }).map((p,idx,arr)=>{
-              const datos=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;
+              const datos=parseDJ(p.datos_json);
               return(
                 <div key={p.id} style={{display:"grid",
                   gridTemplateColumns:"260px 65px 110px 95px 105px",gap:0,
@@ -5227,7 +5213,7 @@ function DelegadoScreen({ user, onLogout }) {
                 </div>
               );
             })}
-            {pendientes.filter(p=>{try{const d=typeof p.datos_json==="string"?JSON.parse(p.datos_json):p.datos_json;return d._tipo!=="comprobante"&&(misCategs.length===0||misCategs.includes(d.categoria_id));}catch(e){return true;}}).length===0&&(
+            {pendientes.filter(p=>{const d=parseDJ(p.datos_json);return misCategs.length===0||misCategs.includes(d.categoria_id);}).length===0&&(
               <div style={{textAlign:"center",padding:"30px 0",color:C.grayMid,fontSize:13}}>Sin pendientes</div>
             )}
           </div>
@@ -5698,7 +5684,7 @@ function FormularioDelegado({ org }) {
     const { foto_url: fotoDelForm, ...fSinFoto } = f;
     await sbFetch("baby_formularios_pendientes","POST",{
       id:uid(), org_id:org,
-      datos_json: JSON.stringify({...fSinFoto, _tipo:"delegado"}),
+      datos_json: {...fSinFoto, _tipo:"delegado"},
       foto_url: fotoDelForm||"",
       created_at: new Date().toISOString(),
     });
@@ -5861,7 +5847,7 @@ function FormularioPublico({ tipo, org }) {
     const { foto_url: fotoJugForm, ...fJugSinFoto } = f;
     await sbFetch("baby_formularios_pendientes","POST",{
       id:uid(), org_id:org,
-      datos_json: JSON.stringify(fJugSinFoto),
+      datos_json: fJugSinFoto,
       foto_url: fotoJugForm||"",
       created_at: new Date().toISOString(),
     });
