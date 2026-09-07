@@ -814,7 +814,7 @@ function PublicoView({ user, onLogout }) {
         monto_total: totalMonto,
         detalle,
         año: añoActual,
-      }),
+      },
       created_at: new Date().toISOString(),
     });
     setPaying(false);
