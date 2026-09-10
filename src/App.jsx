@@ -735,6 +735,10 @@ function PublicoView({ user, onLogout }) {
   const [notaTransf, setNotaTransf] = useState("");
   const [configPago, setConfigPago] = useState(null);
   const [tiposCuotaPub, setTiposCuotaPub] = useState(TIPOS_CUOTA_DEFAULT);
+  const [nuevaClave1, setNuevaClave1] = useState("");
+  const [nuevaClave2, setNuevaClave2] = useState("");
+  const [guardandoClave, setGuardandoClave] = useState(false);
+  const [claveErr, setClaveErr] = useState("");
 
   const añoActual = new Date().getFullYear();
 
@@ -841,6 +845,22 @@ function PublicoView({ user, onLogout }) {
     resetModal();
   };
 
+  const guardarClave = async () => {
+    setClaveErr("");
+    const c1 = nuevaClave1.trim(), c2 = nuevaClave2.trim();
+    if (!/^\d{4}$/.test(c1)) { setClaveErr("La clave tiene que ser de 4 números"); return; }
+    if (c1 !== c2) { setClaveErr("Las claves no coinciden"); return; }
+    setGuardandoClave(true);
+    const res = await sbFetch(`baby_jugadores?id=eq.${jug.id}`, "PATCH", {pin_familia: c1});
+    setGuardandoClave(false);
+    if (res) {
+      setNuevaClave1(""); setNuevaClave2("");
+      setModal("clave_ok");
+    } else {
+      setClaveErr("No se pudo guardar. Probá de nuevo.");
+    }
+  };
+
   return (
     <div style={{minHeight:"100dvh",background:C.offWhite}}>
       {/* Header */}
@@ -852,6 +872,9 @@ function PublicoView({ user, onLogout }) {
               color:C.white,textTransform:"uppercase"}}>Paysandú FC — Baby</div>
             <div style={{color:C.lilac,fontSize:12}}>Ficha del jugador</div>
           </div>
+          <button onClick={()=>setModal("clave")} style={{background:"rgba(255,255,255,.1)",border:"none",
+            borderRadius:8,padding:"7px 10px",color:C.white,fontFamily:"'Barlow Condensed',sans-serif",
+            fontWeight:700,fontSize:12,textTransform:"uppercase",marginRight:6}}>🔒 Clave</button>
           <button onClick={()=>window.location.href=window.location.origin+"?acceso=jugadores"} style={{background:"rgba(255,255,255,.1)",border:"none",
             borderRadius:8,padding:"7px 12px",color:C.white,fontFamily:"'Barlow Condensed',sans-serif",
             fontWeight:700,fontSize:12,textTransform:"uppercase"}}>← Inicio</button>
@@ -1154,6 +1177,48 @@ function PublicoView({ user, onLogout }) {
           </div>
         </Modal>
       )}
+      {modal==="clave"&&(
+        <Modal onClose={()=>{setModal(null);setClaveErr("");setNuevaClave1("");setNuevaClave2("");}} maxWidth={360}>
+          <div style={{padding:"28px 24px"}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,
+              color:C.navy,textTransform:"uppercase",marginBottom:6}}>🔒 Cambiar mi clave</div>
+            <div style={{fontSize:13,color:C.grayMid,marginBottom:16,lineHeight:1.5}}>
+              Por defecto se entra con los últimos 4 dígitos de la cédula de {jug.nombre}. Si preferís
+              una clave propia, elegí una de 4 números acá — vas a necesitarla la próxima vez.
+            </div>
+            <input type="text" inputMode="numeric" maxLength={4} placeholder="Nueva clave (4 dígitos)"
+              value={nuevaClave1} onChange={e=>setNuevaClave1(e.target.value.replace(/[^0-9]/g,""))}
+              style={{width:"100%",padding:"12px 14px",border:`1px solid ${C.gray}`,borderRadius:10,
+                fontSize:15,outline:"none",marginBottom:10}}/>
+            <input type="text" inputMode="numeric" maxLength={4} placeholder="Repetir clave"
+              value={nuevaClave2} onChange={e=>setNuevaClave2(e.target.value.replace(/[^0-9]/g,""))}
+              style={{width:"100%",padding:"12px 14px",border:`1px solid ${C.gray}`,borderRadius:10,
+                fontSize:15,outline:"none",marginBottom:10}}/>
+            {claveErr&&<div style={{color:"#dc2626",fontSize:12,marginBottom:10}}>{claveErr}</div>}
+            <button onClick={guardarClave} disabled={guardandoClave}
+              style={{width:"100%",padding:"12px",border:"none",borderRadius:10,
+                background:`linear-gradient(135deg,${C.navy},${C.navyLight})`,color:C.white,
+                fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,
+                textTransform:"uppercase"}}>{guardandoClave?"Guardando...":"Guardar clave"}</button>
+          </div>
+        </Modal>
+      )}
+      {modal==="clave_ok"&&(
+        <Modal onClose={()=>setModal(null)} maxWidth={340}>
+          <div style={{padding:"32px 24px",textAlign:"center"}}>
+            <div style={{fontSize:48,marginBottom:10}}>✅</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,
+              color:C.navy,textTransform:"uppercase",marginBottom:8}}>Clave actualizada</div>
+            <div style={{fontSize:13,color:C.grayMid,marginBottom:18}}>
+              La vas a usar la próxima vez que entres a la ficha de {jug.nombre}.
+            </div>
+            <button onClick={()=>setModal(null)}
+              style={{width:"100%",padding:"12px",background:`linear-gradient(135deg,#0ea5e9,#0369a1)`,
+                color:C.white,border:"none",borderRadius:10,fontFamily:"'Barlow Condensed',sans-serif",
+                fontWeight:900,fontSize:14,textTransform:"uppercase"}}>Cerrar</button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
@@ -1275,8 +1340,8 @@ function FormAltaJugador({ categorias, onSave, onCancel, initialData=null, reado
 
         {[
           ["nombre","Nombre completo *","text",true],
-          ["ci","Cédula de identidad","text",false],
-          ["pin_familia","PIN familia (3 dígitos, opcional)","number",false],
+          ["ci","Cédula de identidad — es la clave de acceso por defecto","text",false],
+          ["pin_familia","Clave personalizada (opcional, 4 dígitos)","text",false],
           ["celular","Celular *","tel",true],
           ["mail","Email","email",false],
           ["fecha_nacimiento","Fecha de nacimiento *","date",true],
@@ -5276,28 +5341,41 @@ function AccesoJugadoresDirecto() {
 
   const elegirCat = async (catId) => {
     setFiltCat(catId); setLoading(true);
-    const data = await sbFetch(`baby_jugadores?categoria_id=eq.${catId}&estado=eq.activo&select=id,nombre,ci,foto_url,pin_familia&order=nombre.asc`);
+    // No se traen "ci" ni "pin_familia" acá: esta lista es pública (sin login),
+    // así que solo puede exponer lo mínimo para reconocer al jugador.
+    const data = await sbFetch(`baby_jugadores?categoria_id=eq.${catId}&estado=eq.activo&select=id,nombre,foto_url&order=nombre.asc`);
     setLoading(false);
     setJugadores(data||[]);
     setStep("jugs");
   };
 
   const elegirJugador = (jug) => {
-    if (!jug.pin_familia) {
-      window.location.href = `${window.location.origin}?id=${jug.id}`;
-    } else {
-      setSelJug(jug); setPin(""); setErr(""); setStep("pin");
-    }
+    // Toda familia tiene clave: la que eligió, o por defecto los últimos 4
+    // dígitos de la cédula del jugador. Siempre pedimos clave acá.
+    setSelJug(jug); setPin(""); setErr(""); setStep("pin");
   };
 
-  const confirmarPin = (pinValor) => {
-    // Comparar como string en ambos lados para evitar mismatch número/string
+  const confirmarPin = async (pinValor) => {
     const pinIngresado = String(pinValor || "").trim();
-    const pinGuardado  = String(selJug.pin_familia || "").trim();
-    if (pinIngresado === pinGuardado) {
+    if (!pinIngresado) { setErr("Ingresá la clave"); return; }
+    setLoading(true);
+    // Recién acá, ya elegido un jugador puntual, se consulta su cédula/clave
+    // — nunca se descarga junto con el listado de la categoría.
+    const data = await sbFetch(`baby_jugadores?id=eq.${selJug.id}&select=ci,pin_familia`);
+    setLoading(false);
+    const full = data && data[0];
+    if (!full) { setErr("No se pudo verificar. Probá de nuevo."); return; }
+    const pinPropio     = String(full.pin_familia || "").trim();
+    const pinPorDefecto = String(full.ci || "").replace(/\D/g,"").slice(-4);
+    const pinValido = pinPropio || pinPorDefecto;
+    if (!pinValido) {
+      setErr("Este jugador no tiene clave configurada. Pedile el link personal a un delegado.");
+      return;
+    }
+    if (pinIngresado === pinValido) {
       window.location.href = `${window.location.origin}?id=${selJug.id}`;
     } else {
-      setErr("PIN incorrecto");
+      setErr("Clave incorrecta");
     }
   };
 
@@ -5416,7 +5494,6 @@ function AccesoJugadoresDirecto() {
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,
                     fontSize:15,color:"white",textTransform:"uppercase",
                     overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{j.nombre}</div>
-                  {j.ci&&<div style={{fontSize:11,color:"rgba(255,255,255,.5)"}}>CI: {j.ci}</div>}
                 </div>
                 <button onClick={()=>elegirJugador(j)}
                   style={{padding:"8px 14px",background:"linear-gradient(135deg,#16a34a,#15803d)",
@@ -5447,22 +5524,25 @@ function AccesoJugadoresDirecto() {
               <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
                 color:"white",textTransform:"uppercase"}}>{selJug.nombre}</div>
               <div style={{color:"rgba(255,255,255,.6)",fontSize:13,marginTop:4}}>
-                Ingresá el PIN de 3 dígitos
+                Ingresá tu clave (4 dígitos)
+              </div>
+              <div style={{color:"rgba(255,255,255,.4)",fontSize:11,marginTop:6}}>
+                Si nunca la cambiaste, son los últimos 4 dígitos de la cédula del jugador
               </div>
             </div>
             <div style={{display:"flex",gap:10,justifyContent:"center",marginBottom:16}}>
-              {[0,1,2].map(i=>(
+              {[0,1,2,3].map(i=>(
                 <input key={i} type="password" inputMode="numeric" maxLength={1} value={pin[i]||""}
                   onChange={e=>{
                     const v=e.target.value.replace(/[^0-9]/g,"");
                     const arr=pin.split("");arr[i]=v;
-                    const np=arr.join("").slice(0,3);
+                    const np=arr.join("").slice(0,4);
                     setPin(np);
-                    if(v&&i<2) document.getElementById(`pdpin-${i+1}`)?.focus();
-                    if(np.length===3) setTimeout(()=>confirmarPin(np),80);
+                    if(v&&i<3) document.getElementById(`pdpin-${i+1}`)?.focus();
+                    if(np.length===4) setTimeout(()=>confirmarPin(np),80);
                   }}
                   id={`pdpin-${i}`}
-                  style={{width:64,height:64,borderRadius:14,
+                  style={{width:56,height:64,borderRadius:14,
                     border:"2px solid rgba(201,168,212,.5)",
                     background:"rgba(255,255,255,.1)",color:"white",fontSize:32,
                     fontWeight:900,textAlign:"center",outline:"none"}}/>
@@ -5827,7 +5907,7 @@ function FormularioPublico({ tipo, org }) {
   },[]);
 
   const set = (k,v) => setF(p=>({...p,[k]:v}));
-  const valid = f.nombre&&f.celular&&f.categoria_id&&f.fecha_nacimiento;
+  const valid = f.nombre&&f.celular&&f.categoria_id&&f.fecha_nacimiento&&f.ci;
 
   const handleFoto = (e) => {
     const file = e.target.files?.[0];
@@ -5934,7 +6014,7 @@ function FormularioPublico({ tipo, org }) {
           {/* CAMPOS TEXTO */}
           {[
             ["nombre","Nombre completo del jugador *","text"],
-            ["ci","Cédula de identidad (opcional)","text"],
+            ["ci","Cédula de identidad * — va a ser tu clave de acceso","text"],
             ["celular","Celular del tutor *","tel"],
             ["mail","Email del tutor (opcional)","email"],
             ["fecha_nacimiento","Fecha de nacimiento *","date"],
